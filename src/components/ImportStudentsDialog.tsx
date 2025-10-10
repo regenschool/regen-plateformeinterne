@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Upload } from "lucide-react";
+import { Upload, Info } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type ImportStudentsDialogProps = {
   onImportComplete: () => void;
@@ -17,7 +18,7 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
 
   const handleImport = async () => {
     if (!csvData.trim()) {
-      toast.error("Please paste CSV data");
+      toast.error("Please paste your data");
       return;
     }
 
@@ -25,36 +26,20 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
 
     try {
       const lines = csvData.trim().split("\n");
-      const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
-
-      const students = lines.slice(1).map((line) => {
-        const values = line.split(",").map((v) => v.trim());
-        const student: any = {
-          first_name: "",
-          last_name: "",
-          class_name: "",
+      
+      const students = lines.map((line) => {
+        const values = line.split("\t").length > 1 ? line.split("\t") : line.split(",");
+        const cleanValues = values.map((v) => v.trim().replace(/^["']|["']$/g, ""));
+        
+        return {
+          first_name: cleanValues[0] || "",
+          last_name: cleanValues[1] || "",
+          class_name: cleanValues[2] || "",
+          photo_url: cleanValues[3] || null,
+          age: cleanValues[4] ? parseInt(cleanValues[4]) : null,
+          academic_background: cleanValues[5] || null,
+          company: cleanValues[6] || null,
         };
-
-        headers.forEach((header, index) => {
-          const value = values[index];
-          if (header.includes("first") || header.includes("name") && !header.includes("last")) {
-            student.first_name = value;
-          } else if (header.includes("last") || header.includes("surname")) {
-            student.last_name = value;
-          } else if (header.includes("photo") || header.includes("image")) {
-            student.photo_url = value || null;
-          } else if (header.includes("age")) {
-            student.age = value ? parseInt(value) : null;
-          } else if (header.includes("academic") || header.includes("diploma") || header.includes("background")) {
-            student.academic_background = value || null;
-          } else if (header.includes("company") || header.includes("work")) {
-            student.company = value || null;
-          } else if (header.includes("class")) {
-            student.class_name = value;
-          }
-        });
-
-        return student;
       });
 
       const validStudents = students.filter(
@@ -62,7 +47,7 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
       );
 
       if (validStudents.length === 0) {
-        toast.error("No valid students found. Make sure CSV has first_name, last_name, and class_name columns.");
+        toast.error("No valid students found. Make sure all rows have First Name, Last Name, and Class.");
         return;
       }
 
@@ -75,7 +60,7 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
       setCsvData("");
       onImportComplete();
     } catch (error: any) {
-      toast.error("Failed to import students");
+      toast.error("Failed to import students: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -89,26 +74,53 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
           Import CSV
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Import Students from CSV</DialogTitle>
+          <DialogTitle>Import Students</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="text-sm text-muted-foreground space-y-2">
-            <p>Paste your CSV data below. Required columns:</p>
-            <ul className="list-disc list-inside ml-2">
-              <li>first_name (or name)</li>
-              <li>last_name (or surname)</li>
-              <li>class_name (or class)</li>
-            </ul>
-            <p>Optional columns: photo, age, academic_background, company</p>
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Copy your data from Excel/Google Sheets and paste it below. Data should be in this exact column order:
+            </AlertDescription>
+          </Alert>
+          
+          <div className="border rounded-lg overflow-hidden">
+            <div className="grid grid-cols-7 bg-muted font-medium text-sm">
+              <div className="p-3 border-r">First Name *</div>
+              <div className="p-3 border-r">Last Name *</div>
+              <div className="p-3 border-r">Class *</div>
+              <div className="p-3 border-r">Photo URL</div>
+              <div className="p-3 border-r">Age</div>
+              <div className="p-3 border-r">Academic Background</div>
+              <div className="p-3">Company</div>
+            </div>
+            <div className="grid grid-cols-7 bg-background/50 text-xs text-muted-foreground">
+              <div className="p-2 border-r border-t">John</div>
+              <div className="p-2 border-r border-t">Doe</div>
+              <div className="p-2 border-r border-t">2024 Cohort A</div>
+              <div className="p-2 border-r border-t">https://...</div>
+              <div className="p-2 border-r border-t">25</div>
+              <div className="p-2 border-r border-t">MBA</div>
+              <div className="p-2 border-t">Google</div>
+            </div>
           </div>
-          <Textarea
-            value={csvData}
-            onChange={(e) => setCsvData(e.target.value)}
-            placeholder="first_name,last_name,class_name,age,academic_background,company,photo&#10;John,Doe,2024 Cohort A,25,MBA,Google,https://..."
-            className="min-h-[200px] font-mono text-sm"
-          />
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Paste your data here:</p>
+            <p className="text-xs text-muted-foreground">
+              * Required fields. Photo URL should be a direct link to an image (jpg, png, webp). Paste from Excel/Sheets with tabs or comma-separated values.
+            </p>
+            <Textarea
+              value={csvData}
+              onChange={(e) => setCsvData(e.target.value)}
+              placeholder="John	Doe	2024 Cohort A	https://example.com/photo.jpg	25	MBA	Google
+Jane	Smith	2024 Cohort B	https://example.com/photo2.jpg	27	MSc Engineering	Tesla"
+              className="min-h-[200px] font-mono text-sm"
+            />
+          </div>
+          
           <Button onClick={handleImport} disabled={loading} className="w-full">
             {loading ? "Importing..." : "Import Students"}
           </Button>
