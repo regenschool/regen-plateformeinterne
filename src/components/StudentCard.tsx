@@ -4,8 +4,19 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Briefcase, GraduationCap, Edit3, Save, X } from "lucide-react";
+import { Briefcase, GraduationCap, Edit3, Save, X, Trash2 } from "lucide-react";
 import { EditStudentDialog } from "./EditStudentDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type Student = {
   id: string;
@@ -88,6 +99,22 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
     setIsEditingNote(false);
   };
 
+  const deleteStudent = async () => {
+    try {
+      const { error } = await supabase
+        .from("students")
+        .delete()
+        .eq("id", student.id);
+
+      if (error) throw error;
+
+      toast.success("Étudiant supprimé");
+      onUpdate();
+    } catch (error: any) {
+      toast.error("Échec de la suppression");
+    }
+  };
+
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
       <CardHeader className="p-0">
@@ -109,8 +136,28 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
           <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground px-2 py-0.5 rounded-full text-xs font-medium">
             {student.class_name}
           </div>
-          <div className="absolute top-1.5 left-1.5">
+          <div className="absolute top-1.5 left-1.5 flex gap-1">
             <EditStudentDialog student={student} onStudentUpdated={onUpdate} />
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="icon" variant="destructive" className="h-7 w-7">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Êtes-vous sûr de vouloir supprimer {student.first_name} {student.last_name} ?
+                    Cette action est irréversible.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={deleteStudent}>Supprimer</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </CardHeader>
