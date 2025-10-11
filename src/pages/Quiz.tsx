@@ -159,17 +159,16 @@ const Quiz = () => {
     return (
       <div className="max-w-2xl mx-auto">
         <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 shadow-xl">
-          <CardContent className="p-12 text-center space-y-6">
-            <div className="text-6xl mb-4">{result.emoji}</div>
-            <Award className="w-16 h-16 text-primary mx-auto opacity-20" />
+          <CardContent className="p-12 text-center space-y-8">
+            <div className="text-7xl mb-2">{result.emoji}</div>
             <div>
-              <h2 className="text-4xl font-bold mb-3 text-foreground">{result.title}</h2>
-              <p className="text-lg text-muted-foreground leading-relaxed max-w-lg mx-auto mb-4">
+              <h2 className="text-4xl font-bold mb-4 text-foreground">{result.title}</h2>
+              <p className="text-lg text-muted-foreground leading-relaxed max-w-lg mx-auto mb-6">
                 {result.message}
               </p>
-              <div className="inline-block bg-primary/10 px-6 py-3 rounded-full border border-primary/20">
+              <div className="inline-block bg-primary/10 px-8 py-4 rounded-full border border-primary/20">
                 <p className="text-sm text-muted-foreground">
-                  Score : <span className="text-2xl font-bold text-primary">{score}</span> / {students.length}
+                  Score : <span className="text-3xl font-bold text-primary">{score}</span> / {students.length}
                 </p>
               </div>
             </div>
