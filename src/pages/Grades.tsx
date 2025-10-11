@@ -191,6 +191,9 @@ export default function Grades() {
     setSelectedSubject(subject);
     setNewSubjectMetadata({ teacherName, schoolYear, semester });
     setShowNewSubjectDialog(false);
+    
+    // Ajouter la nouvelle matière à la liste
+    setSubjects(prev => [...prev, subject]);
   };
 
   const handleGradeUpdated = () => {
@@ -260,10 +263,12 @@ export default function Grades() {
               value={selectedSubject} 
               onValueChange={(value) => {
                 if (value === "__new__") {
+                  // Ne pas changer selectedSubject, garder la valeur actuelle
                   setShowNewSubjectDialog(true);
                 } else {
                   setSelectedSubject(value);
-                  setNewSubjectMetadata(null);
+                  // Charger les métadonnées de la matière si elle existe déjà
+                  fetchSubjects();
                 }
               }}
               disabled={!selectedClass || !selectedSchoolYear || !selectedSemester}
