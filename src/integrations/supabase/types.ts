@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      grades: {
+        Row: {
+          appreciation: string | null
+          assessment_custom_label: string | null
+          assessment_type: Database["public"]["Enums"]["assessment_type"]
+          class_name: string
+          created_at: string
+          grade: number
+          id: string
+          max_grade: number
+          student_id: string
+          subject: string
+          teacher_id: string
+          updated_at: string
+          weighting: number
+        }
+        Insert: {
+          appreciation?: string | null
+          assessment_custom_label?: string | null
+          assessment_type: Database["public"]["Enums"]["assessment_type"]
+          class_name: string
+          created_at?: string
+          grade: number
+          id?: string
+          max_grade?: number
+          student_id: string
+          subject: string
+          teacher_id: string
+          updated_at?: string
+          weighting?: number
+        }
+        Update: {
+          appreciation?: string | null
+          assessment_custom_label?: string | null
+          assessment_type?: Database["public"]["Enums"]["assessment_type"]
+          class_name?: string
+          created_at?: string
+          grade?: number
+          id?: string
+          max_grade?: number
+          student_id?: string
+          subject?: string
+          teacher_id?: string
+          updated_at?: string
+          weighting?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grades_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quiz_scores: {
         Row: {
           class_name: string
@@ -132,7 +188,14 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      assessment_type:
+        | "participation_individuelle"
+        | "oral_groupe"
+        | "oral_individuel"
+        | "ecrit_groupe"
+        | "ecrit_individuel"
+        | "memoire"
+        | "autre"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -259,6 +322,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      assessment_type: [
+        "participation_individuelle",
+        "oral_groupe",
+        "oral_individuel",
+        "ecrit_groupe",
+        "ecrit_individuel",
+        "memoire",
+        "autre",
+      ],
+    },
   },
 } as const

@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Directory from "./pages/Directory";
 import Quiz from "./pages/Quiz";
+import Grades from "./pages/Grades";
 import NotFound from "./pages/NotFound";
 import { Layout } from "./components/Layout";
 import { LanguageProvider } from "./contexts/LanguageContext";
@@ -72,6 +73,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Quiz />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/grades"
+              element={
+                <ProtectedRoute>
+                  <Grades />
                 </ProtectedRoute>
               }
             />
