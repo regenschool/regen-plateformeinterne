@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ClipboardList, Pencil } from "lucide-react";
+import { ClipboardList } from "lucide-react";
 
 type Student = {
   id: string;
@@ -22,20 +22,9 @@ type Student = {
   class_name: string;
 };
 
-type Grade = {
-  id: string;
-  assessment_type: string;
-  assessment_custom_label: string | null;
-  grade: number;
-  max_grade: number;
-  weighting: number;
-  appreciation: string | null;
-};
-
 type GradeEntryDialogProps = {
   student: Student;
   subject: string;
-  existingGrade?: Grade;
   onGradeUpdated: () => void;
 };
 
@@ -49,14 +38,14 @@ const assessmentTypes = [
   { value: "autre", label: "Autre" },
 ];
 
-export const GradeEntryDialog = ({ student, subject, existingGrade, onGradeUpdated }: GradeEntryDialogProps) => {
+export const GradeEntryDialog = ({ student, subject, onGradeUpdated }: GradeEntryDialogProps) => {
   const [open, setOpen] = useState(false);
-  const [assessmentType, setAssessmentType] = useState(existingGrade?.assessment_type || "");
-  const [customLabel, setCustomLabel] = useState(existingGrade?.assessment_custom_label || "");
-  const [grade, setGrade] = useState(existingGrade?.grade?.toString() || "");
-  const [maxGrade, setMaxGrade] = useState(existingGrade?.max_grade?.toString() || "20");
-  const [weighting, setWeighting] = useState(existingGrade?.weighting?.toString() || "1");
-  const [appreciation, setAppreciation] = useState(existingGrade?.appreciation || "");
+  const [assessmentType, setAssessmentType] = useState("");
+  const [customLabel, setCustomLabel] = useState("");
+  const [grade, setGrade] = useState("");
+  const [maxGrade, setMaxGrade] = useState("20");
+  const [weighting, setWeighting] = useState("1");
+  const [appreciation, setAppreciation] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,15 +79,7 @@ export const GradeEntryDialog = ({ student, subject, existingGrade, onGradeUpdat
       appreciation: appreciation || null,
     };
 
-    let error;
-    if (existingGrade) {
-      ({ error } = await supabase
-        .from("grades")
-        .update(gradeData)
-        .eq("id", existingGrade.id));
-    } else {
-      ({ error } = await supabase.from("grades").insert(gradeData));
-    }
+    const { error } = await supabase.from("grades").insert(gradeData);
 
     if (error) {
       toast.error("Erreur lors de l'enregistrement de la note");
@@ -107,30 +88,30 @@ export const GradeEntryDialog = ({ student, subject, existingGrade, onGradeUpdat
 
     toast.success("Note enregistrée avec succès");
     setOpen(false);
+    
+    // Reset form
+    setAssessmentType("");
+    setCustomLabel("");
+    setGrade("");
+    setMaxGrade("20");
+    setWeighting("1");
+    setAppreciation("");
+    
     onGradeUpdated();
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={existingGrade ? "outline" : "default"} className="w-full">
-          {existingGrade ? (
-            <>
-              <Pencil className="w-4 h-4 mr-2" />
-              Modifier
-            </>
-          ) : (
-            <>
-              <ClipboardList className="w-4 h-4 mr-2" />
-              Saisir une note
-            </>
-          )}
+        <Button variant="default" className="w-full">
+          <ClipboardList className="w-4 h-4 mr-2" />
+          Ajouter une note
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {existingGrade ? "Modifier la note" : "Saisir une note"} - {student.first_name} {student.last_name}
+            Ajouter une note - {student.first_name} {student.last_name}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">

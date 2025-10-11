@@ -123,8 +123,23 @@ export default function Grades() {
     setGrades(data || []);
   };
 
-  const getStudentGrade = (studentId: string) => {
-    return grades.find(g => g.student_id === studentId);
+  const getStudentGrades = (studentId: string) => {
+    return grades.filter(g => g.student_id === studentId);
+  };
+
+  const calculateWeightedAverage = (studentGrades: Grade[]) => {
+    if (studentGrades.length === 0) return null;
+    
+    let totalWeightedScore = 0;
+    let totalWeighting = 0;
+    
+    studentGrades.forEach(grade => {
+      const normalizedGrade = (grade.grade / grade.max_grade) * 20;
+      totalWeightedScore += normalizedGrade * grade.weighting;
+      totalWeighting += grade.weighting;
+    });
+    
+    return totalWeighting > 0 ? (totalWeightedScore / totalWeighting).toFixed(2) : null;
   };
 
   const handleGradeUpdated = () => {
@@ -216,7 +231,8 @@ export default function Grades() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {students.map((student) => {
-                const grade = getStudentGrade(student.id);
+                const studentGrades = getStudentGrades(student.id);
+                const average = calculateWeightedAverage(studentGrades);
                 return (
                   <Card key={student.id} className="overflow-hidden">
                     <CardHeader className="p-0">
@@ -243,19 +259,37 @@ export default function Grades() {
                         </h3>
                       </div>
 
-                      {grade ? (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">Note:</span>
-                            <span className="font-bold text-lg">{grade.grade}/{grade.max_grade}</span>
+                      {studentGrades.length > 0 ? (
+                        <div className="space-y-3">
+                          <div className="bg-primary/5 p-2 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium">Moyenne générale:</span>
+                              <span className="font-bold text-lg text-primary">{average}/20</span>
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">Pondération:</span>
-                            <span className="text-sm">{grade.weighting}</span>
+                          
+                          <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {studentGrades.map((grade) => (
+                              <div key={grade.id} className="border border-border rounded p-2 space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-medium">
+                                    {grade.assessment_type === "autre" 
+                                      ? grade.assessment_custom_label 
+                                      : grade.assessment_type.replace(/_/g, ' ')}
+                                  </span>
+                                  <span className="text-sm font-bold">{grade.grade}/{grade.max_grade}</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  Coef: {grade.weighting}
+                                </div>
+                                {grade.appreciation && (
+                                  <p className="text-xs text-muted-foreground italic line-clamp-2">
+                                    {grade.appreciation}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
                           </div>
-                          {grade.appreciation && (
-                            <p className="text-xs text-muted-foreground italic">{grade.appreciation}</p>
-                          )}
                         </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">Aucune note saisie</p>
@@ -264,7 +298,6 @@ export default function Grades() {
                       <GradeEntryDialog
                         student={student}
                         subject={selectedSubject}
-                        existingGrade={grade}
                         onGradeUpdated={handleGradeUpdated}
                       />
                     </CardContent>
