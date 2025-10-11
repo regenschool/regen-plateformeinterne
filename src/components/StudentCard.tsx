@@ -141,7 +141,7 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
             <EditStudentDialog student={student} onStudentUpdated={onUpdate} />
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button size="icon" variant="destructive" className="h-7 w-7">
+                <Button size="icon" variant="outline" className="h-7 w-7 bg-white/90 hover:bg-destructive/90 hover:text-destructive-foreground border-border/50">
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
               </AlertDialogTrigger>

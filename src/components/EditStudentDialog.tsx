@@ -87,8 +87,8 @@ export const EditStudentDialog = ({ student, onStudentUpdated }: EditStudentDial
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="ghost" className="h-8 px-2">
-          <Pencil className="w-4 h-4" />
+        <Button size="icon" variant="ghost" className="h-7 w-7 bg-white/90 hover:bg-white">
+          <Pencil className="w-3.5 h-3.5 text-foreground" />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
