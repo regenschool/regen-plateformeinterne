@@ -46,6 +46,7 @@ export const BulkGradeImport = ({ students, classname, subject, onClose, onImpor
   const [maxGrade, setMaxGrade] = useState("20");
   const [weighting, setWeighting] = useState("1");
   const [grades, setGrades] = useState<Record<string, string>>({});
+  const [weightings, setWeightings] = useState<Record<string, string>>({});
   const [csvData, setCsvData] = useState("");
 
   const handleGradeChange = (studentId: string, value: string) => {
@@ -60,14 +61,21 @@ export const BulkGradeImport = ({ students, classname, subject, onClose, onImpor
 
     const lines = csvData.trim().split('\n');
     const newGrades: Record<string, string> = {};
+    const newWeightings: Record<string, string> = {};
     
     lines.forEach((line, index) => {
       const parts = line.split(/[,;\t]/).map(p => p.trim());
       
-      // Si on a 3 colonnes (Nom, Prénom, Note) ou 2 colonnes (Nom complet, Note)
+      // Format: Nom Prénom Note [Pondération]
       if (parts.length >= 2) {
-        const gradeValue = parts[parts.length - 1];
-        const studentName = parts.slice(0, -1).join(' ').toLowerCase();
+        const gradeValue = parts[parts.length - 2] || parts[parts.length - 1];
+        const weightValue = parts.length >= 3 && !isNaN(parseFloat(parts[parts.length - 1])) 
+          ? parts[parts.length - 1] 
+          : weighting;
+        
+        // Si on a 3+ colonnes, les premières sont le nom
+        const nameEndIndex = parts.length >= 3 ? parts.length - 2 : parts.length - 1;
+        const studentName = parts.slice(0, nameEndIndex).join(' ').toLowerCase();
         
         // Trouver l'étudiant correspondant
         const student = students.find(s => {
@@ -78,23 +86,30 @@ export const BulkGradeImport = ({ students, classname, subject, onClose, onImpor
         
         if (student && gradeValue && !isNaN(parseFloat(gradeValue))) {
           newGrades[student.id] = gradeValue;
+          newWeightings[student.id] = weightValue;
         }
       } 
-      // Si on a juste une note par ligne (ordre des étudiants)
-      else if (parts.length === 1 && index < students.length) {
+      // Format: Note [Pondération] (ordre des étudiants)
+      else if (parts.length >= 1 && index < students.length) {
         const gradeValue = parts[0];
+        const weightValue = parts.length >= 2 && !isNaN(parseFloat(parts[1])) 
+          ? parts[1] 
+          : weighting;
+        
         if (gradeValue && !isNaN(parseFloat(gradeValue))) {
           newGrades[students[index].id] = gradeValue;
+          newWeightings[students[index].id] = weightValue;
         }
       }
     });
 
     if (Object.keys(newGrades).length === 0) {
-      toast.error("Aucune note valide n'a été détectée. Format attendu: 'Nom Prénom Note' ou juste 'Note' par ligne");
+      toast.error("Aucune note valide n'a été détectée");
       return;
     }
 
     setGrades(newGrades);
+    setWeightings(newWeightings);
     toast.success(`${Object.keys(newGrades).length} notes importées depuis le CSV`);
   };
 
@@ -126,7 +141,7 @@ export const BulkGradeImport = ({ students, classname, subject, onClose, onImpor
         assessment_custom_label: assessmentType === "autre" ? customLabel : null,
         grade: parseFloat(grade),
         max_grade: parseFloat(maxGrade),
-        weighting: parseFloat(weighting),
+        weighting: parseFloat(weightings[studentId] || weighting),
         appreciation: null,
       }));
 
@@ -253,14 +268,15 @@ export const BulkGradeImport = ({ students, classname, subject, onClose, onImpor
                 <Label>Coller vos données CSV *</Label>
                 <p className="text-xs text-muted-foreground mb-2">
                   Formats acceptés:<br/>
-                  • Une note par ligne (dans l'ordre affiché)<br/>
-                  • Nom Prénom Note (séparés par virgule, point-virgule ou tabulation)<br/>
-                  • Prénom Nom Note
+                  • Note [Pondération] (une par ligne, dans l'ordre affiché)<br/>
+                  • Nom Prénom Note [Pondération] (séparés par virgule, point-virgule ou tabulation)<br/>
+                  • Prénom Nom Note [Pondération]<br/>
+                  <span className="text-primary font-medium">La pondération est optionnelle</span>
                 </p>
                 <Textarea
                   value={csvData}
                   onChange={(e) => setCsvData(e.target.value)}
-                  placeholder="Exemple:&#10;Jean Dupont, 15.5&#10;Marie Martin, 18&#10;&#10;Ou simplement:&#10;15.5&#10;18&#10;16"
+                  placeholder="Exemple avec pondération:&#10;Jean Dupont, 15.5, 2&#10;Marie Martin, 18, 1&#10;&#10;Ou simplement:&#10;15.5, 2&#10;18, 1&#10;16, 1.5"
                   className="min-h-[200px] font-mono text-sm"
                 />
               </div>
@@ -288,6 +304,7 @@ export const BulkGradeImport = ({ students, classname, subject, onClose, onImpor
                           </div>
                           <span className="flex-1">{student.first_name} {student.last_name}</span>
                           <span className="font-bold">{grades[student.id]}</span>
+                          <span className="text-xs text-muted-foreground">(×{weightings[student.id] || weighting})</span>
                         </div>
                       ))}
                   </div>
