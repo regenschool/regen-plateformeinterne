@@ -23,6 +23,7 @@ type Student = {
   company: string | null;
   class_name: string;
   special_needs: string | null;
+  created_at: string;
 };
 
 const Directory = () => {
@@ -33,7 +34,7 @@ const Directory = () => {
   const [selectedClass, setSelectedClass] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showActiveSearchOnly, setShowActiveSearchOnly] = useState(false);
-  const [sortBy, setSortBy] = useState<"lastName" | "class" | "classReverse" | "age">("lastName");
+  const [sortBy, setSortBy] = useState<"lastName" | "class" | "classReverse" | "age" | "createdAt">("lastName");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -102,6 +103,9 @@ const Directory = () => {
           if (a.age === null) return 1;
           if (b.age === null) return -1;
           return a.age - b.age;
+        case "createdAt":
+          // Plus récent en premier (date décroissante)
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         default:
           return 0;
       }
@@ -216,6 +220,7 @@ const Directory = () => {
               <SelectItem value="class">{t("directory.sortClass")}</SelectItem>
               <SelectItem value="classReverse">{t("directory.sortClassReverse")}</SelectItem>
               <SelectItem value="age">{t("directory.sortAge")}</SelectItem>
+              <SelectItem value="createdAt">{t("directory.sortCreatedAt")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
