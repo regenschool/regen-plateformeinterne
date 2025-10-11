@@ -142,13 +142,6 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
   };
 
   const handleImport = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      toast.error("You must be logged in to import students");
-      return;
-    }
-
     const validStudents = rows
       .filter((row) => row.first_name && row.last_name && row.class_name)
       .map((row) => {
@@ -176,7 +169,6 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
           birth_date,
           academic_background: row.academic_background || null,
           company: row.company || null,
-          teacher_id: user.id,
         };
       });
 
@@ -188,11 +180,10 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
     setLoading(true);
 
     try {
-      // Fetch existing students to check for matches (only for current teacher)
+      // Fetch existing students to check for matches
       const { data: existingStudents, error: fetchError } = await supabase
         .from("students")
-        .select("id, first_name, last_name, class_name")
-        .eq("teacher_id", user.id);
+        .select("id, first_name, last_name, class_name");
 
       if (fetchError) throw fetchError;
 
