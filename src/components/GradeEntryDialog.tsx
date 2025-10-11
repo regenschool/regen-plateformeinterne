@@ -38,6 +38,10 @@ const assessmentTypes = [
   { value: "autre", label: "Autre" },
 ];
 
+const weightingOptions = [
+  "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5"
+];
+
 export const GradeEntryDialog = ({ student, subject, onGradeUpdated }: GradeEntryDialogProps) => {
   const [open, setOpen] = useState(false);
   const [assessmentType, setAssessmentType] = useState("");
@@ -169,16 +173,20 @@ export const GradeEntryDialog = ({ student, subject, onGradeUpdated }: GradeEntr
 
           <div>
             <Label>Pondération dans la note finale *</Label>
-            <Input
-              type="number"
-              step="0.01"
-              value={weighting}
-              onChange={(e) => setWeighting(e.target.value)}
-              placeholder="1"
-              required
-            />
+            <Select value={weighting} onValueChange={setWeighting}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choisir la pondération" />
+              </SelectTrigger>
+              <SelectContent>
+                {weightingOptions.map((weight) => (
+                  <SelectItem key={weight} value={weight}>
+                    {weight}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <p className="text-xs text-muted-foreground mt-1">
-              Ex: 1 pour un coefficient normal, 2 pour double, 0.5 pour demi
+              Ex: 1 pour coefficient normal, 2 pour double, 0.5 pour demi
             </p>
           </div>
 

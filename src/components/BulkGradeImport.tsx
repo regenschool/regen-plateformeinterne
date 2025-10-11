@@ -40,6 +40,10 @@ const assessmentTypes = [
   { value: "autre", label: "Autre" },
 ];
 
+const weightingOptions = [
+  "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5"
+];
+
 export const BulkGradeImport = ({ students, classname, subject, onClose, onImportComplete }: BulkGradeImportProps) => {
   const [assessmentType, setAssessmentType] = useState("");
   const [customLabel, setCustomLabel] = useState("");
@@ -209,14 +213,19 @@ export const BulkGradeImport = ({ students, classname, subject, onClose, onImpor
               />
             </div>
             <div>
-              <Label>Pondération *</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={weighting}
-                onChange={(e) => setWeighting(e.target.value)}
-                placeholder="1"
-              />
+              <Label>Pondération par défaut *</Label>
+              <Select value={weighting} onValueChange={setWeighting}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir la pondération" />
+                </SelectTrigger>
+                <SelectContent>
+                  {weightingOptions.map((weight) => (
+                    <SelectItem key={weight} value={weight}>
+                      {weight}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
