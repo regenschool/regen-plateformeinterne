@@ -17,6 +17,7 @@ type StudentRow = {
   class_name: string;
   photo_url: string;
   age: string;
+  birth_date: string;
   academic_background: string;
   company: string;
 };
@@ -25,9 +26,9 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<StudentRow[]>([
-    { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", academic_background: "", company: "" },
-    { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", academic_background: "", company: "" },
-    { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", academic_background: "", company: "" },
+    { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", birth_date: "", academic_background: "", company: "" },
+    { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", birth_date: "", academic_background: "", company: "" },
+    { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", birth_date: "", academic_background: "", company: "" },
   ]);
 
   const handleCellChange = (index: number, field: keyof StudentRow, value: string) => {
@@ -42,7 +43,7 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
     const lines = pastedData.split("\n").filter(line => line.trim());
     
     const newRows = [...rows];
-    const fields: (keyof StudentRow)[] = ["first_name", "last_name", "class_name", "photo_url", "age", "academic_background", "company"];
+    const fields: (keyof StudentRow)[] = ["first_name", "last_name", "class_name", "photo_url", "age", "birth_date", "academic_background", "company"];
     const startFieldIndex = fields.indexOf(field);
     
     lines.forEach((line, lineOffset) => {
@@ -51,7 +52,7 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
       
       // Add new rows if needed
       while (targetRowIndex >= newRows.length) {
-        newRows.push({ first_name: "", last_name: "", class_name: "", photo_url: "", age: "", academic_background: "", company: "" });
+        newRows.push({ first_name: "", last_name: "", class_name: "", photo_url: "", age: "", birth_date: "", academic_background: "", company: "" });
       }
       
       values.forEach((value, valueIndex) => {
@@ -66,7 +67,7 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
   };
 
   const addRow = () => {
-    setRows([...rows, { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", academic_background: "", company: "" }]);
+    setRows([...rows, { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", birth_date: "", academic_background: "", company: "" }]);
   };
 
   const removeRow = (index: number) => {
@@ -79,14 +80,18 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
     const validStudents = rows
       .filter((row) => row.first_name && row.last_name && row.class_name)
       .map((row) => {
-        // Calculate birth_date from age if age is provided
+        // Priority: birth_date > age
         let birth_date = null;
-        if (row.age) {
+        
+        if (row.birth_date) {
+          // If birth_date is provided directly, use it
+          birth_date = row.birth_date;
+        } else if (row.age) {
+          // Otherwise calculate from age
           const age = parseInt(row.age);
           if (!isNaN(age)) {
             const currentYear = new Date().getFullYear();
             const birthYear = currentYear - age;
-            // Use January 1st as default birth date when only age is known
             birth_date = `${birthYear}-01-01`;
           }
         }
@@ -157,9 +162,9 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
       toast.success(`Import réussi : ${message.join(", ")}`);
       setOpen(false);
       setRows([
-        { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", academic_background: "", company: "" },
-        { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", academic_background: "", company: "" },
-        { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", academic_background: "", company: "" },
+        { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", birth_date: "", academic_background: "", company: "" },
+        { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", birth_date: "", academic_background: "", company: "" },
+        { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", birth_date: "", academic_background: "", company: "" },
       ]);
       onImportComplete();
     } catch (error: any) {
@@ -195,6 +200,7 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
                 <TableHead className="min-w-[150px]">Class *</TableHead>
                 <TableHead className="min-w-[200px]">Photo URL</TableHead>
                 <TableHead className="min-w-[80px]">Age</TableHead>
+                <TableHead className="min-w-[120px]">Birth Date</TableHead>
                 <TableHead className="min-w-[180px]">Academic Background</TableHead>
                 <TableHead className="min-w-[150px]">Company</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
@@ -246,6 +252,16 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
                       onPaste={(e) => handlePaste(e, index, "age")}
                       placeholder="25"
                       type="number"
+                      className="h-8"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={row.birth_date}
+                      onChange={(e) => handleCellChange(index, "birth_date", e.target.value)}
+                      onPaste={(e) => handlePaste(e, index, "birth_date")}
+                      placeholder="1999-01-15"
+                      type="date"
                       className="h-8"
                     />
                   </TableCell>
