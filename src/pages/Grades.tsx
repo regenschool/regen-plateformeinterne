@@ -425,6 +425,49 @@ export default function Grades() {
     }
   };
 
+  const handleDeleteAssessment = async (assessment: Assessment) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Identifier toutes les notes de cette épreuve
+      const gradesToDelete = grades.filter(g => {
+        const gradeKey = g.assessment_name || 
+                        (g.assessment_type === "autre" 
+                          ? `${g.assessment_type}_${g.assessment_custom_label}`
+                          : g.assessment_type);
+        const assessmentKey = assessment.name === (assessment.type === "autre" 
+          ? assessment.customLabel 
+          : assessment.type.replace(/_/g, ' '))
+          ? (assessment.type === "autre" 
+              ? `${assessment.type}_${assessment.customLabel}`
+              : assessment.type)
+          : assessment.name;
+        
+        return gradeKey === assessmentKey || g.assessment_name === assessment.name;
+      });
+
+      if (gradesToDelete.length === 0) {
+        toast.error("Aucune note à supprimer");
+        return;
+      }
+
+      // Supprimer toutes les notes de cette épreuve
+      const { error } = await supabase
+        .from("grades")
+        .delete()
+        .in('id', gradesToDelete.map(g => g.id));
+
+      if (error) throw error;
+
+      toast.success(`Épreuve "${assessment.name}" supprimée avec ${gradesToDelete.length} note(s)`);
+      fetchGrades();
+    } catch (error) {
+      console.error("Error deleting assessment:", error);
+      toast.error("Erreur lors de la suppression de l'épreuve");
+    }
+  };
+
   const handleResetSelection = () => {
     setSelectedSubject("");
     setGrades([]);
@@ -687,17 +730,49 @@ export default function Grades() {
                             {assessment.studentsWithGrades}/{assessment.totalStudents} étudiants notés
                           </p>
                         </div>
-                        {assessment.studentsWithGrades < assessment.totalStudents && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setSelectedAssessment(assessment)}
-                            className="gap-2"
-                          >
-                            <PlusCircle className="w-4 h-4" />
-                            Compléter
-                          </Button>
-                        )}
+                        <div className="flex gap-2">
+                          {assessment.studentsWithGrades < assessment.totalStudents && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setSelectedAssessment(assessment)}
+                              className="gap-2"
+                            >
+                              <PlusCircle className="w-4 h-4" />
+                              Compléter
+                            </Button>
+                          )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Supprimer l'épreuve</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Êtes-vous sûr de vouloir supprimer l'épreuve "{assessment.name}" ? 
+                                  Toutes les notes associées ({assessment.studentsWithGrades} note(s)) seront supprimées. 
+                                  Cette action est irréversible.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => handleDeleteAssessment(assessment)}
+                                  className="bg-destructive hover:bg-destructive/90"
+                                >
+                                  Supprimer
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                     ))}
                   </div>
