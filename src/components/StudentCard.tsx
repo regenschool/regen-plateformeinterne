@@ -170,12 +170,12 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
           {student.age && <p className="text-xs text-muted-foreground">{student.age} ans</p>}
         </div>
 
-        {student.academic_background && (
-          <div className="flex items-start gap-1.5 text-xs">
-            <GraduationCap className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
-            <span className="text-muted-foreground line-clamp-1">{student.academic_background}</span>
-          </div>
-        )}
+        <div className="flex items-start gap-1.5 text-xs">
+          <GraduationCap className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+          <span className="text-muted-foreground line-clamp-1">
+            {student.academic_background || "Non renseigné"}
+          </span>
+        </div>
 
         <div className="flex items-start gap-1.5 text-xs">
           <Briefcase className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
