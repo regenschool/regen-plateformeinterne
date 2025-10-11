@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Pencil, CalendarIcon } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
+import { studentSchema } from "@/lib/validation";
 
 type Student = {
   id: string;
@@ -63,27 +64,47 @@ export const EditStudentDialog = ({ student, onStudentUpdated }: EditStudentDial
     setLoading(true);
 
     try {
+      // Validate form data
+      const validatedData = studentSchema.parse({
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        class_name: formData.class_name,
+        photo_url: formData.photo_url || "",
+        birth_date: formData.birth_date ? format(formData.birth_date, "yyyy-MM-dd") : null,
+        academic_background: formData.academic_background || "",
+        company: formData.company || "",
+        special_needs: formData.special_needs || "",
+      });
+
       const { error } = await supabase
         .from("students")
         .update({
-          first_name: formData.first_name,
-          last_name: formData.last_name,
-          photo_url: formData.photo_url || null,
-          birth_date: formData.birth_date ? format(formData.birth_date, "yyyy-MM-dd") : null,
-          academic_background: formData.academic_background || null,
-          company: formData.company || null,
-          class_name: formData.class_name,
-          special_needs: formData.special_needs || null,
+          first_name: validatedData.first_name,
+          last_name: validatedData.last_name,
+          photo_url: validatedData.photo_url || null,
+          birth_date: validatedData.birth_date,
+          academic_background: validatedData.academic_background || null,
+          company: validatedData.company || null,
+          class_name: validatedData.class_name,
+          special_needs: validatedData.special_needs || null,
         })
         .eq("id", student.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating student:", error);
+        throw error;
+      }
 
       toast.success("Fiche étudiant modifiée avec succès !");
       setOpen(false);
       onStudentUpdated();
     } catch (error: any) {
-      toast.error("Échec de la modification");
+      if (error.errors) {
+        // Zod validation errors
+        toast.error(error.errors[0]?.message || "Données invalides");
+      } else {
+        toast.error("Échec de la modification");
+      }
     } finally {
       setLoading(false);
     }

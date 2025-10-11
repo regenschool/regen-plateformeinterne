@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Plus, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { studentSchema } from "@/lib/validation";
 
 type AddStudentDialogProps = {
   onStudentAdded: () => void;
@@ -34,20 +35,35 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.from("students").insert({
+      // Validate form data
+      const validatedData = studentSchema.parse({
         first_name: formData.first_name,
         last_name: formData.last_name,
-        photo_url: formData.photo_url || null,
-        birth_date: formData.birth_date ? format(formData.birth_date, "yyyy-MM-dd") : null,
-        academic_background: formData.academic_background || null,
-        company: formData.company || null,
         class_name: formData.class_name,
-        special_needs: formData.special_needs || null,
+        photo_url: formData.photo_url || "",
+        birth_date: formData.birth_date ? format(formData.birth_date, "yyyy-MM-dd") : null,
+        academic_background: formData.academic_background || "",
+        company: formData.company || "",
+        special_needs: formData.special_needs || "",
       });
 
-      if (error) throw error;
+      const { error } = await supabase.from("students").insert({
+        first_name: validatedData.first_name,
+        last_name: validatedData.last_name,
+        photo_url: validatedData.photo_url || null,
+        birth_date: validatedData.birth_date,
+        academic_background: validatedData.academic_background || null,
+        company: validatedData.company || null,
+        class_name: validatedData.class_name,
+        special_needs: validatedData.special_needs || null,
+      });
 
-      toast.success("Student added successfully!");
+      if (error) {
+        console.error("Error adding student:", error);
+        throw error;
+      }
+
+      toast.success("Étudiant ajouté avec succès !");
       setOpen(false);
       setFormData({
         first_name: "",
@@ -61,7 +77,12 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
       });
       onStudentAdded();
     } catch (error: any) {
-      toast.error("Failed to add student");
+      if (error.errors) {
+        // Zod validation errors
+        toast.error(error.errors[0]?.message || "Données invalides");
+      } else {
+        toast.error("Échec de l'ajout de l'étudiant");
+      }
     } finally {
       setLoading(false);
     }

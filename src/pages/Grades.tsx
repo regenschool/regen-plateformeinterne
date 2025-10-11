@@ -8,6 +8,7 @@ import { EditGradeDialog } from "@/components/EditGradeDialog";
 import { BulkGradeImport } from "@/components/BulkGradeImport";
 import { NewSubjectDialog } from "@/components/NewSubjectDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { toast } from "sonner";
 import { ClipboardList, Upload, TrendingUp, FileText, AlertTriangle, Trash2, ArrowLeft, ChevronLeft, ChevronRight, PlusCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -95,6 +96,25 @@ export default function Grades() {
   useEffect(() => {
     fetchClasses();
   }, []);
+  
+  // Real-time subscriptions for grades and subjects
+  useRealtimeSubscription({
+    table: "grades",
+    onChange: () => {
+      if (selectedClass && selectedSubject && selectedSchoolYear && selectedSemester) {
+        fetchGrades();
+      }
+    },
+  });
+  
+  useRealtimeSubscription({
+    table: "subjects",
+    onChange: () => {
+      if (selectedClass && selectedSchoolYear && selectedSemester) {
+        fetchSubjects();
+      }
+    },
+  });
 
   useEffect(() => {
     if (selectedClass && selectedSchoolYear && selectedSemester) {

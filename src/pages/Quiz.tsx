@@ -42,32 +42,53 @@ const Quiz = () => {
   };
 
   const fetchClasses = async () => {
-    const { data } = await supabase
-      .from("students")
-      .select("class_name")
-      .order("class_name");
+    try {
+      const { data, error } = await supabase
+        .from("students")
+        .select("class_name")
+        .order("class_name");
 
-    if (data) {
-      const uniqueClasses = Array.from(new Set(data.map((s) => s.class_name)));
-      setClasses(uniqueClasses);
+      if (error) {
+        console.error("Error fetching classes:", error);
+        throw error;
+      }
+
+      if (data) {
+        const uniqueClasses = Array.from(new Set(data.map((s) => s.class_name)));
+        setClasses(uniqueClasses);
+      }
+    } catch (error) {
+      toast.error("Erreur lors du chargement des classes");
     }
   };
 
   const startQuiz = async () => {
-    if (!selectedClass) return;
+    if (!selectedClass) {
+      toast.error("Veuillez sélectionner une classe");
+      return;
+    }
 
-    const { data } = await supabase
-      .from("students")
-      .select("id, first_name, last_name, photo_url, class_name")
-      .eq("class_name", selectedClass);
+    try {
+      const { data, error } = await supabase
+        .from("students")
+        .select("id, first_name, last_name, photo_url, class_name")
+        .eq("class_name", selectedClass);
 
-    if (data && data.length > 0) {
-      const shuffled = [...data].sort(() => Math.random() - 0.5);
-      setStudents(shuffled);
-      setQuizStarted(true);
-      generateOptions(shuffled[0], shuffled);
-    } else {
-      toast.error("No students found in this class");
+      if (error) {
+        console.error("Error fetching students:", error);
+        throw error;
+      }
+
+      if (data && data.length > 0) {
+        const shuffled = [...data].sort(() => Math.random() - 0.5);
+        setStudents(shuffled);
+        setQuizStarted(true);
+        generateOptions(shuffled[0], shuffled);
+      } else {
+        toast.error("Aucun étudiant trouvé dans cette classe");
+      }
+    } catch (error) {
+      toast.error("Erreur lors du chargement des étudiants");
     }
   };
 
@@ -107,12 +128,21 @@ const Quiz = () => {
     setQuizCompleted(true);
 
     if (userId) {
-      await supabase.from("quiz_scores").insert({
-        user_id: userId,
-        class_name: selectedClass,
-        score: finalScore,
-        total: students.length,
-      });
+      try {
+        const { error } = await supabase.from("quiz_scores").insert({
+          user_id: userId,
+          class_name: selectedClass,
+          score: finalScore,
+          total: students.length,
+        });
+
+        if (error) {
+          console.error("Error saving quiz score:", error);
+          toast.error("Erreur lors de la sauvegarde du score");
+        }
+      } catch (error) {
+        console.error("Error saving quiz score:", error);
+      }
     }
   };
 
