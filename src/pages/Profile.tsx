@@ -284,7 +284,7 @@ const Profile = () => {
     navigate("/grades", {
       state: {
         prefilledClass: subject.class_name,
-        prefilledSubject: subject.id,
+        prefilledSubject: subject.subject_name, // Use subject_name instead of id
         prefilledSchoolYear: subject.school_year,
         prefilledSemester: subject.semester,
       },
