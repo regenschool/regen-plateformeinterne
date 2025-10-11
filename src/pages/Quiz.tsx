@@ -130,25 +130,25 @@ const Quiz = () => {
       if (percentage === 100) {
         return {
           title: "Remarquable !",
-          message: "Votre connaissance de vos pairs reflète les valeurs de Regen School : l'excellence et l'engagement dans la construction d'une communauté de décideurs éclairés.",
+          message: "Vous connaissez parfaitement les étudiants que vous accompagnez à devenir des décideurs éclairés, capables de construire un monde compatible avec les limites planétaires.",
           emoji: "🌟"
         };
       } else if (percentage >= 80) {
         return {
           title: "Très bien !",
-          message: "Vous incarnez l'esprit d'adaptation et de collaboration qui définit les décideurs éclairés de demain.",
+          message: "Vous connaissez bien les étudiants que vous accompagnez à devenir des décideurs éclairés de demain.",
           emoji: "✨"
         };
       } else if (percentage >= 60) {
         return {
           title: "Bon début !",
-          message: "Continuez à tisser des liens avec votre écosystème. Les décideurs éclairés construisent leur impact à travers la qualité de leurs relations.",
+          message: "Continuez à tisser des liens avec vos étudiants. Mieux vous les connaissez, mieux vous les accompagnez à devenir des décideurs éclairés.",
           emoji: "🌱"
         };
       } else {
         return {
           title: "Un point de départ",
-          message: "Chaque leader commence quelque part. L'important est de progresser ensemble vers un monde compatible avec les limites planétaires.",
+          message: "Prenez le temps de mieux connaître vos étudiants pour les accompagner efficacement vers leur rôle de décideurs éclairés.",
           emoji: "🎯"
         };
       }
