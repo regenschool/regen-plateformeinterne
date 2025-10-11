@@ -51,6 +51,9 @@ const weightingOptions = [
 export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpdated }: GradeEntryDialogProps) => {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
+  const [existingAssessments, setExistingAssessments] = useState<Array<{name: string, type: string, customLabel: string | null}>>([]);
+  const [selectedAssessment, setSelectedAssessment] = useState<string>("");
+  const [assessmentName, setAssessmentName] = useState("");
   const [assessmentType, setAssessmentType] = useState("");
   const [customLabel, setCustomLabel] = useState("");
   const [grade, setGrade] = useState("");
@@ -58,6 +61,57 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
   const [weighting, setWeighting] = useState("1");
   const [appreciation, setAppreciation] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fetchExistingAssessments = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("grades")
+        .select("assessment_name, assessment_type, assessment_custom_label")
+        .eq("teacher_id", user.id)
+        .eq("class_name", student.class_name)
+        .eq("subject", subject)
+        .eq("school_year", subjectMetadata?.schoolYear || "")
+        .eq("semester", subjectMetadata?.semester || "")
+        .not("assessment_name", "is", null);
+
+      if (error) throw error;
+
+      // Get unique assessments
+      const uniqueAssessments = Array.from(
+        new Map(data?.map(item => [
+          item.assessment_name,
+          { 
+            name: item.assessment_name, 
+            type: item.assessment_type,
+            customLabel: item.assessment_custom_label 
+          }
+        ]) || []).values()
+      );
+
+      setExistingAssessments(uniqueAssessments);
+    } catch (error) {
+      console.error("Error fetching assessments:", error);
+    }
+  };
+
+  const handleAssessmentSelection = (value: string) => {
+    setSelectedAssessment(value);
+    if (value === "__new__") {
+      setAssessmentName("");
+      setAssessmentType("");
+      setCustomLabel("");
+    } else {
+      const assessment = existingAssessments.find(a => a.name === value);
+      if (assessment) {
+        setAssessmentName(assessment.name);
+        setAssessmentType(assessment.type);
+        setCustomLabel(assessment.customLabel || "");
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +121,11 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast.error(t("grades.gradeError") || "Vous devez être connecté");
+      return;
+    }
+
+    if (!assessmentName.trim()) {
+      toast.error("Veuillez saisir un nom d'épreuve");
       return;
     }
 
@@ -98,6 +157,7 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
       teacher_id: user.id,
       class_name: student.class_name,
       subject: subject,
+      assessment_name: assessmentName.trim(),
       assessment_type: assessmentType as "participation_individuelle" | "oral_groupe" | "oral_individuel" | "ecrit_groupe" | "ecrit_individuel" | "memoire" | "autre",
       assessment_custom_label: assessmentType === "autre" ? customLabel.trim() : null,
       grade: parseFloat(grade),
@@ -117,6 +177,8 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
     setOpen(false);
     
     // Reset form
+    setSelectedAssessment("");
+    setAssessmentName("");
     setAssessmentType("");
     setCustomLabel("");
     setGrade("");
@@ -134,23 +196,61 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
 };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      setOpen(isOpen);
+      if (isOpen) {
+        fetchExistingAssessments();
+      }
+    }}>
       <DialogTrigger asChild>
         <Button variant="default" className="w-full">
           <ClipboardList className="w-4 h-4 mr-2" />
           {t("grades.addGrade") || "Ajouter une note"}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             Ajouter une note - {student.first_name} {student.last_name}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {existingAssessments.length > 0 && (
+            <div>
+              <Label>Épreuve</Label>
+              <Select value={selectedAssessment} onValueChange={handleAssessmentSelection}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Reprendre une épreuve existante ou créer une nouvelle" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__new__">➕ Nouvelle épreuve</SelectItem>
+                  {existingAssessments.map((assessment) => (
+                    <SelectItem key={assessment.name} value={assessment.name}>
+                      {assessment.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div>
+            <Label>Nom de l'épreuve *</Label>
+            <Input
+              value={assessmentName}
+              onChange={(e) => setAssessmentName(e.target.value)}
+              placeholder="Ex: Contrôle continu 1, Examen final..."
+              disabled={selectedAssessment !== "" && selectedAssessment !== "__new__"}
+              required
+            />
+          </div>
           <div>
             <Label>Type d'épreuve *</Label>
-            <Select value={assessmentType} onValueChange={setAssessmentType}>
+            <Select 
+              value={assessmentType} 
+              onValueChange={setAssessmentType}
+              disabled={selectedAssessment !== "" && selectedAssessment !== "__new__"}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionner le type d'épreuve" />
               </SelectTrigger>
@@ -171,6 +271,7 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
                 value={customLabel}
                 onChange={(e) => setCustomLabel(e.target.value)}
                 placeholder="Ex: Projet de fin d'année"
+                disabled={selectedAssessment !== "" && selectedAssessment !== "__new__"}
               />
             </div>
           )}

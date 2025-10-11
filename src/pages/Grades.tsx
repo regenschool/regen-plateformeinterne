@@ -36,6 +36,7 @@ type Grade = {
   id: string;
   student_id: string;
   subject: string;
+  assessment_name: string | null;
   assessment_type: string;
   assessment_custom_label: string | null;
   grade: number;
@@ -235,14 +236,12 @@ export default function Grades() {
       };
     }
 
-    // Get unique assessments (combinations of assessment_type and custom_label)
+    // Get unique assessments by assessment_name
     const assessments = new Map();
     grades.forEach(grade => {
-      const key = grade.assessment_type === "autre" 
-        ? `${grade.assessment_type}_${grade.assessment_custom_label}`
-        : grade.assessment_type;
-      if (!assessments.has(key)) {
-        assessments.set(key, {
+      if (grade.assessment_name && !assessments.has(grade.assessment_name)) {
+        assessments.set(grade.assessment_name, {
+          name: grade.assessment_name,
           type: grade.assessment_type,
           label: grade.assessment_custom_label,
         });
@@ -684,9 +683,9 @@ export default function Grades() {
                               <div key={grade.id} className="border border-border rounded p-2 space-y-1">
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs font-medium">
-                                    {grade.assessment_type === "autre" 
+                                    {grade.assessment_name || (grade.assessment_type === "autre" 
                                       ? grade.assessment_custom_label 
-                                      : grade.assessment_type.replace(/_/g, ' ')}
+                                      : grade.assessment_type.replace(/_/g, ' '))}
                                   </span>
                                   <div className="flex items-center gap-2">
                                     <span className="text-sm font-bold">{grade.grade}/{grade.max_grade}</span>

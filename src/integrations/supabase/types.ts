@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           appreciation: string | null
           assessment_custom_label: string | null
+          assessment_name: string | null
           assessment_type: Database["public"]["Enums"]["assessment_type"]
           class_name: string
           created_at: string
@@ -36,6 +37,7 @@ export type Database = {
         Insert: {
           appreciation?: string | null
           assessment_custom_label?: string | null
+          assessment_name?: string | null
           assessment_type: Database["public"]["Enums"]["assessment_type"]
           class_name: string
           created_at?: string
@@ -54,6 +56,7 @@ export type Database = {
         Update: {
           appreciation?: string | null
           assessment_custom_label?: string | null
+          assessment_name?: string | null
           assessment_type?: Database["public"]["Enums"]["assessment_type"]
           class_name?: string
           created_at?: string
