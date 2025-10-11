@@ -259,7 +259,7 @@ export default function Grades() {
     // Find students with missing grades for any assessment
     const studentsWithMissingGrades = students.filter(student => {
       const studentGrades = getStudentGrades(student.id);
-      return studentGrades.length < totalAssessments && studentGrades.length > 0;
+      return studentGrades.length < totalAssessments;
     }).map(s => `${s.first_name} ${s.last_name}`);
 
     return {
