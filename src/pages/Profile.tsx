@@ -308,16 +308,7 @@ const Profile = () => {
     }
   };
 
-  const navigateToGrades = (subject: Subject) => {
-    navigate("/grades", {
-      state: {
-        prefilledClass: subject.class_name,
-        prefilledSubject: subject.id,
-        prefilledSchoolYear: subject.school_year,
-        prefilledSemester: subject.semester,
-      },
-    });
-  };
+  const deleteInvoice = async (invoiceId: string) => {
     try {
       const { error } = await supabase
         .from("teacher_invoices")
