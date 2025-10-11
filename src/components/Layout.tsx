@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Leaf, Network, Lightbulb, LogOut, Languages, ClipboardList } from "lucide-react";
+import { Leaf, Network, Lightbulb, LogOut, Languages, ClipboardList, User } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
@@ -83,6 +83,14 @@ export const Layout = ({ children }: LayoutProps) => {
                 >
                   <ClipboardList className="w-4 h-4" />
                   <span className="hidden sm:inline">{t("nav.grades")}</span>
+                </Button>
+                <Button
+                  variant={isActive("/profile") ? "default" : "ghost"}
+                  onClick={() => navigate("/profile")}
+                  className="gap-2"
+                >
+                  <User className="w-4 h-4" />
+                  <span className="hidden sm:inline">Profil</span>
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

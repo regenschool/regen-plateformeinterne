@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import Directory from "./pages/Directory";
 import Quiz from "./pages/Quiz";
 import Grades from "./pages/Grades";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import { Layout } from "./components/Layout";
 import { LanguageProvider } from "./contexts/LanguageContext";
@@ -81,6 +82,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Grades />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               }
             />

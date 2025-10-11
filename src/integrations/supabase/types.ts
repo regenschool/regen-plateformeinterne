@@ -109,6 +109,39 @@ export type Database = {
         }
         Relationships: []
       }
+      school_documents: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_path: string
+          file_type: string | null
+          id: string
+          teacher_id: string
+          title: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_path: string
+          file_type?: string | null
+          id?: string
+          teacher_id: string
+          title: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_path?: string
+          file_type?: string | null
+          id?: string
+          teacher_id?: string
+          title?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       students: {
         Row: {
           academic_background: string | null
@@ -190,6 +223,96 @@ export type Database = {
           teacher_id?: string
           teacher_name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      teacher_invoices: {
+        Row: {
+          created_at: string
+          description: string
+          hours: number | null
+          id: string
+          invoice_date: string
+          invoice_number: string
+          other_amount: number | null
+          pdf_path: string | null
+          rate_per_hour: number | null
+          status: string | null
+          teacher_id: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          hours?: number | null
+          id?: string
+          invoice_date: string
+          invoice_number: string
+          other_amount?: number | null
+          pdf_path?: string | null
+          rate_per_hour?: number | null
+          status?: string | null
+          teacher_id: string
+          total_amount: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          hours?: number | null
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          other_amount?: number | null
+          pdf_path?: string | null
+          rate_per_hour?: number | null
+          status?: string | null
+          teacher_id?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      teacher_profiles: {
+        Row: {
+          address: string | null
+          bank_bic: string | null
+          bank_iban: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          siret: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          bank_bic?: string | null
+          bank_iban?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          phone?: string | null
+          siret?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          bank_bic?: string | null
+          bank_iban?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          siret?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
