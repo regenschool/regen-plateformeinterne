@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Leaf, Users, Brain, LogOut } from "lucide-react";
+import { Leaf, Network, Lightbulb, LogOut } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
 
 type LayoutProps = {
@@ -46,7 +46,7 @@ export const Layout = ({ children }: LayoutProps) => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-foreground">Regen School</h1>
-                <p className="text-xs text-muted-foreground">Student Directory</p>
+                <p className="text-xs text-muted-foreground">Espace enseignants</p>
               </div>
             </div>
 
@@ -57,20 +57,20 @@ export const Layout = ({ children }: LayoutProps) => {
                   onClick={() => navigate("/directory")}
                   className="gap-2"
                 >
-                  <Users className="w-4 h-4" />
-                  <span className="hidden sm:inline">Directory</span>
+                  <Network className="w-4 h-4" />
+                  <span className="hidden sm:inline">Écosystème</span>
                 </Button>
                 <Button
                   variant={isActive("/quiz") ? "default" : "ghost"}
                   onClick={() => navigate("/quiz")}
                   className="gap-2"
                 >
-                  <Brain className="w-4 h-4" />
+                  <Lightbulb className="w-4 h-4" />
                   <span className="hidden sm:inline">Quiz</span>
                 </Button>
                 <Button variant="ghost" onClick={handleLogout} className="gap-2">
                   <LogOut className="w-4 h-4" />
-                  <span className="hidden sm:inline">Logout</span>
+                  <span className="hidden sm:inline">Déconnexion</span>
                 </Button>
               </div>
             )}
@@ -79,6 +79,14 @@ export const Layout = ({ children }: LayoutProps) => {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
+      
+      <footer className="border-t border-border mt-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <p className="text-xs text-muted-foreground text-center italic">
+            "Un jardin sauvage qui pousse au gré des liens qui se tissent"
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };

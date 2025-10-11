@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StudentCard } from "@/components/StudentCard";
 import { AddStudentDialog } from "@/components/AddStudentDialog";
 import { ImportStudentsDialog } from "@/components/ImportStudentsDialog";
-import { Plus, Upload, Users } from "lucide-react";
+import { Plus, Upload, Sprout } from "lucide-react";
 import { toast } from "sonner";
 
 type Student = {
@@ -85,8 +85,8 @@ const Directory = () => {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
-          <Users className="w-12 h-12 text-primary mx-auto animate-pulse" />
-          <p className="text-muted-foreground">Loading students...</p>
+          <Sprout className="w-12 h-12 text-primary mx-auto animate-pulse" />
+          <p className="text-muted-foreground">Chargement de l'écosystème...</p>
         </div>
       </div>
     );
@@ -96,9 +96,9 @@ const Directory = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-foreground">Student Directory</h2>
+          <h2 className="text-3xl font-bold text-foreground">Écosystème étudiant</h2>
           <p className="text-muted-foreground">
-            {filteredStudents.length} {filteredStudents.length === 1 ? "student" : "students"}
+            {filteredStudents.length} {filteredStudents.length === 1 ? "étudiant" : "étudiants"} · Leaders responsables de demain
           </p>
         </div>
         <div className="flex gap-2">
@@ -109,17 +109,17 @@ const Directory = () => {
 
       <div className="flex flex-col md:flex-row gap-4">
         <Input
-          placeholder="Search by name, company, or background..."
+          placeholder="Rechercher par nom, entreprise ou parcours..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="md:flex-1"
         />
         <Select value={selectedClass} onValueChange={setSelectedClass}>
           <SelectTrigger className="md:w-[200px]">
-            <SelectValue placeholder="Filter by class" />
+            <SelectValue placeholder="Filtrer par classe" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Classes</SelectItem>
+            <SelectItem value="all">Toutes les classes</SelectItem>
             {classes.map((className) => (
               <SelectItem key={className} value={className}>
                 {className}
@@ -131,13 +131,13 @@ const Directory = () => {
 
       {filteredStudents.length === 0 ? (
         <div className="text-center py-12 space-y-4">
-          <Users className="w-16 h-16 text-muted-foreground mx-auto opacity-50" />
+          <Sprout className="w-16 h-16 text-muted-foreground mx-auto opacity-50" />
           <div>
-            <p className="text-lg font-medium text-foreground">No students found</p>
+            <p className="text-lg font-medium text-foreground">Aucun étudiant trouvé</p>
             <p className="text-muted-foreground">
               {searchTerm || selectedClass !== "all"
-                ? "Try adjusting your filters"
-                : "Add your first student to get started"}
+                ? "Ajustez vos filtres"
+                : "Ajoutez votre premier étudiant"}
             </p>
           </div>
         </div>
