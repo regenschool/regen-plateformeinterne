@@ -669,21 +669,11 @@ export default function Grades() {
             {/* Bouton pour créer une nouvelle épreuve */}
             <div className="flex gap-2">
               <Button 
-                onClick={() => setSelectedAssessment({ 
-                  name: "", 
-                  type: "", 
-                  customLabel: null, 
-                  studentsWithGrades: 0, 
-                  totalStudents: students.length 
-                })}
+                onClick={() => setShowBulkImport(true)}
                 variant="default"
               >
                 <PlusCircle className="w-4 h-4 mr-2" />
                 Nouvelle épreuve
-              </Button>
-              <Button onClick={() => setShowBulkImport(true)} variant="outline">
-                <Upload className="w-4 h-4 mr-2" />
-                {t("grades.bulkImport")}
               </Button>
             </div>
 
