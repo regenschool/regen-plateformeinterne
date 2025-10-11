@@ -299,7 +299,7 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
               <Label>Note *</Label>
               <Input
                 type="number"
-                step="0.01"
+                step="0.1"
                 value={grade}
                 onChange={(e) => setGrade(e.target.value)}
                 placeholder="15.5"
@@ -310,7 +310,7 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
               <Label>Sur *</Label>
               <Input
                 type="number"
-                step="0.01"
+                step="0.1"
                 value={maxGrade}
                 onChange={(e) => setMaxGrade(e.target.value)}
                 placeholder="20"

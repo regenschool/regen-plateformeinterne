@@ -200,7 +200,7 @@ export const EditGradeDialog = ({ grade, onGradeUpdated }: EditGradeDialogProps)
                 <Label>Note *</Label>
                 <Input
                   type="number"
-                  step="0.01"
+                  step="0.1"
                   value={gradeValue}
                   onChange={(e) => setGradeValue(e.target.value)}
                   placeholder="15.5"
@@ -211,7 +211,7 @@ export const EditGradeDialog = ({ grade, onGradeUpdated }: EditGradeDialogProps)
                 <Label>Sur *</Label>
                 <Input
                   type="number"
-                  step="0.01"
+                  step="0.1"
                   value={maxGrade}
                   onChange={(e) => setMaxGrade(e.target.value)}
                   placeholder="20"

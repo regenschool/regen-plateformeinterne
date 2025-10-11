@@ -231,7 +231,7 @@ export const BulkGradeImport = ({ students, classname, subject, subjectMetadata,
               <Label>Note maximale *</Label>
               <Input
                 type="number"
-                step="0.01"
+                step="0.1"
                 value={maxGrade}
                 onChange={(e) => setMaxGrade(e.target.value)}
                 placeholder="20"
@@ -286,7 +286,7 @@ export const BulkGradeImport = ({ students, classname, subject, subjectMetadata,
                     <div className="w-24">
                       <Input
                         type="number"
-                        step="0.01"
+                        step="0.1"
                         placeholder="Note"
                         value={grades[student.id] || ""}
                         onChange={(e) => handleGradeChange(student.id, e.target.value)}
