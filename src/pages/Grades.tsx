@@ -666,6 +666,27 @@ export default function Grades() {
               </Card>
             )}
 
+            {/* Bouton pour créer une nouvelle épreuve */}
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setSelectedAssessment({ 
+                  name: "", 
+                  type: "", 
+                  customLabel: null, 
+                  studentsWithGrades: 0, 
+                  totalStudents: students.length 
+                })}
+                variant="default"
+              >
+                <PlusCircle className="w-4 h-4 mr-2" />
+                Nouvelle épreuve
+              </Button>
+              <Button onClick={() => setShowBulkImport(true)} variant="outline">
+                <Upload className="w-4 h-4 mr-2" />
+                {t("grades.bulkImport")}
+              </Button>
+            </div>
+
             {/* Class Statistics Dashboard */}
             {grades.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -798,13 +819,6 @@ export default function Grades() {
                 </AlertDescription>
               </Alert>
             )}
-
-            <div className="flex gap-2">
-              <Button onClick={() => setShowBulkImport(true)} variant="outline">
-                <Upload className="w-4 h-4 mr-2" />
-                {t("grades.bulkImport")}
-              </Button>
-            </div>
 
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
