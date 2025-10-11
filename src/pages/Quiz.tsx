@@ -97,7 +97,7 @@ const Quiz = () => {
       } else {
         finishQuiz(correct);
       }
-    }, 800);
+    }, 400);
   };
 
   const finishQuiz = async (lastCorrect: boolean) => {
@@ -224,7 +224,7 @@ const Quiz = () => {
             <h3 className="text-2xl font-bold">Who is this?</h3>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {options.map((option) => {
               const isCorrect = option.id === currentStudent.id;
               const isSelected = selectedAnswer === option.id;
@@ -237,15 +237,17 @@ const Quiz = () => {
                   onClick={() => !showFeedback && handleAnswer(option.id)}
                   disabled={showFeedback}
                   variant={showCorrect ? "default" : showWrong ? "destructive" : "outline"}
-                  className={`h-auto py-4 text-lg justify-between ${
-                    showCorrect ? "bg-success hover:bg-success" : ""
-                  } ${showWrong ? "bg-error hover:bg-error" : ""}`}
+                  className={`h-auto py-6 text-xl justify-between transition-all duration-300 ${
+                    showCorrect ? "bg-green-500 hover:bg-green-500 border-green-600 scale-105 shadow-lg" : ""
+                  } ${showWrong ? "bg-red-500 hover:bg-red-500 border-red-600 opacity-60" : ""} ${
+                    !showFeedback ? "hover:scale-102 hover:shadow-md" : ""
+                  }`}
                 >
-                  <span>
+                  <span className="font-semibold">
                     {option.first_name} {option.last_name}
                   </span>
-                  {showCorrect && <Check className="w-5 h-5" />}
-                  {showWrong && <X className="w-5 h-5" />}
+                  {showCorrect && <Check className="w-6 h-6 animate-in zoom-in duration-200" />}
+                  {showWrong && <X className="w-6 h-6 animate-in zoom-in duration-200" />}
                 </Button>
               );
             })}
