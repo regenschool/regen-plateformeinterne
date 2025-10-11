@@ -154,6 +154,42 @@ export type Database = {
         }
         Relationships: []
       }
+      subjects: {
+        Row: {
+          class_name: string
+          created_at: string
+          id: string
+          school_year: string
+          semester: string
+          subject_name: string
+          teacher_id: string
+          teacher_name: string
+          updated_at: string
+        }
+        Insert: {
+          class_name: string
+          created_at?: string
+          id?: string
+          school_year: string
+          semester: string
+          subject_name: string
+          teacher_id: string
+          teacher_name: string
+          updated_at?: string
+        }
+        Update: {
+          class_name?: string
+          created_at?: string
+          id?: string
+          school_year?: string
+          semester?: string
+          subject_name?: string
+          teacher_id?: string
+          teacher_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_notes: {
         Row: {
           created_at: string

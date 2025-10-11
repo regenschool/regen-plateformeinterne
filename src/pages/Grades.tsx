@@ -120,8 +120,8 @@ export default function Grades() {
       if (!user) return;
 
       const { data, error } = await supabase
-        .from("grades")
-        .select("subject, teacher_name, school_year, semester")
+        .from("subjects")
+        .select("*")
         .eq("teacher_id", user.id)
         .eq("class_name", selectedClass)
         .eq("school_year", selectedSchoolYear)
@@ -130,15 +130,15 @@ export default function Grades() {
       if (error) throw error;
       
       if (data) {
-        const uniqueSubjects = Array.from(new Set(data.map(g => g.subject)));
+        const uniqueSubjects = Array.from(new Set(data.map(s => s.subject_name)));
         setSubjects(uniqueSubjects);
         
         // Récupérer les métadonnées de la première matière si elle existe
-        if (data.length > 0 && data[0].teacher_name) {
+        if (data.length > 0) {
           setNewSubjectMetadata({
             teacherName: data[0].teacher_name,
-            schoolYear: data[0].school_year || selectedSchoolYear,
-            semester: data[0].semester || selectedSemester,
+            schoolYear: data[0].school_year,
+            semester: data[0].semester,
           });
         }
       }
@@ -280,13 +280,35 @@ export default function Grades() {
 
   const stats = getClassStatistics();
 
-  const handleSubjectCreated = (subject: string, teacherName: string, schoolYear: string, semester: string) => {
-    setSelectedSubject(subject);
-    setNewSubjectMetadata({ teacherName, schoolYear, semester });
-    setShowNewSubjectDialog(false);
-    
-    // Ajouter la nouvelle matière à la liste
-    setSubjects(prev => [...prev, subject]);
+  const handleSubjectCreated = async (subject: string, teacherName: string, schoolYear: string, semester: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Save the subject to the subjects table
+      const { error } = await supabase.from("subjects").insert({
+        teacher_id: user.id,
+        class_name: selectedClass,
+        subject_name: subject,
+        teacher_name: teacherName,
+        school_year: schoolYear,
+        semester: semester,
+      });
+
+      if (error) throw error;
+
+      setSelectedSubject(subject);
+      setNewSubjectMetadata({ teacherName, schoolYear, semester });
+      setShowNewSubjectDialog(false);
+      
+      // Ajouter la nouvelle matière à la liste
+      setSubjects(prev => [...prev, subject]);
+      
+      toast.success("Matière créée avec succès");
+    } catch (error: any) {
+      console.error("Error creating subject:", error);
+      toast.error("Erreur lors de la création de la matière");
+    }
   };
 
   const handleGradeUpdated = () => {
