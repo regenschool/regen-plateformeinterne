@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Leaf, Users, Brain, ArrowRight } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -27,11 +29,10 @@ const Index = () => {
             </div>
             <div className="space-y-4">
               <h1 className="text-5xl md:text-6xl font-bold text-foreground">
-                Regen School
+                {t("index.title")}
               </h1>
               <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto">
-                Your comprehensive student directory and learning platform for economic
-                adaptation to planetary limits
+                {t("index.subtitle")}
               </p>
             </div>
           </div>
@@ -41,10 +42,9 @@ const Index = () => {
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
                 <Users className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="text-2xl font-bold">Student Directory</h3>
+              <h3 className="text-2xl font-bold">{t("index.directoryTitle")}</h3>
               <p className="text-muted-foreground">
-                Easily browse and manage student profiles with photos, academic backgrounds,
-                and company affiliations. Add private notes for each student.
+                {t("index.directoryDesc")}
               </p>
             </div>
 
@@ -52,10 +52,9 @@ const Index = () => {
               <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mx-auto">
                 <Brain className="w-6 h-6 text-accent" />
               </div>
-              <h3 className="text-2xl font-bold">Quiz Mode</h3>
+              <h3 className="text-2xl font-bold">{t("index.quizTitle")}</h3>
               <p className="text-muted-foreground">
-                Learn student names faster with our gamified quiz system. Match faces to
-                names and track your progress with scores.
+                {t("index.quizDesc")}
               </p>
             </div>
           </div>
@@ -66,11 +65,11 @@ const Index = () => {
               size="lg"
               className="text-lg px-8 py-6 gap-2 group"
             >
-              Get Started
+              {t("index.getStarted")}
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Button>
             <p className="text-sm text-muted-foreground">
-              Sign up or log in to access the platform
+              {t("index.signupLogin")}
             </p>
           </div>
         </div>

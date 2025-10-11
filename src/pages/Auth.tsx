@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Leaf } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,10 +26,10 @@ const Auth = () => {
         password,
       });
       if (error) throw error;
-      toast.success("Connecté avec succès !");
+      toast.success(t("auth.welcome"));
       navigate("/");
     } catch (error: any) {
-      toast.error(error.message);
+      toast.error(t("auth.loginError"));
     } finally {
       setLoading(false);
     }
@@ -43,17 +45,17 @@ const Auth = () => {
             </div>
           </div>
           <CardTitle className="text-3xl font-bold">Regen School</CardTitle>
-          <CardDescription>Plateforme enseignants - Connexion</CardDescription>
+          <CardDescription>{t("auth.subtitle")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-6 p-4 bg-muted rounded-lg border border-border">
             <p className="text-sm text-muted-foreground text-center">
-              Utilisez votre adresse email <span className="font-semibold text-foreground">Regen School</span> pour vous connecter
+              {t("auth.welcome")}
             </p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Adresse email Regen School</Label>
+              <Label htmlFor="email">{t("auth.email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -64,7 +66,7 @@ const Auth = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe</Label>
+              <Label htmlFor="password">{t("auth.password")}</Label>
               <Input
                 id="password"
                 type="password"
@@ -76,7 +78,7 @@ const Auth = () => {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Connexion..." : "Se connecter"}
+              {loading ? "..." : t("auth.login")}
             </Button>
           </form>
         </CardContent>

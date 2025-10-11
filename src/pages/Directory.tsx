@@ -10,6 +10,7 @@ import { Plus, Upload, Sprout, Download, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type Student = {
   id: string;
@@ -24,6 +25,7 @@ type Student = {
 };
 
 const Directory = () => {
+  const { t } = useLanguage();
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<string[]>([]);
@@ -55,7 +57,7 @@ const Directory = () => {
       const uniqueClasses = Array.from(new Set(data?.map((s) => s.class_name) || []));
       setClasses(uniqueClasses);
     } catch (error: any) {
-      toast.error("Failed to load students");
+      toast.error(t("directory.loadError"));
     } finally {
       setLoading(false);
     }
@@ -145,7 +147,7 @@ const Directory = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success("Export CSV réussi");
+    toast.success(t("directory.exportSuccess"));
   };
 
   const handleStudentAdded = () => {
@@ -157,7 +159,7 @@ const Directory = () => {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
           <Sprout className="w-12 h-12 text-primary mx-auto animate-pulse" />
-          <p className="text-muted-foreground">Chargement de l'écosystème...</p>
+          <p className="text-muted-foreground">{t("directory.loading")}</p>
         </div>
       </div>
     );
@@ -167,15 +169,15 @@ const Directory = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-foreground">Écosystème étudiant</h2>
+          <h2 className="text-3xl font-bold text-foreground">{t("directory.title")}</h2>
           <p className="text-muted-foreground">
-            {filteredStudents.length} {filteredStudents.length === 1 ? "étudiant" : "étudiants"} · Leaders responsables de demain
+            {filteredStudents.length} {filteredStudents.length === 1 ? t("directory.student") : t("directory.studentsCount")} · {t("directory.subtitle")}
           </p>
         </div>
         <div className="flex gap-2">
           <Button onClick={exportToCSV} variant="outline" size="default">
             <Download className="w-4 h-4 mr-2" />
-            Export CSV
+            {t("directory.exportCSV")}
           </Button>
           <ImportStudentsDialog onImportComplete={handleStudentAdded} />
           <AddStudentDialog onStudentAdded={handleStudentAdded} />
@@ -185,17 +187,17 @@ const Directory = () => {
       <div className="space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
           <Input
-            placeholder="Rechercher par nom, entreprise ou parcours..."
+            placeholder={t("directory.searchPlaceholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="md:flex-1"
           />
           <Select value={selectedClass} onValueChange={setSelectedClass}>
             <SelectTrigger className="md:w-[200px]">
-              <SelectValue placeholder="Filtrer par classe" />
+              <SelectValue placeholder={t("directory.filterByClass")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Toutes les classes</SelectItem>
+              <SelectItem value="all">{t("directory.allClasses")}</SelectItem>
               {classes.map((className) => (
                 <SelectItem key={className} value={className}>
                   {className}
@@ -206,13 +208,13 @@ const Directory = () => {
           <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
             <SelectTrigger className="md:w-[220px]">
               <ArrowUpDown className="w-4 h-4 mr-2" />
-              <SelectValue placeholder="Trier par" />
+              <SelectValue placeholder={t("directory.sortBy")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="lastName">Nom (A → Z)</SelectItem>
-              <SelectItem value="class">Classe (A → Z)</SelectItem>
-              <SelectItem value="classReverse">Classe (Z → A)</SelectItem>
-              <SelectItem value="age">Âge (+ jeune → + vieux)</SelectItem>
+              <SelectItem value="lastName">{t("directory.sortLastName")}</SelectItem>
+              <SelectItem value="class">{t("directory.sortClass")}</SelectItem>
+              <SelectItem value="classReverse">{t("directory.sortClassReverse")}</SelectItem>
+              <SelectItem value="age">{t("directory.sortAge")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -227,7 +229,7 @@ const Directory = () => {
             htmlFor="active-search"
             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
           >
-            Afficher uniquement les étudiants en recherche active
+            {t("directory.showActiveSearch")}
           </Label>
         </div>
       </div>
@@ -236,11 +238,11 @@ const Directory = () => {
         <div className="text-center py-12 space-y-4">
           <Sprout className="w-16 h-16 text-muted-foreground mx-auto opacity-50" />
           <div>
-            <p className="text-lg font-medium text-foreground">Aucun étudiant trouvé</p>
+            <p className="text-lg font-medium text-foreground">{t("directory.noStudents")}</p>
             <p className="text-muted-foreground">
               {searchTerm || selectedClass !== "all"
-                ? "Ajustez vos filtres"
-                : "Ajoutez votre premier étudiant"}
+                ? t("directory.adjustFilters")
+                : t("directory.addFirstStudent")}
             </p>
           </div>
         </div>

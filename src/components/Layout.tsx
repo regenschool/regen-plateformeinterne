@@ -2,8 +2,15 @@ import { ReactNode, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Leaf, Network, Lightbulb, LogOut } from "lucide-react";
+import { Leaf, Network, Lightbulb, LogOut, Languages } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
+import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type LayoutProps = {
   children: ReactNode;
@@ -13,6 +20,7 @@ export const Layout = ({ children }: LayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [session, setSession] = useState<Session | null>(null);
+  const { t, language, setLanguage } = useLanguage();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -46,7 +54,7 @@ export const Layout = ({ children }: LayoutProps) => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-foreground">Regen School</h1>
-                <p className="text-xs text-muted-foreground">Espace enseignants</p>
+                <p className="text-xs text-muted-foreground">{t("nav.teachersSpace")}</p>
               </div>
             </div>
 
@@ -58,7 +66,7 @@ export const Layout = ({ children }: LayoutProps) => {
                   className="gap-2"
                 >
                   <Network className="w-4 h-4" />
-                  <span className="hidden sm:inline">Écosystème</span>
+                  <span className="hidden sm:inline">{t("nav.ecosystem")}</span>
                 </Button>
                 <Button
                   variant={isActive("/quiz") ? "default" : "ghost"}
@@ -66,11 +74,32 @@ export const Layout = ({ children }: LayoutProps) => {
                   className="gap-2"
                 >
                   <Lightbulb className="w-4 h-4" />
-                  <span className="hidden sm:inline">Quiz</span>
+                  <span className="hidden sm:inline">{t("nav.quiz")}</span>
                 </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Languages className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-card z-50">
+                    <DropdownMenuItem 
+                      onClick={() => setLanguage("en")}
+                      className={language === "en" ? "bg-primary/10" : ""}
+                    >
+                      🇬🇧 English
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setLanguage("fr")}
+                      className={language === "fr" ? "bg-primary/10" : ""}
+                    >
+                      🇫🇷 Français
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button variant="ghost" onClick={handleLogout} className="gap-2">
                   <LogOut className="w-4 h-4" />
-                  <span className="hidden sm:inline">Déconnexion</span>
+                  <span className="hidden sm:inline">{t("nav.logout")}</span>
                 </Button>
               </div>
             )}
@@ -83,7 +112,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <footer className="border-t border-border mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <p className="text-xs text-muted-foreground text-center italic">
-            "Un jardin sauvage qui pousse au gré des liens qui se tissent"
+            "{t("footer.quote")}"
           </p>
         </div>
       </footer>

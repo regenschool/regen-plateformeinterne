@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Sparkles, Check, X, Award, ArrowLeft } from "lucide-react";
+import { Sparkles, Check, X, ArrowLeft } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type Student = {
   id: string;
@@ -17,6 +18,7 @@ type Student = {
 
 const Quiz = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [classes, setClasses] = useState<string[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [students, setStudents] = useState<Student[]>([]);
@@ -129,26 +131,26 @@ const Quiz = () => {
     const getMessage = () => {
       if (percentage === 100) {
         return {
-          title: "Remarquable !",
-          message: "Vous connaissez parfaitement les étudiants que vous accompagnez à devenir des décideurs éclairés, capables de construire un monde compatible avec les limites planétaires.",
+          title: t("quiz.results.perfect.title"),
+          message: t("quiz.results.perfect.message"),
           emoji: "🌟"
         };
       } else if (percentage >= 80) {
         return {
-          title: "Très bien !",
-          message: "Vous connaissez bien les étudiants que vous accompagnez à devenir des décideurs éclairés de demain.",
+          title: t("quiz.results.good.title"),
+          message: t("quiz.results.good.message"),
           emoji: "✨"
         };
       } else if (percentage >= 60) {
         return {
-          title: "Bon début !",
-          message: "Continuez à tisser des liens avec vos étudiants. Mieux vous les connaissez, mieux vous les accompagnez à devenir des décideurs éclairés.",
+          title: t("quiz.results.decent.title"),
+          message: t("quiz.results.decent.message"),
           emoji: "🌱"
         };
       } else {
         return {
-          title: "Un point de départ",
-          message: "Prenez le temps de mieux connaître vos étudiants pour les accompagner efficacement vers leur rôle de décideurs éclairés.",
+          title: t("quiz.results.low.title"),
+          message: t("quiz.results.low.message"),
           emoji: "🎯"
         };
       }
@@ -168,16 +170,16 @@ const Quiz = () => {
               </p>
               <div className="inline-block bg-primary/10 px-8 py-4 rounded-full border border-primary/20">
                 <p className="text-sm text-muted-foreground">
-                  Score : <span className="text-3xl font-bold text-primary">{score}</span> / {students.length}
+                  {t("quiz.results.scoreLabel")} <span className="text-3xl font-bold text-primary">{score}</span> / {students.length}
                 </p>
               </div>
             </div>
             <div className="flex gap-4 justify-center pt-4">
               <Button onClick={resetQuiz} variant="outline" size="lg">
-                Autre classe
+                {t("quiz.results.anotherClass")}
               </Button>
               <Button onClick={() => navigate("/directory")} size="lg">
-                Retour à l'écosystème
+                {t("quiz.results.backToEcosystem")}
               </Button>
             </div>
           </CardContent>
@@ -198,17 +200,17 @@ const Quiz = () => {
                   <div className="w-12 h-12 rounded-full bg-primary/10 blur-xl"></div>
                 </div>
               </div>
-              <h2 className="text-3xl font-bold text-foreground">Quiz de l'écosystème</h2>
+              <h2 className="text-3xl font-bold text-foreground">{t("quiz.title")}</h2>
               <p className="text-muted-foreground max-w-md mx-auto">
-                Testez votre connaissance des décideurs éclairés qui construisent avec vous un monde compatible avec les limites planétaires
+                {t("quiz.subtitle")}
               </p>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block text-foreground">Sélectionnez une classe</label>
+                <label className="text-sm font-medium mb-2 block text-foreground">{t("quiz.selectClass")}</label>
                 <Select value={selectedClass} onValueChange={setSelectedClass}>
                   <SelectTrigger className="border-primary/20">
-                    <SelectValue placeholder="Choisir une classe..." />
+                    <SelectValue placeholder={t("quiz.chooseClass")} />
                   </SelectTrigger>
                   <SelectContent>
                     {classes.map((className) => (
@@ -220,7 +222,7 @@ const Quiz = () => {
                 </Select>
               </div>
               <Button onClick={startQuiz} disabled={!selectedClass} className="w-full" size="lg">
-                Commencer le quiz
+                {t("quiz.startQuiz")}
               </Button>
             </div>
           </CardContent>
@@ -236,10 +238,10 @@ const Quiz = () => {
       <div className="mb-6 flex items-center justify-between">
         <Button variant="ghost" onClick={resetQuiz}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Exit Quiz
+          {t("quiz.exitQuiz")}
         </Button>
         <div className="text-sm font-medium">
-          Question {currentIndex + 1} of {students.length} • Score: {score}
+          {t("quiz.questionOf")} {currentIndex + 1} {t("quiz.of")} {students.length} • {t("quiz.score")}: {score}
         </div>
       </div>
 
@@ -260,7 +262,7 @@ const Quiz = () => {
                 </div>
               )}
             </div>
-            <h3 className="text-2xl font-bold">Who is this?</h3>
+            <h3 className="text-2xl font-bold">{t("quiz.whoIsThis")}</h3>
           </div>
 
           <div className="grid grid-cols-1 gap-4">
