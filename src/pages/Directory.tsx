@@ -171,7 +171,7 @@ const Directory = () => {
         <div>
           <h2 className="text-3xl font-bold text-foreground">{t("directory.title")}</h2>
           <p className="text-muted-foreground">
-            {filteredStudents.length} {filteredStudents.length === 1 ? t("directory.student") : t("directory.studentsCount")} · {t("directory.subtitle")}
+            {filteredStudents.length} / {students.length} {filteredStudents.length === 1 ? t("directory.student") : t("directory.studentsCount")} · {t("directory.subtitle")}
           </p>
         </div>
         <div className="flex gap-2">
