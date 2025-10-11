@@ -9,7 +9,7 @@ import { BulkGradeImport } from "@/components/BulkGradeImport";
 import { NewSubjectDialog } from "@/components/NewSubjectDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
-import { ClipboardList, Upload, TrendingUp, FileText, AlertTriangle, Trash2 } from "lucide-react";
+import { ClipboardList, Upload, TrendingUp, FileText, AlertTriangle, Trash2, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -371,10 +371,64 @@ export default function Grades() {
     }
   };
 
+  const handleResetSelection = () => {
+    setSelectedSubject("");
+    setGrades([]);
+  };
+
+  const handleNavigateToSubject = (direction: 'prev' | 'next') => {
+    const currentIndex = subjects.indexOf(selectedSubject);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex >= 0 && newIndex < subjects.length) {
+      setSelectedSubject(subjects[newIndex]);
+    }
+  };
+
+  const currentSubjectIndex = subjects.indexOf(selectedSubject);
+  const hasPrevSubject = currentSubjectIndex > 0;
+  const hasNextSubject = currentSubjectIndex >= 0 && currentSubjectIndex < subjects.length - 1;
+
   return (
     <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-foreground">{t("grades.title")}</h1>
+        <div className="flex items-center gap-3">
+          {selectedSubject && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleResetSelection}
+              className="gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Retour à la sélection
+            </Button>
+          )}
+          <h1 className="text-3xl font-bold text-foreground">{t("grades.title")}</h1>
+        </div>
+        {selectedSubject && subjects.length > 1 && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleNavigateToSubject('prev')}
+              disabled={!hasPrevSubject}
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Matière précédente
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleNavigateToSubject('next')}
+              disabled={!hasNextSubject}
+            >
+              Matière suivante
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
