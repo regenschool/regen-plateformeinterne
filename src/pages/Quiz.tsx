@@ -136,7 +136,7 @@ const Quiz = () => {
       } else if (percentage >= 80) {
         return {
           title: "Très bien !",
-          message: "Vous incarnez l'esprit d'adaptation et de collaboration qui définit les leaders responsables de demain.",
+          message: "Vous incarnez l'esprit d'adaptation et de collaboration qui définit les décideurs éclairés de demain.",
           emoji: "✨"
         };
       } else if (percentage >= 60) {
