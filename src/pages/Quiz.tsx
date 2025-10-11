@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Brain, Check, X, Trophy, ArrowLeft } from "lucide-react";
+import { Sparkles, Check, X, Award, ArrowLeft } from "lucide-react";
 
 type Student = {
   id: string;
@@ -126,24 +126,59 @@ const Quiz = () => {
 
   if (quizCompleted) {
     const percentage = Math.round((score / students.length) * 100);
+    const getMessage = () => {
+      if (percentage === 100) {
+        return {
+          title: "Remarquable !",
+          message: "Votre connaissance de vos pairs reflète les valeurs de Regen School : l'excellence et l'engagement dans la construction d'une communauté de décideurs éclairés.",
+          emoji: "🌟"
+        };
+      } else if (percentage >= 80) {
+        return {
+          title: "Très bien !",
+          message: "Vous incarnez l'esprit d'adaptation et de collaboration qui définit les leaders responsables de demain.",
+          emoji: "✨"
+        };
+      } else if (percentage >= 60) {
+        return {
+          title: "Bon début !",
+          message: "Continuez à tisser des liens avec votre écosystème. Les décideurs éclairés construisent leur impact à travers la qualité de leurs relations.",
+          emoji: "🌱"
+        };
+      } else {
+        return {
+          title: "Un point de départ",
+          message: "Chaque leader commence quelque part. L'important est de progresser ensemble vers un monde compatible avec les limites planétaires.",
+          emoji: "🎯"
+        };
+      }
+    };
+
+    const result = getMessage();
+
     return (
       <div className="max-w-2xl mx-auto">
-        <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-2 border-primary/20">
+        <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 shadow-xl">
           <CardContent className="p-12 text-center space-y-6">
-            <Trophy className="w-20 h-20 text-accent mx-auto" />
+            <div className="text-6xl mb-4">{result.emoji}</div>
+            <Award className="w-16 h-16 text-primary mx-auto opacity-20" />
             <div>
-              <h2 className="text-4xl font-bold mb-2">Quiz Complete!</h2>
-              <p className="text-xl text-muted-foreground">
-                You scored {score} out of {students.length}
+              <h2 className="text-4xl font-bold mb-3 text-foreground">{result.title}</h2>
+              <p className="text-lg text-muted-foreground leading-relaxed max-w-lg mx-auto mb-4">
+                {result.message}
               </p>
-              <p className="text-3xl font-bold text-primary mt-4">{percentage}%</p>
+              <div className="inline-block bg-primary/10 px-6 py-3 rounded-full border border-primary/20">
+                <p className="text-sm text-muted-foreground">
+                  Score : <span className="text-2xl font-bold text-primary">{score}</span> / {students.length}
+                </p>
+              </div>
             </div>
-            <div className="flex gap-4 justify-center">
-              <Button onClick={resetQuiz} variant="outline">
-                Try Another Class
+            <div className="flex gap-4 justify-center pt-4">
+              <Button onClick={resetQuiz} variant="outline" size="lg">
+                Autre classe
               </Button>
-              <Button onClick={() => navigate("/directory")}>
-                Back to Directory
+              <Button onClick={() => navigate("/directory")} size="lg">
+                Retour à l'écosystème
               </Button>
             </div>
           </CardContent>
@@ -155,21 +190,26 @@ const Quiz = () => {
   if (!quizStarted) {
     return (
       <div className="max-w-2xl mx-auto">
-        <Card>
+        <Card className="border-primary/20 shadow-lg">
           <CardContent className="p-8 space-y-6">
-            <div className="text-center space-y-2">
-              <Brain className="w-16 h-16 text-primary mx-auto" />
-              <h2 className="text-3xl font-bold">Quiz Mode</h2>
-              <p className="text-muted-foreground">
-                Test your knowledge of student names and faces
+            <div className="text-center space-y-4">
+              <div className="relative">
+                <Sparkles className="w-16 h-16 text-primary mx-auto opacity-30" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 blur-xl"></div>
+                </div>
+              </div>
+              <h2 className="text-3xl font-bold text-foreground">Quiz de l'écosystème</h2>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                Testez votre connaissance des décideurs éclairés qui construisent avec vous un monde compatible avec les limites planétaires
               </p>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Select a class</label>
+                <label className="text-sm font-medium mb-2 block text-foreground">Sélectionnez une classe</label>
                 <Select value={selectedClass} onValueChange={setSelectedClass}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a class..." />
+                  <SelectTrigger className="border-primary/20">
+                    <SelectValue placeholder="Choisir une classe..." />
                   </SelectTrigger>
                   <SelectContent>
                     {classes.map((className) => (
@@ -181,7 +221,7 @@ const Quiz = () => {
                 </Select>
               </div>
               <Button onClick={startQuiz} disabled={!selectedClass} className="w-full" size="lg">
-                Start Quiz
+                Commencer le quiz
               </Button>
             </div>
           </CardContent>
@@ -236,18 +276,18 @@ const Quiz = () => {
                   key={option.id}
                   onClick={() => !showFeedback && handleAnswer(option.id)}
                   disabled={showFeedback}
-                  variant={showCorrect ? "default" : showWrong ? "destructive" : "outline"}
-                  className={`h-auto py-6 text-xl justify-between transition-all duration-300 ${
-                    showCorrect ? "bg-green-500 hover:bg-green-500 border-green-600 scale-105 shadow-lg" : ""
-                  } ${showWrong ? "bg-red-500 hover:bg-red-500 border-red-600 opacity-60" : ""} ${
-                    !showFeedback ? "hover:scale-102 hover:shadow-md" : ""
+                  variant="outline"
+                  className={`h-auto py-6 text-xl justify-between transition-all duration-300 border-primary/20 ${
+                    showCorrect ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-400 dark:border-emerald-600 scale-105 shadow-lg" : ""
+                  } ${showWrong ? "bg-rose-50 dark:bg-rose-950/20 border-rose-400 dark:border-rose-600 opacity-50" : ""} ${
+                    !showFeedback ? "hover:scale-102 hover:shadow-md hover:border-primary/40" : ""
                   }`}
                 >
-                  <span className="font-semibold">
+                  <span className={`font-semibold ${showCorrect ? "text-emerald-700 dark:text-emerald-400" : ""} ${showWrong ? "text-rose-700 dark:text-rose-400" : ""}`}>
                     {option.first_name} {option.last_name}
                   </span>
-                  {showCorrect && <Check className="w-6 h-6 animate-in zoom-in duration-200" />}
-                  {showWrong && <X className="w-6 h-6 animate-in zoom-in duration-200" />}
+                  {showCorrect && <Check className="w-6 h-6 text-emerald-600 dark:text-emerald-400 animate-in zoom-in duration-200" />}
+                  {showWrong && <X className="w-6 h-6 text-rose-600 dark:text-rose-400 animate-in zoom-in duration-200" />}
                 </Button>
               );
             })}
