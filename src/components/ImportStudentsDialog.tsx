@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Upload, Plus, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { parse, format, isValid } from "date-fns";
 
 type ImportStudentsDialogProps = {
   onImportComplete: () => void;
@@ -76,6 +77,51 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
     }
   };
 
+  // Parse various date formats from Excel
+  const parseDateString = (dateStr: string): string | null => {
+    if (!dateStr || !dateStr.trim()) return null;
+    
+    const trimmedDate = dateStr.trim();
+    
+    // Try various date formats that Excel might use
+    const dateFormats = [
+      'yyyy-MM-dd',      // ISO format: 1999-01-15
+      'dd/MM/yyyy',      // French format: 15/01/1999
+      'MM/dd/yyyy',      // US format: 01/15/1999
+      'dd-MM-yyyy',      // 15-01-1999
+      'MM-dd-yyyy',      // 01-15-1999
+      'd/M/yyyy',        // 5/1/1999
+      'M/d/yyyy',        // 1/5/1999
+      'dd/MM/yy',        // 15/01/99
+      'MM/dd/yy',        // 01/15/99
+      'dd.MM.yyyy',      // 15.01.1999
+      'yyyy/MM/dd',      // 1999/01/15
+    ];
+    
+    for (const formatStr of dateFormats) {
+      try {
+        const parsedDate = parse(trimmedDate, formatStr, new Date());
+        if (isValid(parsedDate)) {
+          return format(parsedDate, 'yyyy-MM-dd');
+        }
+      } catch (e) {
+        // Try next format
+      }
+    }
+    
+    // If no format worked, try native Date parsing as last resort
+    try {
+      const nativeDate = new Date(trimmedDate);
+      if (isValid(nativeDate)) {
+        return format(nativeDate, 'yyyy-MM-dd');
+      }
+    } catch (e) {
+      // Parsing failed
+    }
+    
+    return null;
+  };
+
   const handleImport = async () => {
     const validStudents = rows
       .filter((row) => row.first_name && row.last_name && row.class_name)
@@ -84,8 +130,8 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
         let birth_date = null;
         
         if (row.birth_date) {
-          // If birth_date is provided directly, use it
-          birth_date = row.birth_date;
+          // Parse the date string from Excel format
+          birth_date = parseDateString(row.birth_date);
         } else if (row.age) {
           // Otherwise calculate from age
           const age = parseInt(row.age);
