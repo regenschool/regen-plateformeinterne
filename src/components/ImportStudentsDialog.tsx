@@ -78,15 +78,29 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
   const handleImport = async () => {
     const validStudents = rows
       .filter((row) => row.first_name && row.last_name && row.class_name)
-      .map((row) => ({
-        first_name: row.first_name,
-        last_name: row.last_name,
-        class_name: row.class_name,
-        photo_url: row.photo_url || null,
-        age: row.age ? parseInt(row.age) : null,
-        academic_background: row.academic_background || null,
-        company: row.company || null,
-      }));
+      .map((row) => {
+        // Calculate birth_date from age if age is provided
+        let birth_date = null;
+        if (row.age) {
+          const age = parseInt(row.age);
+          if (!isNaN(age)) {
+            const currentYear = new Date().getFullYear();
+            const birthYear = currentYear - age;
+            // Use January 1st as default birth date when only age is known
+            birth_date = `${birthYear}-01-01`;
+          }
+        }
+        
+        return {
+          first_name: row.first_name,
+          last_name: row.last_name,
+          class_name: row.class_name,
+          photo_url: row.photo_url || null,
+          birth_date,
+          academic_background: row.academic_background || null,
+          company: row.company || null,
+        };
+      });
 
     if (validStudents.length === 0) {
       toast.error("Please fill in at least one student with First Name, Last Name, and Class.");
