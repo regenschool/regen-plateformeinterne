@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ type Assessment = {
 
 export default function Grades() {
   const { t } = useLanguage();
+  const location = useLocation();
   const [students, setStudents] = useState<Student[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>("");
@@ -78,6 +80,17 @@ export default function Grades() {
     semester: string;
   } | null>(null);
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
+
+  // Handle prefilled data from navigation
+  useEffect(() => {
+    if (location.state) {
+      const { prefilledClass, prefilledSubject, prefilledSchoolYear, prefilledSemester } = location.state as any;
+      if (prefilledClass) setSelectedClass(prefilledClass);
+      if (prefilledSubject) setSelectedSubject(prefilledSubject);
+      if (prefilledSchoolYear) setSelectedSchoolYear(prefilledSchoolYear);
+      if (prefilledSemester) setSelectedSemester(prefilledSemester);
+    }
+  }, [location.state]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
 
   const currentYear = new Date().getFullYear();

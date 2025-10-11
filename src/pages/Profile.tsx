@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,6 +59,7 @@ type Invoice = {
 };
 
 const Profile = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -253,6 +255,17 @@ const Profile = () => {
     }
   };
 
+  const navigateToGrades = (subject: Subject) => {
+    navigate("/grades", {
+      state: {
+        prefilledClass: subject.class_name,
+        prefilledSubject: subject.id,
+        prefilledSchoolYear: subject.school_year,
+        prefilledSemester: subject.semester,
+      },
+    });
+  };
+
   const generateInvoicePDF = async (invoiceId: string) => {
     try {
       toast.info("Génération du PDF en cours...");
@@ -295,7 +308,16 @@ const Profile = () => {
     }
   };
 
-  const deleteInvoice = async (invoiceId: string) => {
+  const navigateToGrades = (subject: Subject) => {
+    navigate("/grades", {
+      state: {
+        prefilledClass: subject.class_name,
+        prefilledSubject: subject.id,
+        prefilledSchoolYear: subject.school_year,
+        prefilledSemester: subject.semester,
+      },
+    });
+  };
     try {
       const { error } = await supabase
         .from("teacher_invoices")
@@ -449,26 +471,44 @@ const Profile = () => {
                   Aucune matière enregistrée. Créez vos matières depuis l'onglet Notes.
                 </p>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Matière</TableHead>
-                      <TableHead>Classe</TableHead>
-                      <TableHead>Année</TableHead>
-                      <TableHead>Semestre</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {subjects.map((subject) => (
-                      <TableRow key={subject.id}>
-                        <TableCell className="font-medium">{subject.subject_name}</TableCell>
-                        <TableCell>{subject.class_name}</TableCell>
-                        <TableCell>{subject.school_year}</TableCell>
-                        <TableCell>{subject.semester}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="space-y-2">
+                  {subjects.map((subject) => (
+                    <div
+                      key={subject.id}
+                      onClick={() => navigateToGrades(subject)}
+                      className="p-4 border border-border rounded-lg hover:bg-accent/50 hover:border-primary/50 cursor-pointer transition-all group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                            {subject.subject_name}
+                          </h3>
+                          <div className="flex gap-4 text-sm text-muted-foreground">
+                            <span>📚 {subject.class_name}</span>
+                            <span>📅 {subject.school_year}</span>
+                            <span>📆 {subject.semester}</span>
+                          </div>
+                        </div>
+                        <div className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M5 12h14" />
+                            <path d="m12 5 7 7-7 7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>
