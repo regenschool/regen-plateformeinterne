@@ -4,10 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Sparkles, Check, X, ArrowLeft } from "lucide-react";
+import { Sparkles, Check, X, ArrowLeft, Share2, Copy, Link as LinkIcon, Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type Student = {
   id: string;
@@ -15,6 +19,15 @@ type Student = {
   last_name: string;
   photo_url: string | null;
   class_name: string;
+};
+
+type PublicLink = {
+  id: string;
+  class_name: string;
+  created_at: string;
+  expires_at: string | null;
+  is_active: boolean;
+  access_count: number;
 };
 
 const Quiz = () => {
@@ -31,6 +44,9 @@ const Quiz = () => {
   const [showFeedback, setShowFeedback] = useState(false);
   const [options, setOptions] = useState<Student[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [showLinksDialog, setShowLinksDialog] = useState(false);
+  const [publicLinks, setPublicLinks] = useState<PublicLink[]>([]);
+  const [expirationDays, setExpirationDays] = useState<string>("7");
 
   useEffect(() => {
     fetchClasses();
@@ -158,6 +174,101 @@ const Quiz = () => {
     }
   };
 
+  const fetchPublicLinks = async () => {
+    if (!userId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("public_quiz_links")
+        .select("*")
+        .eq("created_by", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setPublicLinks(data || []);
+    } catch (error) {
+      console.error("Error fetching links:", error);
+      toast.error("Erreur lors du chargement des liens");
+    }
+  };
+
+  const createPublicLink = async () => {
+    if (!selectedClass || !userId) return;
+
+    try {
+      const expiresAt = expirationDays 
+        ? new Date(Date.now() + parseInt(expirationDays) * 24 * 60 * 60 * 1000).toISOString()
+        : null;
+
+      const { data, error } = await supabase
+        .from("public_quiz_links")
+        .insert({
+          created_by: userId,
+          class_name: selectedClass,
+          expires_at: expiresAt,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success("Lien public créé avec succès !");
+      fetchPublicLinks();
+      
+      // Copy link to clipboard
+      const link = `${window.location.origin}/quiz/${data.id}`;
+      await navigator.clipboard.writeText(link);
+      toast.success("Lien copié dans le presse-papiers !");
+    } catch (error) {
+      console.error("Error creating link:", error);
+      toast.error("Erreur lors de la création du lien");
+    }
+  };
+
+  const copyLink = async (linkId: string) => {
+    const link = `${window.location.origin}/quiz/${linkId}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      toast.success("Lien copié dans le presse-papiers !");
+    } catch (error) {
+      toast.error("Erreur lors de la copie du lien");
+    }
+  };
+
+  const toggleLinkStatus = async (linkId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("public_quiz_links")
+        .update({ is_active: !currentStatus })
+        .eq("id", linkId);
+
+      if (error) throw error;
+
+      toast.success(currentStatus ? "Lien désactivé" : "Lien activé");
+      fetchPublicLinks();
+    } catch (error) {
+      console.error("Error toggling link:", error);
+      toast.error("Erreur lors de la modification du lien");
+    }
+  };
+
+  const deleteLink = async (linkId: string) => {
+    try {
+      const { error } = await supabase
+        .from("public_quiz_links")
+        .delete()
+        .eq("id", linkId);
+
+      if (error) throw error;
+
+      toast.success("Lien supprimé");
+      fetchPublicLinks();
+    } catch (error) {
+      console.error("Error deleting link:", error);
+      toast.error("Erreur lors de la suppression du lien");
+    }
+  };
+
   const resetQuiz = () => {
     setQuizStarted(false);
     setQuizCompleted(false);
@@ -263,9 +374,117 @@ const Quiz = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={startQuiz} disabled={!selectedClass} className="w-full" size="lg">
-                {t("quiz.startQuiz")}
-              </Button>
+              <div className="flex gap-3">
+                <Button onClick={startQuiz} disabled={!selectedClass} className="flex-1" size="lg">
+                  {t("quiz.startQuiz")}
+                </Button>
+                <Dialog open={showLinksDialog} onOpenChange={(open) => {
+                  setShowLinksDialog(open);
+                  if (open) fetchPublicLinks();
+                }}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="lg" disabled={!selectedClass}>
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Liens publics
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Gérer les liens publics - {selectedClass}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-6">
+                      <div className="space-y-4 border-b pb-4">
+                        <h3 className="font-semibold">Créer un nouveau lien</h3>
+                        <div className="flex gap-3 items-end">
+                          <div className="flex-1">
+                            <Label htmlFor="expiration">Expiration (jours)</Label>
+                            <Input
+                              id="expiration"
+                              type="number"
+                              min="1"
+                              value={expirationDays}
+                              onChange={(e) => setExpirationDays(e.target.value)}
+                              placeholder="7"
+                            />
+                          </div>
+                          <Button onClick={createPublicLink}>
+                            <LinkIcon className="w-4 h-4 mr-2" />
+                            Créer le lien
+                          </Button>
+                        </div>
+                      </div>
+
+                      {publicLinks.length > 0 ? (
+                        <div className="space-y-3">
+                          <h3 className="font-semibold">Liens existants</h3>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Classe</TableHead>
+                                <TableHead>Accès</TableHead>
+                                <TableHead>Expire le</TableHead>
+                                <TableHead>Statut</TableHead>
+                                <TableHead>Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {publicLinks.map((link) => (
+                                <TableRow key={link.id}>
+                                  <TableCell className="font-medium">{link.class_name}</TableCell>
+                                  <TableCell>{link.access_count}</TableCell>
+                                  <TableCell>
+                                    {link.expires_at 
+                                      ? new Date(link.expires_at).toLocaleDateString()
+                                      : "Jamais"}
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className={`px-2 py-1 rounded-full text-xs ${
+                                      link.is_active 
+                                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" 
+                                        : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+                                    }`}>
+                                      {link.is_active ? "Actif" : "Inactif"}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => copyLink(link.id)}
+                                      >
+                                        <Copy className="w-4 h-4" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => toggleLinkStatus(link.id, link.is_active)}
+                                      >
+                                        {link.is_active ? "Désactiver" : "Activer"}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => deleteLink(link.id)}
+                                      >
+                                        <Trash2 className="w-4 h-4 text-destructive" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground text-center py-8">
+                          Aucun lien public créé pour cette classe
+                        </p>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
           </CardContent>
         </Card>

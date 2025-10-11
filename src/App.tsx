@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Directory from "./pages/Directory";
 import Quiz from "./pages/Quiz";
+import PublicQuiz from "./pages/PublicQuiz";
 import Grades from "./pages/Grades";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
@@ -77,6 +78,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/quiz/:linkId" element={<PublicQuiz />} />
             <Route
               path="/grades"
               element={

@@ -82,6 +82,36 @@ export type Database = {
           },
         ]
       }
+      public_quiz_links: {
+        Row: {
+          access_count: number
+          class_name: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+        }
+        Insert: {
+          access_count?: number
+          class_name: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+        }
+        Update: {
+          access_count?: number
+          class_name?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+        }
+        Relationships: []
+      }
       quiz_scores: {
         Row: {
           class_name: string
