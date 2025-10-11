@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Sparkles, Check, X, ArrowLeft } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 
 type Student = {
   id: string;
@@ -35,6 +36,17 @@ const Quiz = () => {
     fetchClasses();
     getCurrentUser();
   }, []);
+  
+  // Real-time subscription for students changes
+  useRealtimeSubscription({
+    table: "students",
+    onChange: useCallback(() => {
+      if (selectedClass && quizStarted) {
+        // Refetch students if quiz is active
+        fetchClasses();
+      }
+    }, [selectedClass, quizStarted]),
+  });
 
   const getCurrentUser = async () => {
     const { data } = await supabase.auth.getUser();
