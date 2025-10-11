@@ -219,6 +219,7 @@ export default function Grades() {
       return {
         classAverage: null,
         totalAssessments: 0,
+        missingGradesCount: 0,
         studentsWithMissingGrades: [],
       };
     }
@@ -256,15 +257,23 @@ export default function Grades() {
       ? (totalAverage / studentsWithGrades).toFixed(2)
       : null;
 
-    // Find students with missing grades for any assessment
-    const studentsWithMissingGrades = students.filter(student => {
+    // Calculate total missing grades and find students with missing grades
+    let missingGradesCount = 0;
+    const studentsWithMissingGrades: string[] = [];
+    
+    students.forEach(student => {
       const studentGrades = getStudentGrades(student.id);
-      return studentGrades.length < totalAssessments;
-    }).map(s => `${s.first_name} ${s.last_name}`);
+      const missingCount = totalAssessments - studentGrades.length;
+      if (missingCount > 0) {
+        missingGradesCount += missingCount;
+        studentsWithMissingGrades.push(`${student.first_name} ${student.last_name}`);
+      }
+    });
 
     return {
       classAverage,
       totalAssessments,
+      missingGradesCount,
       studentsWithMissingGrades,
     };
   };
@@ -439,7 +448,7 @@ export default function Grades() {
                       <div>
                         <p className="text-sm text-muted-foreground">Notes manquantes</p>
                         <p className="text-2xl font-bold text-foreground">
-                          {stats.studentsWithMissingGrades.length}
+                          {stats.missingGradesCount}
                         </p>
                       </div>
                     </div>
