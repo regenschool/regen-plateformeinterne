@@ -98,11 +98,12 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
     }
 
     try {
-      const { error } = await supabase.from("user_notes").upsert({
-        user_id: userId,
-        student_id: student.id,
-        note: note,
-      });
+      const { error } = await supabase
+        .from("user_notes")
+        .upsert(
+          { user_id: userId, student_id: student.id, note: note.trim() },
+          { onConflict: "user_id,student_id" }
+        );
 
       if (error) throw error;
 
