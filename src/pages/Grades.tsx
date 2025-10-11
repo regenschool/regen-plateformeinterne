@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GradeEntryDialog } from "@/components/GradeEntryDialog";
+import { EditGradeDialog } from "@/components/EditGradeDialog";
 import { BulkGradeImport } from "@/components/BulkGradeImport";
 import { NewSubjectDialog } from "@/components/NewSubjectDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -398,7 +399,10 @@ export default function Grades() {
                                       ? grade.assessment_custom_label 
                                       : grade.assessment_type.replace(/_/g, ' ')}
                                   </span>
-                                  <span className="text-sm font-bold">{grade.grade}/{grade.max_grade}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold">{grade.grade}/{grade.max_grade}</span>
+                                    <EditGradeDialog grade={grade} onGradeUpdated={handleGradeUpdated} />
+                                  </div>
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   Coef: {grade.weighting}
