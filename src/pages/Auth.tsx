@@ -10,7 +10,6 @@ import { Leaf } from "lucide-react";
 
 const Auth = () => {
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -20,26 +19,13 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        toast.success("Logged in successfully!");
-        navigate("/");
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-          },
-        });
-        if (error) throw error;
-        toast.success("Account created! You can now log in.");
-        setIsLogin(true);
-      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      toast.success("Connecté avec succès !");
+      navigate("/");
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -57,23 +43,28 @@ const Auth = () => {
             </div>
           </div>
           <CardTitle className="text-3xl font-bold">Regen School</CardTitle>
-          <CardDescription>Student Directory & Learning Platform</CardDescription>
+          <CardDescription>Plateforme enseignants - Connexion</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="mb-6 p-4 bg-muted rounded-lg border border-border">
+            <p className="text-sm text-muted-foreground text-center">
+              Utilisez votre adresse email <span className="font-semibold text-foreground">Regen School</span> pour vous connecter
+            </p>
+          </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Adresse email Regen School</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="your@email.com"
+                placeholder="prenom.nom@regen-school.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Mot de passe</Label>
               <Input
                 id="password"
                 type="password"
@@ -85,17 +76,9 @@ const Auth = () => {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Processing..." : isLogin ? "Log In" : "Sign Up"}
+              {loading ? "Connexion..." : "Se connecter"}
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-primary hover:underline"
-            >
-              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Log in"}
-            </button>
-          </div>
         </CardContent>
       </Card>
     </div>
