@@ -49,9 +49,8 @@ const Directory = () => {
     try {
       const { data, error } = await supabase
         .from("students")
-        .select("*")
-        .order("class_name", { ascending: true })
-        .order("last_name", { ascending: true });
+        .select("*");
+
 
       if (error) throw error;
 
