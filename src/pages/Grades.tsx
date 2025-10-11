@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -202,11 +201,10 @@ export default function Grades() {
   };
 
   return (
-    <Layout>
-      <div className="container mx-auto py-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-foreground">{t("grades.title")}</h1>
-        </div>
+    <div className="container mx-auto py-8 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-foreground">{t("grades.title")}</h1>
+      </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
@@ -397,6 +395,5 @@ export default function Grades() {
           defaultSemester={selectedSemester}
         />
       </div>
-    </Layout>
   );
 }
