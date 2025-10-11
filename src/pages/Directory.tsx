@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StudentCard } from "@/components/StudentCard";
 import { AddStudentDialog } from "@/components/AddStudentDialog";
 import { ImportStudentsDialog } from "@/components/ImportStudentsDialog";
-import { Plus, Upload, Sprout, Download, ArrowUpDown } from "lucide-react";
+import { Sprout, Download, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -43,6 +43,7 @@ const Directory = () => {
 
   useEffect(() => {
     filterStudents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [students, selectedClass, searchTerm, showActiveSearchOnly, sortBy]);
 
   const fetchStudents = async () => {

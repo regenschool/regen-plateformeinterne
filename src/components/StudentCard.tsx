@@ -67,6 +67,7 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
     if (userId) {
       fetchNote();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, student.id]);
 
   const getCurrentUser = async () => {
