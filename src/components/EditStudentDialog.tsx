@@ -16,6 +16,7 @@ type Student = {
   academic_background: string | null;
   company: string | null;
   class_name: string;
+  special_needs: string | null;
 };
 
 type EditStudentDialogProps = {
@@ -34,6 +35,7 @@ export const EditStudentDialog = ({ student, onStudentUpdated }: EditStudentDial
     academic_background: "",
     company: "",
     class_name: "",
+    special_needs: "",
   });
 
   useEffect(() => {
@@ -46,6 +48,7 @@ export const EditStudentDialog = ({ student, onStudentUpdated }: EditStudentDial
         academic_background: student.academic_background || "",
         company: student.company || "",
         class_name: student.class_name,
+        special_needs: student.special_needs || "",
       });
     }
   }, [open, student]);
@@ -65,6 +68,7 @@ export const EditStudentDialog = ({ student, onStudentUpdated }: EditStudentDial
           academic_background: formData.academic_background || null,
           company: formData.company || null,
           class_name: formData.class_name,
+          special_needs: formData.special_needs || null,
         })
         .eq("id", student.id);
 
@@ -163,6 +167,16 @@ export const EditStudentDialog = ({ student, onStudentUpdated }: EditStudentDial
               value={formData.company}
               onChange={(e) => setFormData({ ...formData, company: e.target.value })}
               placeholder="ex: Google, Microsoft"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="special_needs">Situation médicale / Tiers temps</Label>
+            <Input
+              id="special_needs"
+              value={formData.special_needs}
+              onChange={(e) => setFormData({ ...formData, special_needs: e.target.value })}
+              placeholder="ex: Dyslexie, Tiers temps..."
             />
           </div>
 

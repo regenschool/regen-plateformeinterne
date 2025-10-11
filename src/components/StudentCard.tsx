@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Briefcase, GraduationCap, Edit3, Save, X, Trash2 } from "lucide-react";
+import { Briefcase, GraduationCap, Edit3, Save, X, Trash2, AlertCircle } from "lucide-react";
 import { EditStudentDialog } from "./EditStudentDialog";
 import {
   AlertDialog,
@@ -27,6 +27,7 @@ type Student = {
   academic_background: string | null;
   company: string | null;
   class_name: string;
+  special_needs: string | null;
 };
 
 type StudentCardProps = {
@@ -180,6 +181,13 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
           <div className="flex items-start gap-1.5 text-xs">
             <Briefcase className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
             <span className="text-muted-foreground line-clamp-1">{student.company}</span>
+          </div>
+        )}
+
+        {student.special_needs && (
+          <div className="flex items-start gap-1.5 text-xs">
+            <AlertCircle className="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
+            <span className="text-muted-foreground line-clamp-1">{student.special_needs}</span>
           </div>
         )}
 

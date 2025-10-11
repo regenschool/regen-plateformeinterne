@@ -22,6 +22,7 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
     academic_background: "",
     company: "",
     class_name: "",
+    special_needs: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,6 +38,7 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
         academic_background: formData.academic_background || null,
         company: formData.company || null,
         class_name: formData.class_name,
+        special_needs: formData.special_needs || null,
       });
 
       if (error) throw error;
@@ -51,6 +53,7 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
         academic_background: "",
         company: "",
         class_name: "",
+        special_needs: "",
       });
       onStudentAdded();
     } catch (error: any) {
@@ -144,6 +147,16 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
               value={formData.company}
               onChange={(e) => setFormData({ ...formData, company: e.target.value })}
               placeholder="e.g., Google, Microsoft"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="special_needs">Situation médicale / Tiers temps</Label>
+            <Input
+              id="special_needs"
+              value={formData.special_needs}
+              onChange={(e) => setFormData({ ...formData, special_needs: e.target.value })}
+              placeholder="ex: Dyslexie, Tiers temps..."
             />
           </div>
 

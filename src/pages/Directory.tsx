@@ -20,6 +20,7 @@ type Student = {
   academic_background: string | null;
   company: string | null;
   class_name: string;
+  special_needs: string | null;
 };
 
 const Directory = () => {
