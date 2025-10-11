@@ -82,7 +82,7 @@ export const Layout = ({ children }: LayoutProps) => {
                   className="gap-2"
                 >
                   <ClipboardList className="w-4 h-4" />
-                  <span className="hidden sm:inline">Notes</span>
+                  <span className="hidden sm:inline">{t("nav.grades")}</span>
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

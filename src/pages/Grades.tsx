@@ -167,15 +167,15 @@ export default function Grades() {
     <Layout>
       <div className="container mx-auto py-8 space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold text-foreground">Gestion des notes</h1>
+          <h1 className="text-3xl font-bold text-foreground">{t("grades.title")}</h1>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium mb-2 block">Classe</label>
+            <label className="text-sm font-medium mb-2 block">{t("grades.class")}</label>
             <Select value={selectedClass} onValueChange={setSelectedClass}>
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionner une classe" />
+                <SelectValue placeholder={t("grades.selectClass")} />
               </SelectTrigger>
               <SelectContent>
                 {classes.map((className) => (
@@ -188,7 +188,7 @@ export default function Grades() {
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Matière</label>
+            <label className="text-sm font-medium mb-2 block">{t("grades.subject")}</label>
             <Select 
               value={selectedSubject} 
               onValueChange={(value) => {
@@ -201,7 +201,7 @@ export default function Grades() {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionner une matière" />
+                <SelectValue placeholder={t("grades.selectSubject")} />
               </SelectTrigger>
               <SelectContent>
                 {subjects.map((subject) => (
@@ -209,7 +209,7 @@ export default function Grades() {
                     {subject}
                   </SelectItem>
                 ))}
-                <SelectItem value="__new__">+ Nouvelle matière</SelectItem>
+                <SelectItem value="__new__">{t("grades.newSubject")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -220,7 +220,7 @@ export default function Grades() {
             <div className="flex gap-2">
               <Button onClick={() => setShowBulkImport(true)} variant="outline">
                 <Upload className="w-4 h-4 mr-2" />
-                Import en masse
+                {t("grades.bulkImport")}
               </Button>
             </div>
 
@@ -258,7 +258,7 @@ export default function Grades() {
                         <div className="space-y-3">
                           <div className="bg-primary/5 p-2 rounded-lg">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium">Moyenne générale:</span>
+                              <span className="text-sm font-medium">{t("grades.generalAverage")}:</span>
                               <span className="font-bold text-lg text-primary">{average}/20</span>
                             </div>
                           </div>
@@ -287,7 +287,7 @@ export default function Grades() {
                           </div>
                         </div>
                       ) : (
-                        <p className="text-sm text-muted-foreground">Aucune note saisie</p>
+                        <p className="text-sm text-muted-foreground">{t("grades.noGradeEntered")}</p>
                       )}
 
                       <GradeEntryDialog
