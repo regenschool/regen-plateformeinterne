@@ -9,6 +9,7 @@ import { BulkGradeImport } from "@/components/BulkGradeImport";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { ClipboardList, Upload } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 type Student = {
   id: string;
@@ -40,6 +41,7 @@ export default function Grades() {
   const [classes, setClasses] = useState<string[]>([]);
   const [subjects, setSubjects] = useState<string[]>([]);
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [newSubject, setNewSubject] = useState("");
 
   useEffect(() => {
     fetchClasses();
@@ -156,19 +158,50 @@ export default function Grades() {
 
           <div>
             <label className="text-sm font-medium mb-2 block">Matière</label>
-            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner une matière" />
-              </SelectTrigger>
-              <SelectContent>
-                {subjects.map((subject) => (
-                  <SelectItem key={subject} value={subject}>
-                    {subject}
-                  </SelectItem>
-                ))}
-                <SelectItem value="__new__">+ Nouvelle matière</SelectItem>
-              </SelectContent>
-            </Select>
+            {selectedSubject === "__new__" ? (
+              <div className="flex gap-2">
+                <Input
+                  value={newSubject}
+                  onChange={(e) => setNewSubject(e.target.value)}
+                  placeholder="Nom de la nouvelle matière"
+                />
+                <Button 
+                  onClick={() => {
+                    if (newSubject.trim()) {
+                      setSelectedSubject(newSubject.trim());
+                      setNewSubject("");
+                    } else {
+                      toast.error("Veuillez saisir un nom de matière");
+                    }
+                  }}
+                >
+                  Valider
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedSubject("");
+                    setNewSubject("");
+                  }}
+                >
+                  Annuler
+                </Button>
+              </div>
+            ) : (
+              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner une matière" />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((subject) => (
+                    <SelectItem key={subject} value={subject}>
+                      {subject}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__new__">+ Nouvelle matière</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
 
@@ -242,15 +275,6 @@ export default function Grades() {
           </>
         )}
 
-        {selectedSubject === "__new__" && (
-          <Card>
-            <CardContent className="p-6">
-              <p className="text-muted-foreground text-center">
-                Pour créer une nouvelle matière, saisissez la première note d'un étudiant
-              </p>
-            </CardContent>
-          </Card>
-        )}
 
         {showBulkImport && selectedClass && selectedSubject && (
           <BulkGradeImport
