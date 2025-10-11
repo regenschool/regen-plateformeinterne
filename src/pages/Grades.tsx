@@ -70,8 +70,14 @@ export default function Grades() {
 
   useEffect(() => {
     fetchClasses();
-    fetchSubjects();
   }, []);
+
+  useEffect(() => {
+    if (selectedClass && selectedSchoolYear && selectedSemester) {
+      fetchSubjects();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedClass, selectedSchoolYear, selectedSemester]);
 
   useEffect(() => {
     if (selectedClass) {
@@ -81,11 +87,11 @@ export default function Grades() {
   }, [selectedClass]);
 
   useEffect(() => {
-    if (selectedClass && selectedSubject) {
+    if (selectedClass && selectedSubject && selectedSchoolYear && selectedSemester) {
       fetchGrades();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClass, selectedSubject]);
+  }, [selectedClass, selectedSubject, selectedSchoolYear, selectedSemester]);
 
   const fetchClasses = async () => {
     const { data } = await supabase
@@ -105,12 +111,24 @@ export default function Grades() {
 
     const { data } = await supabase
       .from("grades")
-      .select("subject")
-      .eq("teacher_id", user.id);
+      .select("subject, teacher_name, school_year, semester")
+      .eq("teacher_id", user.id)
+      .eq("class_name", selectedClass)
+      .eq("school_year", selectedSchoolYear)
+      .eq("semester", selectedSemester);
     
     if (data) {
       const uniqueSubjects = Array.from(new Set(data.map(g => g.subject)));
       setSubjects(uniqueSubjects);
+      
+      // Récupérer les métadonnées de la première matière si elle existe
+      if (data.length > 0 && data[0].teacher_name) {
+        setNewSubjectMetadata({
+          teacherName: data[0].teacher_name,
+          schoolYear: data[0].school_year || selectedSchoolYear,
+          semester: data[0].semester || selectedSemester,
+        });
+      }
     }
   };
 
@@ -138,7 +156,9 @@ export default function Grades() {
       .select("*")
       .eq("teacher_id", user.id)
       .eq("class_name", selectedClass)
-      .eq("subject", selectedSubject);
+      .eq("subject", selectedSubject)
+      .eq("school_year", selectedSchoolYear)
+      .eq("semester", selectedSemester);
 
     if (error) {
       toast.error("Erreur lors du chargement des notes");
@@ -187,22 +207,6 @@ export default function Grades() {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="text-sm font-medium mb-2 block">{t("grades.class")}</label>
-            <Select value={selectedClass} onValueChange={setSelectedClass}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("grades.selectClass")} />
-              </SelectTrigger>
-              <SelectContent>
-                {classes.map((className) => (
-                  <SelectItem key={className} value={className}>
-                    {className}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
             <label className="text-sm font-medium mb-2 block">{t("grades.schoolYear")}</label>
             <Select value={selectedSchoolYear} onValueChange={setSelectedSchoolYear}>
               <SelectTrigger>
@@ -235,6 +239,22 @@ export default function Grades() {
           </div>
 
           <div>
+            <label className="text-sm font-medium mb-2 block">{t("grades.class")}</label>
+            <Select value={selectedClass} onValueChange={setSelectedClass}>
+              <SelectTrigger>
+                <SelectValue placeholder={t("grades.selectClass")} />
+              </SelectTrigger>
+              <SelectContent>
+                {classes.map((className) => (
+                  <SelectItem key={className} value={className}>
+                    {className}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
             <label className="text-sm font-medium mb-2 block">{t("grades.subject")}</label>
             <Select 
               value={selectedSubject} 
@@ -246,6 +266,7 @@ export default function Grades() {
                   setNewSubjectMetadata(null);
                 }
               }}
+              disabled={!selectedClass || !selectedSchoolYear || !selectedSemester}
             >
               <SelectTrigger>
                 <SelectValue placeholder={t("grades.selectSubject")} />
@@ -262,7 +283,7 @@ export default function Grades() {
           </div>
         </div>
 
-        {selectedClass && selectedSubject && selectedSubject !== "__new__" && (
+        {selectedClass && selectedSubject && selectedSubject !== "__new__" && selectedSchoolYear && selectedSemester && (
           <>
             <div className="flex gap-2">
               <Button onClick={() => setShowBulkImport(true)} variant="outline">
