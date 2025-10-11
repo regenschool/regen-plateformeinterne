@@ -89,9 +89,9 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
   };
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
       <CardHeader className="p-0">
-        <div className="relative w-full h-56 bg-gradient-to-br from-primary/10 to-accent/10">
+        <div className="relative w-full h-40 bg-gradient-to-br from-primary/10 to-accent/10">
           {student.photo_url ? (
             <img
               src={student.photo_url}
@@ -100,45 +100,45 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <div className="text-6xl font-bold text-primary/30">
+              <div className="text-4xl font-bold text-primary/30">
                 {student.first_name[0]}
                 {student.last_name[0]}
               </div>
             </div>
           )}
-          <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
+          <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground px-2 py-0.5 rounded-full text-xs font-medium">
             {student.class_name}
           </div>
-          <div className="absolute top-2 left-2">
+          <div className="absolute top-1.5 left-1.5">
             <EditStudentDialog student={student} onStudentUpdated={onUpdate} />
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-3 space-y-2">
         <div>
-          <h3 className="text-xl font-bold text-foreground">
+          <h3 className="text-lg font-bold text-foreground leading-tight">
             {student.first_name} {student.last_name}
           </h3>
-          {student.age && <p className="text-sm text-muted-foreground">{student.age} years old</p>}
+          {student.age && <p className="text-xs text-muted-foreground">{student.age} ans</p>}
         </div>
 
         {student.academic_background && (
-          <div className="flex items-start gap-2 text-sm">
-            <GraduationCap className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-            <span className="text-muted-foreground">{student.academic_background}</span>
+          <div className="flex items-start gap-1.5 text-xs">
+            <GraduationCap className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+            <span className="text-muted-foreground line-clamp-1">{student.academic_background}</span>
           </div>
         )}
 
         {student.company && (
-          <div className="flex items-start gap-2 text-sm">
-            <Briefcase className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-            <span className="text-muted-foreground">{student.company}</span>
+          <div className="flex items-start gap-1.5 text-xs">
+            <Briefcase className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+            <span className="text-muted-foreground line-clamp-1">{student.company}</span>
           </div>
         )}
 
-        <div className="pt-3 border-t border-border space-y-2">
+        <div className="pt-2 border-t border-border space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-foreground">Private Notes</label>
+            <label className="text-xs font-medium text-foreground">Notes privées</label>
             {!isEditingNote && (
               <Button
                 size="sm"
@@ -152,26 +152,26 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
           </div>
 
           {isEditingNote ? (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Add your private notes..."
-                className="min-h-[80px] text-sm"
+                placeholder="Ajoutez vos notes privées..."
+                className="min-h-[60px] text-xs"
               />
-              <div className="flex gap-2">
-                <Button size="sm" onClick={saveNote} className="flex-1">
+              <div className="flex gap-1.5">
+                <Button size="sm" onClick={saveNote} className="flex-1 h-7 text-xs">
                   <Save className="w-3 h-3 mr-1" />
-                  Save
+                  Sauver
                 </Button>
-                <Button size="sm" variant="outline" onClick={cancelEdit}>
+                <Button size="sm" variant="outline" onClick={cancelEdit} className="h-7">
                   <X className="w-3 h-3" />
                 </Button>
               </div>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground min-h-[60px]">
-              {savedNote || "No notes yet. Click edit to add."}
+            <p className="text-xs text-muted-foreground min-h-[50px] line-clamp-3">
+              {savedNote || "Pas de notes. Cliquez pour ajouter."}
             </p>
           )}
         </div>
