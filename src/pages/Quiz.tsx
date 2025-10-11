@@ -97,7 +97,7 @@ const Quiz = () => {
       } else {
         finishQuiz(correct);
       }
-    }, 1500);
+    }, 800);
   };
 
   const finishQuiz = async (lastCorrect: boolean) => {
