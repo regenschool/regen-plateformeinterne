@@ -9,9 +9,20 @@ import { BulkGradeImport } from "@/components/BulkGradeImport";
 import { NewSubjectDialog } from "@/components/NewSubjectDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
-import { ClipboardList, Upload, TrendingUp, FileText, AlertTriangle } from "lucide-react";
+import { ClipboardList, Upload, TrendingUp, FileText, AlertTriangle, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type Student = {
   id: string;
@@ -316,6 +327,50 @@ export default function Grades() {
     fetchSubjects();
   };
 
+  const handleDeleteSubject = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Delete all grades for this subject
+      const { error: gradesError } = await supabase
+        .from("grades")
+        .delete()
+        .eq("teacher_id", user.id)
+        .eq("class_name", selectedClass)
+        .eq("subject", selectedSubject)
+        .eq("school_year", selectedSchoolYear)
+        .eq("semester", selectedSemester);
+
+      if (gradesError) throw gradesError;
+
+      // Delete the subject
+      const { error: subjectError } = await supabase
+        .from("subjects")
+        .delete()
+        .eq("teacher_id", user.id)
+        .eq("class_name", selectedClass)
+        .eq("subject_name", selectedSubject)
+        .eq("school_year", selectedSchoolYear)
+        .eq("semester", selectedSemester);
+
+      if (subjectError) throw subjectError;
+
+      toast.success("Matière supprimée avec succès");
+      
+      // Reset selection
+      setSelectedSubject("");
+      setNewSubjectMetadata(null);
+      setGrades([]);
+      
+      // Refresh subjects list
+      fetchSubjects();
+    } catch (error) {
+      console.error("Error deleting subject:", error);
+      toast.error("Erreur lors de la suppression de la matière");
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-center justify-between">
@@ -407,20 +462,46 @@ export default function Grades() {
             {newSubjectMetadata && (
               <Card className="bg-primary/5 border-primary/20">
                 <CardContent className="p-4">
-                  <h3 className="font-medium mb-2">{t("grades.subjectInfo")}</h3>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">{t("grades.teacher")}:</span>
-                      <p className="font-medium">{newSubjectMetadata.teacherName}</p>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-medium mb-2">{t("grades.subjectInfo")}</h3>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">{t("grades.teacher")}:</span>
+                          <p className="font-medium">{newSubjectMetadata.teacherName}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">{t("grades.schoolYear")}:</span>
+                          <p className="font-medium">{newSubjectMetadata.schoolYear}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">{t("grades.semester")}:</span>
+                          <p className="font-medium">{newSubjectMetadata.semester}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-muted-foreground">{t("grades.schoolYear")}:</span>
-                      <p className="font-medium">{newSubjectMetadata.schoolYear}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">{t("grades.semester")}:</span>
-                      <p className="font-medium">{newSubjectMetadata.semester}</p>
-                    </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Supprimer la matière</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Êtes-vous sûr de vouloir supprimer la matière "{selectedSubject}" ? 
+                            Toutes les notes associées seront également supprimées. Cette action est irréversible.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annuler</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDeleteSubject} className="bg-destructive hover:bg-destructive/90">
+                            Supprimer
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </CardContent>
               </Card>
