@@ -9,8 +9,9 @@ import { BulkGradeImport } from "@/components/BulkGradeImport";
 import { NewSubjectDialog } from "@/components/NewSubjectDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
-import { ClipboardList, Upload } from "lucide-react";
+import { ClipboardList, Upload, TrendingUp, FileText, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type Student = {
   id: string;
@@ -212,6 +213,64 @@ export default function Grades() {
     return totalWeighting > 0 ? (totalWeightedScore / totalWeighting).toFixed(2) : null;
   };
 
+  // Calculate class statistics
+  const getClassStatistics = () => {
+    if (students.length === 0 || grades.length === 0) {
+      return {
+        classAverage: null,
+        totalAssessments: 0,
+        studentsWithMissingGrades: [],
+      };
+    }
+
+    // Get unique assessments (combinations of assessment_type and custom_label)
+    const assessments = new Map();
+    grades.forEach(grade => {
+      const key = grade.assessment_type === "autre" 
+        ? `${grade.assessment_type}_${grade.assessment_custom_label}`
+        : grade.assessment_type;
+      if (!assessments.has(key)) {
+        assessments.set(key, {
+          type: grade.assessment_type,
+          label: grade.assessment_custom_label,
+        });
+      }
+    });
+
+    const totalAssessments = assessments.size;
+
+    // Calculate class average
+    let totalAverage = 0;
+    let studentsWithGrades = 0;
+    
+    students.forEach(student => {
+      const studentGrades = getStudentGrades(student.id);
+      const average = calculateWeightedAverage(studentGrades);
+      if (average) {
+        totalAverage += parseFloat(average);
+        studentsWithGrades++;
+      }
+    });
+
+    const classAverage = studentsWithGrades > 0 
+      ? (totalAverage / studentsWithGrades).toFixed(2)
+      : null;
+
+    // Find students with missing grades for any assessment
+    const studentsWithMissingGrades = students.filter(student => {
+      const studentGrades = getStudentGrades(student.id);
+      return studentGrades.length < totalAssessments && studentGrades.length > 0;
+    }).map(s => `${s.first_name} ${s.last_name}`);
+
+    return {
+      classAverage,
+      totalAssessments,
+      studentsWithMissingGrades,
+    };
+  };
+
+  const stats = getClassStatistics();
+
   const handleSubjectCreated = (subject: string, teacherName: string, schoolYear: string, semester: string) => {
     setSelectedSubject(subject);
     setNewSubjectMetadata({ teacherName, schoolYear, semester });
@@ -334,6 +393,70 @@ export default function Grades() {
                   </div>
                 </CardContent>
               </Card>
+            )}
+
+            {/* Class Statistics Dashboard */}
+            {grades.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <TrendingUp className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Moyenne de classe</p>
+                        <p className="text-2xl font-bold text-foreground">
+                          {stats.classAverage ? `${stats.classAverage}/20` : "—"}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <FileText className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Nombre d'épreuves</p>
+                        <p className="text-2xl font-bold text-foreground">
+                          {stats.totalAssessments}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-amber-500/10 rounded-lg">
+                        <AlertTriangle className="w-5 h-5 text-amber-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Notes manquantes</p>
+                        <p className="text-2xl font-bold text-foreground">
+                          {stats.studentsWithMissingGrades.length}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Alert for missing grades */}
+            {stats.studentsWithMissingGrades.length > 0 && (
+              <Alert className="border-amber-500/50 bg-amber-500/10">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                <AlertDescription>
+                  <span className="font-medium">Notes manquantes pour :</span>{" "}
+                  {stats.studentsWithMissingGrades.join(", ")}
+                </AlertDescription>
+              </Alert>
             )}
 
             <div className="flex gap-2">
