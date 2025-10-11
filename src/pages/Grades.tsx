@@ -291,12 +291,20 @@ export default function Grades() {
       };
     }
 
-    // Get unique assessments by assessment_name
+    // Get unique assessments using the same logic as calculateAssessments
     const assessments = new Map();
     grades.forEach(grade => {
-      if (grade.assessment_name && !assessments.has(grade.assessment_name)) {
-        assessments.set(grade.assessment_name, {
-          name: grade.assessment_name,
+      const key = grade.assessment_name || 
+                  (grade.assessment_type === "autre" 
+                    ? `${grade.assessment_type}_${grade.assessment_custom_label}`
+                    : grade.assessment_type);
+      
+      if (!assessments.has(key)) {
+        assessments.set(key, {
+          name: grade.assessment_name || 
+                (grade.assessment_type === "autre" 
+                  ? grade.assessment_custom_label || grade.assessment_type
+                  : grade.assessment_type.replace(/_/g, ' ')),
           type: grade.assessment_type,
           label: grade.assessment_custom_label,
         });
