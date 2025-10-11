@@ -73,7 +73,7 @@ const Quiz = () => {
     const incorrect = allStudents
       .filter((s) => s.id !== correctStudent.id)
       .sort(() => Math.random() - 0.5)
-      .slice(0, 3);
+      .slice(0, 1);
 
     const opts = [...incorrect, correctStudent].sort(() => Math.random() - 0.5);
     setOptions(opts);
