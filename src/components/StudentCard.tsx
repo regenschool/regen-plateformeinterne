@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Briefcase, GraduationCap, Edit3, Save, X } from "lucide-react";
+import { EditStudentDialog } from "./EditStudentDialog";
 
 type Student = {
   id: string;
@@ -107,6 +108,9 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
           )}
           <div className="absolute top-2 right-2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-sm font-medium">
             {student.class_name}
+          </div>
+          <div className="absolute top-2 left-2">
+            <EditStudentDialog student={student} onStudentUpdated={onUpdate} />
           </div>
         </div>
       </CardHeader>
