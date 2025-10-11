@@ -4,8 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 type AddStudentDialogProps = {
   onStudentAdded: () => void;
@@ -18,7 +22,7 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
     first_name: "",
     last_name: "",
     photo_url: "",
-    age: "",
+    birth_date: undefined as Date | undefined,
     academic_background: "",
     company: "",
     class_name: "",
@@ -34,7 +38,7 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
         first_name: formData.first_name,
         last_name: formData.last_name,
         photo_url: formData.photo_url || null,
-        age: formData.age ? parseInt(formData.age) : null,
+        birth_date: formData.birth_date ? format(formData.birth_date, "yyyy-MM-dd") : null,
         academic_background: formData.academic_background || null,
         company: formData.company || null,
         class_name: formData.class_name,
@@ -49,7 +53,7 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
         first_name: "",
         last_name: "",
         photo_url: "",
-        age: "",
+        birth_date: undefined,
         academic_background: "",
         company: "",
         class_name: "",
@@ -120,14 +124,31 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="age">Age</Label>
-            <Input
-              id="age"
-              type="number"
-              value={formData.age}
-              onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-              min="1"
-            />
+            <Label htmlFor="birth_date">Date of Birth</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !formData.birth_date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.birth_date ? format(formData.birth_date, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={formData.birth_date}
+                  onSelect={(date) => setFormData({ ...formData, birth_date: date })}
+                  disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-2">

@@ -25,6 +25,7 @@ type Student = {
   last_name: string;
   photo_url: string | null;
   age: number | null;
+  birth_date: string | null;
   academic_background: string | null;
   company: string | null;
   class_name: string;
@@ -42,6 +43,21 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
   const [savedNote, setSavedNote] = useState("");
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+
+  // Calculate age from birth_date
+  const calculateAge = (birthDate: string | null): number | null => {
+    if (!birthDate) return null;
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const displayAge = student.birth_date ? calculateAge(student.birth_date) : student.age;
 
   useEffect(() => {
     getCurrentUser();
@@ -168,7 +184,7 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
           <h3 className="text-lg font-bold text-foreground leading-tight">
             {student.first_name} {student.last_name}
           </h3>
-          {student.age && <p className="text-xs text-muted-foreground">{student.age} {t("studentCard.yearsOld")}</p>}
+          {displayAge && <p className="text-xs text-muted-foreground">{displayAge} {t("studentCard.yearsOld")}</p>}
         </div>
 
         <div className="flex items-start gap-1.5 text-xs">

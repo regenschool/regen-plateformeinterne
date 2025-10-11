@@ -45,6 +45,7 @@ export type Database = {
         Row: {
           academic_background: string | null
           age: number | null
+          birth_date: string | null
           class_name: string
           company: string | null
           created_at: string
@@ -58,6 +59,7 @@ export type Database = {
         Insert: {
           academic_background?: string | null
           age?: number | null
+          birth_date?: string | null
           class_name: string
           company?: string | null
           created_at?: string
@@ -71,6 +73,7 @@ export type Database = {
         Update: {
           academic_background?: string | null
           age?: number | null
+          birth_date?: string | null
           class_name?: string
           company?: string | null
           created_at?: string
@@ -123,7 +126,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_age: {
+        Args: { birth_date: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

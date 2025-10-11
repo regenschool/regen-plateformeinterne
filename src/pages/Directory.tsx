@@ -18,6 +18,7 @@ type Student = {
   last_name: string;
   photo_url: string | null;
   age: number | null;
+  birth_date: string | null;
   academic_background: string | null;
   company: string | null;
   class_name: string;

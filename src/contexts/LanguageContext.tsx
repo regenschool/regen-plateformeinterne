@@ -154,6 +154,8 @@ const translations = {
       deleteConfirmMessage: "Are you sure you want to delete",
       cancel: "Cancel",
       delete: "Delete",
+      birthDate: "Date of Birth",
+      pickDate: "Pick a date",
     },
   },
   fr: {
@@ -259,6 +261,8 @@ const translations = {
       deleteConfirmMessage: "Êtes-vous sûr de vouloir supprimer",
       cancel: "Annuler",
       delete: "Supprimer",
+      birthDate: "Date de naissance",
+      pickDate: "Choisir une date",
     },
   },
 };
