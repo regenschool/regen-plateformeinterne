@@ -46,6 +46,7 @@ export default function Grades() {
   const [classes, setClasses] = useState<string[]>([]);
   const [subjects, setSubjects] = useState<string[]>([]);
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [newSubject, setNewSubject] = useState("");
   const [showNewSubjectDialog, setShowNewSubjectDialog] = useState(false);
   const [newSubjectMetadata, setNewSubjectMetadata] = useState<{
@@ -93,78 +94,102 @@ export default function Grades() {
   }, [selectedClass, selectedSubject, selectedSchoolYear, selectedSemester]);
 
   const fetchClasses = async () => {
-    const { data } = await supabase
-      .from("students")
-      .select("class_name")
-      .order("class_name");
-    
-    if (data) {
-      const uniqueClasses = Array.from(new Set(data.map(s => s.class_name)));
-      setClasses(uniqueClasses);
+    try {
+      const { data, error } = await supabase
+        .from("students")
+        .select("class_name")
+        .order("class_name");
+      
+      if (error) throw error;
+      
+      if (data) {
+        const uniqueClasses = Array.from(new Set(data.map(s => s.class_name)));
+        setClasses(uniqueClasses);
+      }
+    } catch (error) {
+      console.error("Error fetching classes:", error);
+      toast.error(t("grades.loadError") || "Erreur lors du chargement des classes");
     }
   };
 
   const fetchSubjects = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    const { data } = await supabase
-      .from("grades")
-      .select("subject, teacher_name, school_year, semester")
-      .eq("teacher_id", user.id)
-      .eq("class_name", selectedClass)
-      .eq("school_year", selectedSchoolYear)
-      .eq("semester", selectedSemester);
-    
-    if (data) {
-      const uniqueSubjects = Array.from(new Set(data.map(g => g.subject)));
-      setSubjects(uniqueSubjects);
+      const { data, error } = await supabase
+        .from("grades")
+        .select("subject, teacher_name, school_year, semester")
+        .eq("teacher_id", user.id)
+        .eq("class_name", selectedClass)
+        .eq("school_year", selectedSchoolYear)
+        .eq("semester", selectedSemester);
       
-      // Récupérer les métadonnées de la première matière si elle existe
-      if (data.length > 0 && data[0].teacher_name) {
-        setNewSubjectMetadata({
-          teacherName: data[0].teacher_name,
-          schoolYear: data[0].school_year || selectedSchoolYear,
-          semester: data[0].semester || selectedSemester,
-        });
+      if (error) throw error;
+      
+      if (data) {
+        const uniqueSubjects = Array.from(new Set(data.map(g => g.subject)));
+        setSubjects(uniqueSubjects);
+        
+        // Récupérer les métadonnées de la première matière si elle existe
+        if (data.length > 0 && data[0].teacher_name) {
+          setNewSubjectMetadata({
+            teacherName: data[0].teacher_name,
+            schoolYear: data[0].school_year || selectedSchoolYear,
+            semester: data[0].semester || selectedSemester,
+          });
+        }
       }
+    } catch (error) {
+      console.error("Error fetching subjects:", error);
+      toast.error("Erreur lors du chargement des matières");
     }
   };
 
   const fetchStudents = async () => {
-    const { data, error } = await supabase
-      .from("students")
-      .select("id, first_name, last_name, photo_url, class_name")
-      .eq("class_name", selectedClass)
-      .order("last_name");
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from("students")
+        .select("id, first_name, last_name, photo_url, class_name")
+        .eq("class_name", selectedClass)
+        .order("last_name");
 
-    if (error) {
+      if (error) throw error;
+
+      setStudents(data || []);
+    } catch (error) {
+      console.error("Error fetching students:", error);
       toast.error("Erreur lors du chargement des étudiants");
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    setStudents(data || []);
   };
 
   const fetchGrades = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      setIsLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-    const { data, error } = await supabase
-      .from("grades")
-      .select("*")
-      .eq("teacher_id", user.id)
-      .eq("class_name", selectedClass)
-      .eq("subject", selectedSubject)
-      .eq("school_year", selectedSchoolYear)
-      .eq("semester", selectedSemester);
+      const { data, error } = await supabase
+        .from("grades")
+        .select("*")
+        .eq("teacher_id", user.id)
+        .eq("class_name", selectedClass)
+        .eq("subject", selectedSubject)
+        .eq("school_year", selectedSchoolYear)
+        .eq("semester", selectedSemester);
 
-    if (error) {
+      if (error) throw error;
+
+      setGrades(data || []);
+    } catch (error) {
+      console.error("Error fetching grades:", error);
       toast.error("Erreur lors du chargement des notes");
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    setGrades(data || []);
   };
 
   const getStudentGrades = (studentId: string) => {
@@ -288,6 +313,28 @@ export default function Grades() {
 
         {selectedClass && selectedSubject && selectedSubject !== "__new__" && selectedSchoolYear && selectedSemester && (
           <>
+            {newSubjectMetadata && (
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="p-4">
+                  <h3 className="font-medium mb-2">{t("grades.subjectInfo")}</h3>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">{t("grades.teacher")}:</span>
+                      <p className="font-medium">{newSubjectMetadata.teacherName}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">{t("grades.schoolYear")}:</span>
+                      <p className="font-medium">{newSubjectMetadata.schoolYear}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">{t("grades.semester")}:</span>
+                      <p className="font-medium">{newSubjectMetadata.semester}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="flex gap-2">
               <Button onClick={() => setShowBulkImport(true)} variant="outline">
                 <Upload className="w-4 h-4 mr-2" />
@@ -295,7 +342,15 @@ export default function Grades() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p className="text-muted-foreground">Chargement...</p>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {students.map((student) => {
                 const studentGrades = getStudentGrades(student.id);
                 const average = calculateWeightedAverage(studentGrades);
@@ -372,6 +427,7 @@ export default function Grades() {
                 );
               })}
             </div>
+            )}
           </>
         )}
 

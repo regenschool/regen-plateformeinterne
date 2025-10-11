@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { ClipboardList } from "lucide-react";
 
@@ -48,6 +49,7 @@ const weightingOptions = [
 ];
 
 export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpdated }: GradeEntryDialogProps) => {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [assessmentType, setAssessmentType] = useState("");
   const [customLabel, setCustomLabel] = useState("");
@@ -55,13 +57,16 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
   const [maxGrade, setMaxGrade] = useState("20");
   const [weighting, setWeighting] = useState("1");
   const [appreciation, setAppreciation] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (isSubmitting) return;
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      toast.error("Vous devez être connecté");
+      toast.error(t("grades.gradeError") || "Vous devez être connecté");
       return;
     }
 
@@ -70,10 +75,23 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
       return;
     }
 
-    if (assessmentType === "autre" && !customLabel) {
+    if (assessmentType === "autre" && !customLabel.trim()) {
       toast.error("Veuillez préciser le type d'épreuve");
       return;
     }
+
+    if (!grade || parseFloat(grade) < 0) {
+      toast.error("Veuillez saisir une note valide");
+      return;
+    }
+
+    if (!maxGrade || parseFloat(maxGrade) <= 0) {
+      toast.error("La note maximale doit être supérieure à 0");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
 
     const gradeData = {
       student_id: student.id,
@@ -81,11 +99,11 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
       class_name: student.class_name,
       subject: subject,
       assessment_type: assessmentType as "participation_individuelle" | "oral_groupe" | "oral_individuel" | "ecrit_groupe" | "ecrit_individuel" | "memoire" | "autre",
-      assessment_custom_label: assessmentType === "autre" ? customLabel : null,
+      assessment_custom_label: assessmentType === "autre" ? customLabel.trim() : null,
       grade: parseFloat(grade),
       max_grade: parseFloat(maxGrade),
       weighting: parseFloat(weighting),
-      appreciation: appreciation || null,
+      appreciation: appreciation.trim() || null,
       teacher_name: subjectMetadata?.teacherName || null,
       school_year: subjectMetadata?.schoolYear || null,
       semester: subjectMetadata?.semester || null,
@@ -93,12 +111,9 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
 
     const { error } = await supabase.from("grades").insert(gradeData);
 
-    if (error) {
-      toast.error("Erreur lors de l'enregistrement de la note");
-      return;
-    }
+    if (error) throw error;
 
-    toast.success("Note enregistrée avec succès");
+    toast.success(t("grades.gradeSuccess") || "Note enregistrée avec succès");
     setOpen(false);
     
     // Reset form
@@ -110,14 +125,20 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
     setAppreciation("");
     
     onGradeUpdated();
-  };
+  } catch (error) {
+    console.error("Error saving grade:", error);
+    toast.error(t("grades.gradeError") || "Erreur lors de l'enregistrement de la note");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="default" className="w-full">
           <ClipboardList className="w-4 h-4 mr-2" />
-          Ajouter une note
+          {t("grades.addGrade") || "Ajouter une note"}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
@@ -209,11 +230,11 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
           </div>
 
           <div className="flex gap-2 pt-4">
-            <Button type="submit" className="flex-1">
-              Enregistrer
+            <Button type="submit" className="flex-1" disabled={isSubmitting}>
+              {isSubmitting ? "Enregistrement..." : t("grades.save") || "Enregistrer"}
             </Button>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Annuler
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
+              {t("grades.cancel") || "Annuler"}
             </Button>
           </div>
         </form>
