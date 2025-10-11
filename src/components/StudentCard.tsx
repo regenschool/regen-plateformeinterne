@@ -177,12 +177,12 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
           </div>
         )}
 
-        {student.company && (
-          <div className="flex items-start gap-1.5 text-xs">
-            <Briefcase className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
-            <span className="text-muted-foreground line-clamp-1">{student.company}</span>
-          </div>
-        )}
+        <div className="flex items-start gap-1.5 text-xs">
+          <Briefcase className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+          <span className="text-muted-foreground line-clamp-1">
+            {student.company || "Non renseigné"}
+          </span>
+        </div>
 
         {student.special_needs && (
           <div className="flex items-start gap-1.5 text-xs">
