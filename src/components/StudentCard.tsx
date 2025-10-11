@@ -3,8 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Briefcase, GraduationCap, Edit3, Save, X, Trash2, AlertCircle } from "lucide-react";
+import { Briefcase, GraduationCap, Edit3, Save, X, Trash2, AlertCircle, Check } from "lucide-react";
 import { EditStudentDialog } from "./EditStudentDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import {
@@ -43,6 +44,12 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
   const [savedNote, setSavedNote] = useState("");
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  
+  // Inline editing states for academic_background and company
+  const [isEditingAcademic, setIsEditingAcademic] = useState(false);
+  const [academicValue, setAcademicValue] = useState(student.academic_background || "");
+  const [isEditingCompany, setIsEditingCompany] = useState(false);
+  const [companyValue, setCompanyValue] = useState(student.company || "");
 
   // Calculate age from birth_date
   const calculateAge = (birthDate: string | null): number | null => {
@@ -136,6 +143,62 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
     }
   };
 
+  const saveAcademicBackground = async () => {
+    try {
+      const { error } = await supabase
+        .from("students")
+        .update({ academic_background: academicValue.trim() || null })
+        .eq("id", student.id);
+
+      if (error) throw error;
+
+      setIsEditingAcademic(false);
+      toast.success("Parcours académique mis à jour");
+      onUpdate();
+    } catch (error: any) {
+      toast.error("Échec de la mise à jour");
+      console.error("Failed to update academic background:", error);
+    }
+  };
+
+  const saveCompany = async () => {
+    try {
+      const { error } = await supabase
+        .from("students")
+        .update({ company: companyValue.trim() || null })
+        .eq("id", student.id);
+
+      if (error) throw error;
+
+      setIsEditingCompany(false);
+      toast.success("Entreprise mise à jour");
+      onUpdate();
+    } catch (error: any) {
+      toast.error("Échec de la mise à jour");
+      console.error("Failed to update company:", error);
+    }
+  };
+
+  const handleAcademicKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveAcademicBackground();
+    } else if (e.key === "Escape") {
+      setAcademicValue(student.academic_background || "");
+      setIsEditingAcademic(false);
+    }
+  };
+
+  const handleCompanyKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveCompany();
+    } else if (e.key === "Escape") {
+      setCompanyValue(student.company || "");
+      setIsEditingCompany(false);
+    }
+  };
+
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
       <CardHeader className="p-0">
@@ -189,18 +252,74 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
           {displayAge && <p className="text-xs text-muted-foreground">{displayAge} {t("studentCard.yearsOld")}</p>}
         </div>
 
-        <div className="flex items-start gap-1.5 text-xs">
+        <div 
+          className="flex items-start gap-1.5 text-xs group cursor-pointer hover:bg-accent/30 rounded px-1 -mx-1 py-0.5 transition-colors"
+          onClick={() => !isEditingAcademic && setIsEditingAcademic(true)}
+        >
           <GraduationCap className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
-          <span className="text-muted-foreground line-clamp-1">
-            {student.academic_background || t("studentCard.notSpecified")}
-          </span>
+          {isEditingAcademic ? (
+            <div className="flex-1 flex items-center gap-1">
+              <Input
+                value={academicValue}
+                onChange={(e) => setAcademicValue(e.target.value)}
+                onKeyDown={handleAcademicKeyDown}
+                onBlur={saveAcademicBackground}
+                placeholder={t("studentCard.notSpecified")}
+                className="h-6 text-xs flex-1"
+                autoFocus
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  saveAcademicBackground();
+                }}
+              >
+                <Check className="w-3 h-3" />
+              </Button>
+            </div>
+          ) : (
+            <span className="text-muted-foreground line-clamp-1 flex-1 group-hover:text-foreground transition-colors">
+              {student.academic_background || t("studentCard.notSpecified")}
+            </span>
+          )}
         </div>
 
-        <div className="flex items-start gap-1.5 text-xs">
+        <div 
+          className="flex items-start gap-1.5 text-xs group cursor-pointer hover:bg-accent/30 rounded px-1 -mx-1 py-0.5 transition-colors"
+          onClick={() => !isEditingCompany && setIsEditingCompany(true)}
+        >
           <Briefcase className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
-          <span className="text-muted-foreground line-clamp-1">
-            {student.company || t("studentCard.notSpecified")}
-          </span>
+          {isEditingCompany ? (
+            <div className="flex-1 flex items-center gap-1">
+              <Input
+                value={companyValue}
+                onChange={(e) => setCompanyValue(e.target.value)}
+                onKeyDown={handleCompanyKeyDown}
+                onBlur={saveCompany}
+                placeholder={t("studentCard.notSpecified")}
+                className="h-6 text-xs flex-1"
+                autoFocus
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  saveCompany();
+                }}
+              >
+                <Check className="w-3 h-3" />
+              </Button>
+            </div>
+          ) : (
+            <span className="text-muted-foreground line-clamp-1 flex-1 group-hover:text-foreground transition-colors">
+              {student.company || t("studentCard.notSpecified")}
+            </span>
+          )}
         </div>
 
         {student.special_needs && (
