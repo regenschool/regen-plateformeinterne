@@ -42,6 +42,8 @@ export default function Grades() {
   const [grades, setGrades] = useState<Grade[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [selectedSchoolYear, setSelectedSchoolYear] = useState<string>("");
+  const [selectedSemester, setSelectedSemester] = useState<string>("");
   const [classes, setClasses] = useState<string[]>([]);
   const [subjects, setSubjects] = useState<string[]>([]);
   const [showBulkImport, setShowBulkImport] = useState(false);
@@ -52,6 +54,19 @@ export default function Grades() {
     schoolYear: string;
     semester: string;
   } | null>(null);
+
+  const currentYear = new Date().getFullYear();
+  const schoolYears = [
+    `${currentYear - 1}-${currentYear}`,
+    `${currentYear}-${currentYear + 1}`,
+    `${currentYear + 1}-${currentYear + 2}`,
+  ];
+  
+  const semesters = [
+    { value: "Semestre 1", label: t("grades.semester1") },
+    { value: "Semestre 2", label: t("grades.semester2") },
+    { value: "Année complète", label: t("grades.fullYear") },
+  ];
 
   useEffect(() => {
     fetchClasses();
@@ -170,7 +185,7 @@ export default function Grades() {
           <h1 className="text-3xl font-bold text-foreground">{t("grades.title")}</h1>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="text-sm font-medium mb-2 block">{t("grades.class")}</label>
             <Select value={selectedClass} onValueChange={setSelectedClass}>
@@ -181,6 +196,38 @@ export default function Grades() {
                 {classes.map((className) => (
                   <SelectItem key={className} value={className}>
                     {className}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-2 block">{t("grades.schoolYear")}</label>
+            <Select value={selectedSchoolYear} onValueChange={setSelectedSchoolYear}>
+              <SelectTrigger>
+                <SelectValue placeholder={t("grades.selectSchoolYear")} />
+              </SelectTrigger>
+              <SelectContent>
+                {schoolYears.map((year) => (
+                  <SelectItem key={year} value={year}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium mb-2 block">{t("grades.semester")}</label>
+            <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+              <SelectTrigger>
+                <SelectValue placeholder={t("grades.selectSemester")} />
+              </SelectTrigger>
+              <SelectContent>
+                {semesters.map((sem) => (
+                  <SelectItem key={sem.value} value={sem.value}>
+                    {sem.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -320,6 +367,8 @@ export default function Grades() {
           open={showNewSubjectDialog}
           onClose={() => setShowNewSubjectDialog(false)}
           onSubjectCreated={handleSubjectCreated}
+          defaultSchoolYear={selectedSchoolYear}
+          defaultSemester={selectedSemester}
         />
       </div>
     </Layout>
