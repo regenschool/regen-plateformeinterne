@@ -77,48 +77,67 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
     }
   };
 
-  // Parse various date formats from Excel
+  // Parse various date formats, including Excel serial numbers
+  const excelSerialToISO = (serial: number): string | null => {
+    if (!isFinite(serial)) return null;
+    // Excel's day 1 = 1899-12-31, but due to leap-year bug, using 1899-12-30 works for dates >= 1900-03-01
+    const epoch = Date.UTC(1899, 11, 30);
+    const date = new Date(epoch + Math.floor(serial) * 24 * 60 * 60 * 1000);
+    if (!isValid(date)) return null;
+    return format(date, 'yyyy-MM-dd');
+  };
+
   const parseDateString = (dateStr: string): string | null => {
     if (!dateStr || !dateStr.trim()) return null;
-    
+
     const trimmedDate = dateStr.trim();
-    
+
+    // Excel can paste serial numbers (e.g., 45361) or with decimal separators
+    const numericCandidate = Number(trimmedDate.replace(',', '.'));
+    if (!Number.isNaN(numericCandidate) && /^(\d+)([\.,]\d+)?$/.test(trimmedDate)) {
+      const iso = excelSerialToISO(Math.floor(numericCandidate));
+      if (iso) return iso;
+    }
+
     // Try various date formats that Excel might use
     const dateFormats = [
-      'yyyy-MM-dd',      // ISO format: 1999-01-15
-      'dd/MM/yyyy',      // French format: 15/01/1999
-      'MM/dd/yyyy',      // US format: 01/15/1999
-      'dd-MM-yyyy',      // 15-01-1999
-      'MM-dd-yyyy',      // 01-15-1999
-      'd/M/yyyy',        // 5/1/1999
-      'M/d/yyyy',        // 1/5/1999
-      'dd/MM/yy',        // 15/01/99
-      'MM/dd/yy',        // 01/15/99
-      'dd.MM.yyyy',      // 15.01.1999
-      'yyyy/MM/dd',      // 1999/01/15
+      'yyyy-MM-dd',
+      'yyyy-M-d',
+      'dd/MM/yyyy',
+      'd/M/yyyy',
+      'MM/dd/yyyy',
+      'M/d/yyyy',
+      'dd-MM-yyyy',
+      'd-M-yyyy',
+      'MM-dd-yyyy',
+      'M-d-yyyy',
+      'dd.MM.yyyy',
+      'd.M.yyyy',
+      'dd/MM/yy',
+      'd/M/yy',
+      'MM/dd/yy',
+      'M/d/yy',
+      'yyyy/MM/dd',
+      'yyyy/M/d',
     ];
-    
-    for (const formatStr of dateFormats) {
+
+    for (const fmt of dateFormats) {
       try {
-        const parsedDate = parse(trimmedDate, formatStr, new Date());
+        const parsedDate = parse(trimmedDate, fmt, new Date());
         if (isValid(parsedDate)) {
           return format(parsedDate, 'yyyy-MM-dd');
         }
-      } catch (e) {
-        // Try next format
+      } catch (_) {
+        // continue
       }
     }
-    
-    // If no format worked, try native Date parsing as last resort
-    try {
-      const nativeDate = new Date(trimmedDate);
-      if (isValid(nativeDate)) {
-        return format(nativeDate, 'yyyy-MM-dd');
-      }
-    } catch (e) {
-      // Parsing failed
+
+    // Fallback: native Date parsing
+    const native = new Date(trimmedDate);
+    if (isValid(native)) {
+      return format(native, 'yyyy-MM-dd');
     }
-    
+
     return null;
   };
 
@@ -306,8 +325,8 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
                       value={row.birth_date}
                       onChange={(e) => handleCellChange(index, "birth_date", e.target.value)}
                       onPaste={(e) => handlePaste(e, index, "birth_date")}
-                      placeholder="1999-01-15"
-                      type="date"
+                      placeholder="1999-01-15 or 15/01/1999 or Excel serial"
+                      type="text"
                       className="h-8"
                     />
                   </TableCell>
