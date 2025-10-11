@@ -96,10 +96,51 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
     setLoading(true);
 
     try {
-      const { error } = await supabase.from("students").insert(validStudents);
-      if (error) throw error;
+      // Fetch existing students to check for matches
+      const { data: existingStudents, error: fetchError } = await supabase
+        .from("students")
+        .select("id, first_name, last_name, class_name");
 
-      toast.success(`Successfully imported ${validStudents.length} students!`);
+      if (fetchError) throw fetchError;
+
+      let updatedCount = 0;
+      let createdCount = 0;
+
+      // Process each student
+      for (const student of validStudents) {
+        // Find existing student by first_name, last_name, and class_name
+        const existing = existingStudents?.find(
+          (s) =>
+            s.first_name.toLowerCase() === student.first_name.toLowerCase() &&
+            s.last_name.toLowerCase() === student.last_name.toLowerCase() &&
+            s.class_name.toLowerCase() === student.class_name.toLowerCase()
+        );
+
+        if (existing) {
+          // Update existing student
+          const { error: updateError } = await supabase
+            .from("students")
+            .update(student)
+            .eq("id", existing.id);
+
+          if (updateError) throw updateError;
+          updatedCount++;
+        } else {
+          // Create new student
+          const { error: insertError } = await supabase
+            .from("students")
+            .insert([student]);
+
+          if (insertError) throw insertError;
+          createdCount++;
+        }
+      }
+
+      const message = [];
+      if (createdCount > 0) message.push(`${createdCount} créé(s)`);
+      if (updatedCount > 0) message.push(`${updatedCount} mis à jour`);
+      
+      toast.success(`Import réussi : ${message.join(", ")}`);
       setOpen(false);
       setRows([
         { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", academic_background: "", company: "" },
