@@ -26,6 +26,11 @@ type BulkGradeImportProps = {
   students: Student[];
   classname: string;
   subject: string;
+  subjectMetadata: {
+    teacherName: string;
+    schoolYear: string;
+    semester: string;
+  } | null;
   onClose: () => void;
   onImportComplete: () => void;
 };
@@ -44,7 +49,7 @@ const weightingOptions = [
   "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5"
 ];
 
-export const BulkGradeImport = ({ students, classname, subject, onClose, onImportComplete }: BulkGradeImportProps) => {
+export const BulkGradeImport = ({ students, classname, subject, subjectMetadata, onClose, onImportComplete }: BulkGradeImportProps) => {
   const [assessmentType, setAssessmentType] = useState("");
   const [customLabel, setCustomLabel] = useState("");
   const [maxGrade, setMaxGrade] = useState("20");
@@ -147,6 +152,9 @@ export const BulkGradeImport = ({ students, classname, subject, onClose, onImpor
         max_grade: parseFloat(maxGrade),
         weighting: parseFloat(weightings[studentId] || weighting),
         appreciation: null,
+        teacher_name: subjectMetadata?.teacherName || null,
+        school_year: subjectMetadata?.schoolYear || null,
+        semester: subjectMetadata?.semester || null,
       }));
 
     if (gradeEntries.length === 0) {

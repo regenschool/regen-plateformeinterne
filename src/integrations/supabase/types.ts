@@ -24,9 +24,12 @@ export type Database = {
           grade: number
           id: string
           max_grade: number
+          school_year: string | null
+          semester: string | null
           student_id: string
           subject: string
           teacher_id: string
+          teacher_name: string | null
           updated_at: string
           weighting: number
         }
@@ -39,9 +42,12 @@ export type Database = {
           grade: number
           id?: string
           max_grade?: number
+          school_year?: string | null
+          semester?: string | null
           student_id: string
           subject: string
           teacher_id: string
+          teacher_name?: string | null
           updated_at?: string
           weighting?: number
         }
@@ -54,9 +60,12 @@ export type Database = {
           grade?: number
           id?: string
           max_grade?: number
+          school_year?: string | null
+          semester?: string | null
           student_id?: string
           subject?: string
           teacher_id?: string
+          teacher_name?: string | null
           updated_at?: string
           weighting?: number
         }

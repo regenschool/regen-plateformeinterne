@@ -25,6 +25,11 @@ type Student = {
 type GradeEntryDialogProps = {
   student: Student;
   subject: string;
+  subjectMetadata: {
+    teacherName: string;
+    schoolYear: string;
+    semester: string;
+  } | null;
   onGradeUpdated: () => void;
 };
 
@@ -42,7 +47,7 @@ const weightingOptions = [
   "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5"
 ];
 
-export const GradeEntryDialog = ({ student, subject, onGradeUpdated }: GradeEntryDialogProps) => {
+export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpdated }: GradeEntryDialogProps) => {
   const [open, setOpen] = useState(false);
   const [assessmentType, setAssessmentType] = useState("");
   const [customLabel, setCustomLabel] = useState("");
@@ -81,6 +86,9 @@ export const GradeEntryDialog = ({ student, subject, onGradeUpdated }: GradeEntr
       max_grade: parseFloat(maxGrade),
       weighting: parseFloat(weighting),
       appreciation: appreciation || null,
+      teacher_name: subjectMetadata?.teacherName || null,
+      school_year: subjectMetadata?.schoolYear || null,
+      semester: subjectMetadata?.semester || null,
     };
 
     const { error } = await supabase.from("grades").insert(gradeData);

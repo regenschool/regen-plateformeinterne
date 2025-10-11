@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GradeEntryDialog } from "@/components/GradeEntryDialog";
 import { BulkGradeImport } from "@/components/BulkGradeImport";
+import { NewSubjectDialog } from "@/components/NewSubjectDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { ClipboardList, Upload } from "lucide-react";
@@ -30,6 +31,9 @@ type Grade = {
   weighting: number;
   appreciation: string | null;
   created_at: string;
+  teacher_name: string | null;
+  school_year: string | null;
+  semester: string | null;
 };
 
 export default function Grades() {
@@ -42,6 +46,12 @@ export default function Grades() {
   const [subjects, setSubjects] = useState<string[]>([]);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [newSubject, setNewSubject] = useState("");
+  const [showNewSubjectDialog, setShowNewSubjectDialog] = useState(false);
+  const [newSubjectMetadata, setNewSubjectMetadata] = useState<{
+    teacherName: string;
+    schoolYear: string;
+    semester: string;
+  } | null>(null);
 
   useEffect(() => {
     fetchClasses();
@@ -142,6 +152,12 @@ export default function Grades() {
     return totalWeighting > 0 ? (totalWeightedScore / totalWeighting).toFixed(2) : null;
   };
 
+  const handleSubjectCreated = (subject: string, teacherName: string, schoolYear: string, semester: string) => {
+    setSelectedSubject(subject);
+    setNewSubjectMetadata({ teacherName, schoolYear, semester });
+    setShowNewSubjectDialog(false);
+  };
+
   const handleGradeUpdated = () => {
     fetchGrades();
     fetchSubjects();
@@ -173,50 +189,29 @@ export default function Grades() {
 
           <div>
             <label className="text-sm font-medium mb-2 block">Matière</label>
-            {selectedSubject === "__new__" ? (
-              <div className="flex gap-2">
-                <Input
-                  value={newSubject}
-                  onChange={(e) => setNewSubject(e.target.value)}
-                  placeholder="Nom de la nouvelle matière"
-                />
-                <Button 
-                  onClick={() => {
-                    if (newSubject.trim()) {
-                      setSelectedSubject(newSubject.trim());
-                      setNewSubject("");
-                    } else {
-                      toast.error("Veuillez saisir un nom de matière");
-                    }
-                  }}
-                >
-                  Valider
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedSubject("");
-                    setNewSubject("");
-                  }}
-                >
-                  Annuler
-                </Button>
-              </div>
-            ) : (
-              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner une matière" />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject} value={subject}>
-                      {subject}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="__new__">+ Nouvelle matière</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
+            <Select 
+              value={selectedSubject} 
+              onValueChange={(value) => {
+                if (value === "__new__") {
+                  setShowNewSubjectDialog(true);
+                } else {
+                  setSelectedSubject(value);
+                  setNewSubjectMetadata(null);
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner une matière" />
+              </SelectTrigger>
+              <SelectContent>
+                {subjects.map((subject) => (
+                  <SelectItem key={subject} value={subject}>
+                    {subject}
+                  </SelectItem>
+                ))}
+                <SelectItem value="__new__">+ Nouvelle matière</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -298,6 +293,7 @@ export default function Grades() {
                       <GradeEntryDialog
                         student={student}
                         subject={selectedSubject}
+                        subjectMetadata={newSubjectMetadata}
                         onGradeUpdated={handleGradeUpdated}
                       />
                     </CardContent>
@@ -314,10 +310,17 @@ export default function Grades() {
             students={students}
             classname={selectedClass}
             subject={selectedSubject}
+            subjectMetadata={newSubjectMetadata}
             onClose={() => setShowBulkImport(false)}
             onImportComplete={handleGradeUpdated}
           />
         )}
+
+        <NewSubjectDialog
+          open={showNewSubjectDialog}
+          onClose={() => setShowNewSubjectDialog(false)}
+          onSubjectCreated={handleSubjectCreated}
+        />
       </div>
     </Layout>
   );
