@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Briefcase, GraduationCap, Edit3, Save, X, Trash2, AlertCircle } from "lucide-react";
 import { EditStudentDialog } from "./EditStudentDialog";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +37,7 @@ type StudentCardProps = {
 };
 
 export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
+  const { t } = useLanguage();
   const [note, setNote] = useState("");
   const [savedNote, setSavedNote] = useState("");
   const [isEditingNote, setIsEditingNote] = useState(false);
@@ -74,7 +76,7 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
 
   const saveNote = async () => {
     if (!userId) {
-      toast.error("Please log in to save notes");
+      toast.error(t("studentCard.loginToSaveNotes"));
       return;
     }
 
@@ -89,9 +91,9 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
 
       setSavedNote(note);
       setIsEditingNote(false);
-      toast.success("Note saved");
+      toast.success(t("studentCard.noteSaved"));
     } catch (error: any) {
-      toast.error("Failed to save note");
+      toast.error(t("studentCard.failedToSaveNote"));
     }
   };
 
@@ -109,10 +111,10 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
 
       if (error) throw error;
 
-      toast.success("Étudiant supprimé");
+      toast.success(t("studentCard.studentDeleted"));
       onUpdate();
     } catch (error: any) {
-      toast.error("Échec de la suppression");
+      toast.error(t("studentCard.deleteFailed"));
     }
   };
 
@@ -147,15 +149,14 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                  <AlertDialogTitle>{t("studentCard.confirmDelete")}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Êtes-vous sûr de vouloir supprimer {student.first_name} {student.last_name} ?
-                    Cette action est irréversible.
+                    {t("studentCard.deleteConfirmMessage")} {student.first_name} {student.last_name}?
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Annuler</AlertDialogCancel>
-                  <AlertDialogAction onClick={deleteStudent}>Supprimer</AlertDialogAction>
+                  <AlertDialogCancel>{t("studentCard.cancel")}</AlertDialogCancel>
+                  <AlertDialogAction onClick={deleteStudent}>{t("studentCard.delete")}</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -167,20 +168,20 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
           <h3 className="text-lg font-bold text-foreground leading-tight">
             {student.first_name} {student.last_name}
           </h3>
-          {student.age && <p className="text-xs text-muted-foreground">{student.age} ans</p>}
+          {student.age && <p className="text-xs text-muted-foreground">{student.age} {t("studentCard.yearsOld")}</p>}
         </div>
 
         <div className="flex items-start gap-1.5 text-xs">
           <GraduationCap className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
           <span className="text-muted-foreground line-clamp-1">
-            {student.academic_background || "Non renseigné"}
+            {student.academic_background || t("studentCard.notSpecified")}
           </span>
         </div>
 
         <div className="flex items-start gap-1.5 text-xs">
           <Briefcase className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
           <span className="text-muted-foreground line-clamp-1">
-            {student.company || "Non renseigné"}
+            {student.company || t("studentCard.notSpecified")}
           </span>
         </div>
 
@@ -193,7 +194,7 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
 
         <div className="pt-2 border-t border-border space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-medium text-foreground">Notes privées</label>
+            <label className="text-xs font-medium text-foreground">{t("studentCard.privateNotes")}</label>
             {!isEditingNote && (
               <Button
                 size="sm"
@@ -211,13 +212,13 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
               <Textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Ajoutez vos notes privées..."
+                placeholder={t("studentCard.addPrivateNotes")}
                 className="min-h-[60px] text-xs"
               />
               <div className="flex gap-1.5">
                 <Button size="sm" onClick={saveNote} className="flex-1 h-7 text-xs">
                   <Save className="w-3 h-3 mr-1" />
-                  Sauver
+                  {t("studentCard.save")}
                 </Button>
                 <Button size="sm" variant="outline" onClick={cancelEdit} className="h-7">
                   <X className="w-3 h-3" />
@@ -226,7 +227,7 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
             </div>
           ) : (
             <p className="text-xs text-muted-foreground min-h-[50px] line-clamp-3">
-              {savedNote || "Pas de notes. Cliquez pour ajouter."}
+              {savedNote || t("studentCard.noNotes")}
             </p>
           )}
         </div>
