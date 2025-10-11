@@ -6,8 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StudentCard } from "@/components/StudentCard";
 import { AddStudentDialog } from "@/components/AddStudentDialog";
 import { ImportStudentsDialog } from "@/components/ImportStudentsDialog";
-import { Plus, Upload, Sprout } from "lucide-react";
+import { Plus, Upload, Sprout, Download } from "lucide-react";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 type Student = {
   id: string;
@@ -26,6 +28,7 @@ const Directory = () => {
   const [classes, setClasses] = useState<string[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [showActiveSearchOnly, setShowActiveSearchOnly] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,7 +37,7 @@ const Directory = () => {
 
   useEffect(() => {
     filterStudents();
-  }, [students, selectedClass, searchTerm]);
+  }, [students, selectedClass, searchTerm, showActiveSearchOnly]);
 
   const fetchStudents = async () => {
     try {
@@ -63,6 +66,12 @@ const Directory = () => {
       filtered = filtered.filter((s) => s.class_name === selectedClass);
     }
 
+    if (showActiveSearchOnly) {
+      filtered = filtered.filter(
+        (s) => s.company?.toLowerCase() === "en recherche active"
+      );
+    }
+
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -75,6 +84,47 @@ const Directory = () => {
     }
 
     setFilteredStudents(filtered);
+  };
+
+  const exportToCSV = () => {
+    const headers = [
+      "Prénom",
+      "Nom",
+      "Âge",
+      "Parcours académique",
+      "Entreprise",
+      "Classe",
+    ];
+
+    const csvData = filteredStudents.map((student) => [
+      student.first_name,
+      student.last_name,
+      student.age || "",
+      student.academic_background || "",
+      student.company || "",
+      student.class_name,
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...csvData.map((row) =>
+        row.map((cell) => `"${cell}"`).join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `etudiants_${new Date().toISOString().split("T")[0]}.csv`
+    );
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Export CSV réussi");
   };
 
   const handleStudentAdded = () => {
@@ -102,31 +152,51 @@ const Directory = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button onClick={exportToCSV} variant="outline" size="default">
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </Button>
           <ImportStudentsDialog onImportComplete={handleStudentAdded} />
           <AddStudentDialog onStudentAdded={handleStudentAdded} />
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4">
-        <Input
-          placeholder="Rechercher par nom, entreprise ou parcours..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="md:flex-1"
-        />
-        <Select value={selectedClass} onValueChange={setSelectedClass}>
-          <SelectTrigger className="md:w-[200px]">
-            <SelectValue placeholder="Filtrer par classe" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toutes les classes</SelectItem>
-            {classes.map((className) => (
-              <SelectItem key={className} value={className}>
-                {className}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row gap-4">
+          <Input
+            placeholder="Rechercher par nom, entreprise ou parcours..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="md:flex-1"
+          />
+          <Select value={selectedClass} onValueChange={setSelectedClass}>
+            <SelectTrigger className="md:w-[200px]">
+              <SelectValue placeholder="Filtrer par classe" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes les classes</SelectItem>
+              {classes.map((className) => (
+                <SelectItem key={className} value={className}>
+                  {className}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="active-search"
+            checked={showActiveSearchOnly}
+            onCheckedChange={(checked) => setShowActiveSearchOnly(checked === true)}
+          />
+          <Label
+            htmlFor="active-search"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+          >
+            Afficher uniquement les étudiants en recherche active
+          </Label>
+        </div>
       </div>
 
       {filteredStudents.length === 0 ? (
