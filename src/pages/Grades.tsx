@@ -188,14 +188,29 @@ export default function Grades() {
         const uniqueSubjects = Array.from(new Set(data.map(s => s.subject_name)));
         setSubjects(uniqueSubjects);
         
-        // Récupérer les métadonnées de la première matière si elle existe
-        if (data.length > 0) {
+        // Vérifier si la matière sélectionnée existe toujours dans la BDD
+        const currentSubjectExists = data.find(s => s.subject_name === selectedSubject);
+        
+        if (selectedSubject && !currentSubjectExists) {
+          // La matière sélectionnée n'existe plus, réinitialiser
+          setSelectedSubject("");
+          setNewSubjectMetadata(null);
+          setGrades([]);
+          toast.warning("La matière sélectionnée n'existe pas pour cette combinaison classe/année/semestre");
+        } else if (currentSubjectExists) {
+          // Récupérer les métadonnées de la matière sélectionnée
           setNewSubjectMetadata({
-            teacherName: data[0].teacher_name,
-            schoolYear: data[0].school_year,
-            semester: data[0].semester,
+            teacherName: currentSubjectExists.teacher_name,
+            schoolYear: currentSubjectExists.school_year,
+            semester: currentSubjectExists.semester,
           });
+        } else {
+          setNewSubjectMetadata(null);
         }
+      } else {
+        setSubjects([]);
+        setSelectedSubject("");
+        setNewSubjectMetadata(null);
       }
     } catch (error) {
       console.error("Error fetching subjects:", error);
@@ -649,7 +664,7 @@ export default function Grades() {
           </div>
         </div>
 
-        {selectedClass && selectedSubject && selectedSubject !== "__new__" && selectedSchoolYear && selectedSemester && (
+        {selectedClass && selectedSubject && selectedSubject !== "__new__" && selectedSchoolYear && selectedSemester && newSubjectMetadata && (
           <>
             {newSubjectMetadata && (
               <Card className="bg-primary/5 border-primary/20">
