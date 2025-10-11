@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import { useDebounce } from "@/hooks/useDebounce";
 
 type Student = {
   id: string;
@@ -36,15 +38,27 @@ const Directory = () => {
   const [showActiveSearchOnly, setShowActiveSearchOnly] = useState(false);
   const [sortBy, setSortBy] = useState<"lastName" | "class" | "classReverse" | "age" | "createdAt">("lastName");
   const [loading, setLoading] = useState(true);
+  
+  // Debounce search term to avoid excessive filtering
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   useEffect(() => {
     fetchStudents();
   }, []);
+  
+  // Real-time subscription for students table
+  useRealtimeSubscription({
+    table: "students",
+    onChange: () => {
+      // Refetch students when any change occurs
+      fetchStudents();
+    },
+  });
 
   useEffect(() => {
     filterStudents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [students, selectedClass, searchTerm, showActiveSearchOnly, sortBy]);
+  }, [students, selectedClass, debouncedSearchTerm, showActiveSearchOnly, sortBy]);
 
   const fetchStudents = async () => {
     try {
@@ -53,7 +67,10 @@ const Directory = () => {
         .select("*")
         .order("last_name");
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching students:", error);
+        throw error;
+      }
 
       setStudents(data || []);
       const uniqueClasses = Array.from(new Set(data?.map((s) => s.class_name) || []));
@@ -78,8 +95,8 @@ const Directory = () => {
       );
     }
 
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+    if (debouncedSearchTerm) {
+      const term = debouncedSearchTerm.toLowerCase();
       filtered = filtered.filter(
         (s) =>
           s.first_name.toLowerCase().includes(term) ||
