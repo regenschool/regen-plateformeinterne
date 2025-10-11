@@ -32,6 +32,12 @@ type GradeEntryDialogProps = {
     semester: string;
   } | null;
   onGradeUpdated: () => void;
+  preselectedAssessment?: {
+    name: string;
+    type: string;
+    customLabel: string | null;
+  } | null;
+  onAssessmentDeselected?: () => void;
 };
 
 const assessmentTypes = [
@@ -48,7 +54,7 @@ const weightingOptions = [
   "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5"
 ];
 
-export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpdated }: GradeEntryDialogProps) => {
+export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpdated, preselectedAssessment, onAssessmentDeselected }: GradeEntryDialogProps) => {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [existingAssessments, setExistingAssessments] = useState<Array<{name: string, type: string, customLabel: string | null}>>([]);
@@ -200,6 +206,18 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
       setOpen(isOpen);
       if (isOpen) {
         fetchExistingAssessments();
+        // Si une épreuve est présélectionnée, l'appliquer
+        if (preselectedAssessment) {
+          setAssessmentName(preselectedAssessment.name);
+          setAssessmentType(preselectedAssessment.type);
+          setCustomLabel(preselectedAssessment.customLabel || "");
+          setSelectedAssessment(preselectedAssessment.name);
+        }
+      } else {
+        // Réinitialiser la présélection quand on ferme le dialog
+        if (onAssessmentDeselected) {
+          onAssessmentDeselected();
+        }
       }
     }}>
       <DialogTrigger asChild>

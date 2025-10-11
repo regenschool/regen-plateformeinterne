@@ -9,7 +9,7 @@ import { BulkGradeImport } from "@/components/BulkGradeImport";
 import { NewSubjectDialog } from "@/components/NewSubjectDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
-import { ClipboardList, Upload, TrendingUp, FileText, AlertTriangle, Trash2, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { ClipboardList, Upload, TrendingUp, FileText, AlertTriangle, Trash2, ArrowLeft, ChevronLeft, ChevronRight, PlusCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -49,6 +49,14 @@ type Grade = {
   semester: string | null;
 };
 
+type Assessment = {
+  name: string;
+  type: string;
+  customLabel: string | null;
+  studentsWithGrades: number;
+  totalStudents: number;
+};
+
 export default function Grades() {
   const { t } = useLanguage();
   const [students, setStudents] = useState<Student[]>([]);
@@ -68,6 +76,8 @@ export default function Grades() {
     schoolYear: string;
     semester: string;
   } | null>(null);
+  const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
+  const [assessments, setAssessments] = useState<Assessment[]>([]);
 
   const currentYear = new Date().getFullYear();
   const schoolYears = [
@@ -198,12 +208,57 @@ export default function Grades() {
       if (error) throw error;
 
       setGrades(data || []);
+      calculateAssessments(data || []);
     } catch (error) {
       console.error("Error fetching grades:", error);
       toast.error("Erreur lors du chargement des notes");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const calculateAssessments = (allGrades: Grade[]) => {
+    const assessmentMap = new Map<string, Assessment>();
+    
+    allGrades.forEach(grade => {
+      // Générer une clé unique pour l'épreuve
+      const key = grade.assessment_name || 
+                  (grade.assessment_type === "autre" 
+                    ? `${grade.assessment_type}_${grade.assessment_custom_label}`
+                    : grade.assessment_type);
+      
+      if (!assessmentMap.has(key)) {
+        assessmentMap.set(key, {
+          name: grade.assessment_name || 
+                (grade.assessment_type === "autre" 
+                  ? grade.assessment_custom_label || grade.assessment_type
+                  : grade.assessment_type.replace(/_/g, ' ')),
+          type: grade.assessment_type,
+          customLabel: grade.assessment_custom_label,
+          studentsWithGrades: 0,
+          totalStudents: students.length,
+        });
+      }
+    });
+    
+    // Compter les étudiants qui ont une note pour chaque épreuve
+    assessmentMap.forEach((assessment, key) => {
+      const studentsWithThisGrade = new Set(
+        allGrades
+          .filter(g => {
+            const gradeKey = g.assessment_name || 
+                           (g.assessment_type === "autre" 
+                             ? `${g.assessment_type}_${g.assessment_custom_label}`
+                             : g.assessment_type);
+            return gradeKey === key;
+          })
+          .map(g => g.student_id)
+      ).size;
+      
+      assessment.studentsWithGrades = studentsWithThisGrade;
+    });
+    
+    setAssessments(Array.from(assessmentMap.values()));
   };
 
   const getStudentGrades = (studentId: string) => {
@@ -613,6 +668,43 @@ export default function Grades() {
               </div>
             )}
 
+            {/* Liste des épreuves existantes */}
+            {assessments.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Épreuves de cette matière</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {assessments.map((assessment, index) => (
+                      <div 
+                        key={index}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/5 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium">{assessment.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {assessment.studentsWithGrades}/{assessment.totalStudents} étudiants notés
+                          </p>
+                        </div>
+                        {assessment.studentsWithGrades < assessment.totalStudents && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedAssessment(assessment)}
+                            className="gap-2"
+                          >
+                            <PlusCircle className="w-4 h-4" />
+                            Compléter
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Alert for missing grades */}
             {stats.studentsWithMissingGrades.length > 0 && (
               <Alert className="border-amber-500/50 bg-amber-500/10">
@@ -713,6 +805,8 @@ export default function Grades() {
                         subject={selectedSubject}
                         subjectMetadata={newSubjectMetadata}
                         onGradeUpdated={handleGradeUpdated}
+                        preselectedAssessment={selectedAssessment}
+                        onAssessmentDeselected={() => setSelectedAssessment(null)}
                       />
                     </CardContent>
                   </Card>
