@@ -34,6 +34,14 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
     setLoading(true);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error("You must be logged in to add students");
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.from("students").insert({
         first_name: formData.first_name,
         last_name: formData.last_name,
@@ -43,6 +51,7 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
         company: formData.company || null,
         class_name: formData.class_name,
         special_needs: formData.special_needs || null,
+        teacher_id: user.id,
       });
 
       if (error) throw error;

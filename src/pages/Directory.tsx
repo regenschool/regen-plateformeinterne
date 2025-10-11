@@ -48,10 +48,18 @@ const Directory = () => {
 
   const fetchStudents = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error(t("directory.authError"));
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("students")
-        .select("*");
-
+        .select("*")
+        .eq("teacher_id", user.id);
 
       if (error) throw error;
 
