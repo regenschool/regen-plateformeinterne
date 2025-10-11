@@ -50,6 +50,7 @@ const weightingOptions = [
 ];
 
 export const BulkGradeImport = ({ students, classname, subject, subjectMetadata, onClose, onImportComplete }: BulkGradeImportProps) => {
+  const [assessmentName, setAssessmentName] = useState("");
   const [assessmentType, setAssessmentType] = useState("");
   const [customLabel, setCustomLabel] = useState("");
   const [maxGrade, setMaxGrade] = useState("20");
@@ -129,6 +130,11 @@ export const BulkGradeImport = ({ students, classname, subject, subjectMetadata,
       return;
     }
 
+    if (!assessmentName.trim()) {
+      toast.error("Veuillez saisir un nom d'épreuve");
+      return;
+    }
+
     if (!assessmentType) {
       toast.error("Veuillez sélectionner un type d'épreuve");
       return;
@@ -146,6 +152,7 @@ export const BulkGradeImport = ({ students, classname, subject, subjectMetadata,
         teacher_id: user.id,
         class_name: classname,
         subject: subject,
+        assessment_name: assessmentName.trim(),
         assessment_type: assessmentType as "participation_individuelle" | "oral_groupe" | "oral_individuel" | "ecrit_groupe" | "ecrit_individuel" | "memoire" | "autre",
         assessment_custom_label: assessmentType === "autre" ? customLabel : null,
         grade: parseFloat(grade),
@@ -182,6 +189,16 @@ export const BulkGradeImport = ({ students, classname, subject, subjectMetadata,
         </SheetHeader>
 
         <div className="space-y-6 mt-6">
+          <div>
+            <Label>Nom de l'épreuve *</Label>
+            <Input
+              value={assessmentName}
+              onChange={(e) => setAssessmentName(e.target.value)}
+              placeholder="Ex: Contrôle continu 1, Examen final..."
+              required
+            />
+          </div>
+
           <div>
             <Label>Type d'épreuve *</Label>
             <Select value={assessmentType} onValueChange={setAssessmentType}>
