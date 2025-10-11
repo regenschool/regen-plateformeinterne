@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StudentCard } from "@/components/StudentCard";
 import { AddStudentDialog } from "@/components/AddStudentDialog";
 import { ImportStudentsDialog } from "@/components/ImportStudentsDialog";
-import { Plus, Upload, Sprout, Download } from "lucide-react";
+import { Plus, Upload, Sprout, Download, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,7 @@ const Directory = () => {
   const [selectedClass, setSelectedClass] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showActiveSearchOnly, setShowActiveSearchOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<"lastName" | "class" | "classReverse" | "age">("lastName");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,7 +39,7 @@ const Directory = () => {
 
   useEffect(() => {
     filterStudents();
-  }, [students, selectedClass, searchTerm, showActiveSearchOnly]);
+  }, [students, selectedClass, searchTerm, showActiveSearchOnly, sortBy]);
 
   const fetchStudents = async () => {
     try {
@@ -83,6 +84,25 @@ const Directory = () => {
           s.academic_background?.toLowerCase().includes(term)
       );
     }
+
+    // Apply sorting
+    filtered = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "lastName":
+          return a.last_name.localeCompare(b.last_name);
+        case "class":
+          return a.class_name.localeCompare(b.class_name);
+        case "classReverse":
+          return b.class_name.localeCompare(a.class_name);
+        case "age":
+          // Plus jeune en premier (âge croissant)
+          if (a.age === null) return 1;
+          if (b.age === null) return -1;
+          return a.age - b.age;
+        default:
+          return 0;
+      }
+    });
 
     setFilteredStudents(filtered);
   };
@@ -181,6 +201,18 @@ const Directory = () => {
                   {className}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+            <SelectTrigger className="md:w-[220px]">
+              <ArrowUpDown className="w-4 h-4 mr-2" />
+              <SelectValue placeholder="Trier par" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="lastName">Nom (A → Z)</SelectItem>
+              <SelectItem value="class">Classe (A → Z)</SelectItem>
+              <SelectItem value="classReverse">Classe (Z → A)</SelectItem>
+              <SelectItem value="age">Âge (+ jeune → + vieux)</SelectItem>
             </SelectContent>
           </Select>
         </div>
