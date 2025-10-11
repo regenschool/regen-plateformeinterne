@@ -92,6 +92,31 @@ const Profile = () => {
     }
   }, [userId]);
 
+  // Real-time subscription for subjects
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel('subjects-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'subjects',
+          filter: `teacher_id=eq.${userId}`,
+        },
+        () => {
+          fetchSubjects();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
+
   const getCurrentUser = async () => {
     const { data } = await supabase.auth.getUser();
     setUserId(data.user?.id || null);
