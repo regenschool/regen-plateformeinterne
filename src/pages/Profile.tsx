@@ -16,6 +16,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ImportSubjectsDialog } from "@/components/ImportSubjectsDialog";
 
 type TeacherProfile = {
   id: string;
@@ -63,10 +64,12 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [profile, setProfile] = useState<TeacherProfile | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [documents, setDocuments] = useState<SchoolDocument[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   
   // Invoice form state
   const [showInvoiceForm, setShowInvoiceForm] = useState(false);
@@ -119,7 +122,21 @@ const Profile = () => {
 
   const getCurrentUser = async () => {
     const { data } = await supabase.auth.getUser();
-    setUserId(data.user?.id || null);
+    const currentUserId = data.user?.id || null;
+    setUserId(currentUserId);
+    
+    // Vérifier si l'utilisateur est admin
+    if (currentUserId) {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", currentUserId)
+        .eq("role", "admin")
+        .maybeSingle();
+      
+      setIsAdmin(!!roleData);
+    }
+    
     setLoading(false);
   };
 
@@ -163,15 +180,31 @@ const Profile = () => {
     if (!userId) return;
 
     try {
-      const { data, error } = await supabase
-        .from("subjects")
-        .select("*")
-        .eq("teacher_id", userId)
-        .order("school_year", { ascending: false })
-        .order("class_name");
+      if (isAdmin) {
+        // Les admins voient toutes les matières
+        const { data, error } = await supabase
+          .from("subjects")
+          .select("*")
+          .order("school_year", { ascending: false })
+          .order("class_name");
 
-      if (error) throw error;
-      setSubjects(data || []);
+        if (error) throw error;
+        setSubjects(data || []);
+      } else {
+        // Les enseignants voient leurs matières (créées par eux ou assignées via email)
+        const { data: userData } = await supabase.auth.getUser();
+        const userEmail = userData.user?.email;
+
+        const { data, error } = await supabase
+          .from("subjects")
+          .select("*")
+          .or(`teacher_id.eq.${userId},teacher_email.eq.${userEmail}`)
+          .order("school_year", { ascending: false })
+          .order("class_name");
+
+        if (error) throw error;
+        setSubjects(data || []);
+      }
     } catch (error: any) {
       console.error("Error fetching subjects:", error);
     }
@@ -373,7 +406,7 @@ const Profile = () => {
           </TabsTrigger>
           <TabsTrigger value="subjects">
             <BookOpen className="w-4 h-4 mr-2" />
-            Mes Matières
+            {isAdmin ? "Toutes les Matières" : "Mes Matières"}
           </TabsTrigger>
           <TabsTrigger value="documents">
             <FileText className="w-4 h-4 mr-2" />
@@ -476,15 +509,29 @@ const Profile = () => {
         <TabsContent value="subjects" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Mes Matières</CardTitle>
-              <CardDescription>
-                Liste des matières que vous enseignez
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>{isAdmin ? "Toutes les Matières" : "Mes Matières"}</CardTitle>
+                  <CardDescription>
+                    {isAdmin 
+                      ? "Liste de toutes les matières de l'école" 
+                      : "Liste des matières que vous enseignez"}
+                  </CardDescription>
+                </div>
+                {isAdmin && (
+                  <Button onClick={() => setShowImportDialog(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Importer une matière
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {subjects.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">
-                  Aucune matière enregistrée. Créez vos matières depuis l'onglet Notes.
+                  {isAdmin 
+                    ? "Aucune matière enregistrée. Commencez par importer des matières." 
+                    : "Aucune matière enregistrée. Créez vos matières depuis l'onglet Notes."}
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -781,6 +828,12 @@ const Profile = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <ImportSubjectsDialog
+        open={showImportDialog}
+        onClose={() => setShowImportDialog(false)}
+        onImported={fetchSubjects}
+      />
     </div>
   );
 };

@@ -228,6 +228,7 @@ export type Database = {
           school_year: string
           semester: string
           subject_name: string
+          teacher_email: string | null
           teacher_id: string
           teacher_name: string
           updated_at: string
@@ -239,6 +240,7 @@ export type Database = {
           school_year: string
           semester: string
           subject_name: string
+          teacher_email?: string | null
           teacher_id: string
           teacher_name: string
           updated_at?: string
@@ -250,6 +252,7 @@ export type Database = {
           school_year?: string
           semester?: string
           subject_name?: string
+          teacher_email?: string | null
           teacher_id?: string
           teacher_name?: string
           updated_at?: string
@@ -410,6 +413,10 @@ export type Database = {
       calculate_age: {
         Args: { birth_date: string }
         Returns: number
+      }
+      get_user_email: {
+        Args: { _user_id: string }
+        Returns: string
       }
       has_role: {
         Args: {
