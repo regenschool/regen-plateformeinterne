@@ -89,8 +89,17 @@ export default function Grades() {
       if (prefilledSubject) setSelectedSubject(prefilledSubject);
       if (prefilledSchoolYear) setSelectedSchoolYear(prefilledSchoolYear);
       if (prefilledSemester) setSelectedSemester(prefilledSemester);
+    } else {
+      // Si on arrive sans state (clic sur navigation), réinitialiser tout
+      setSelectedClass("");
+      setSelectedSubject("");
+      setSelectedSchoolYear("");
+      setSelectedSemester("");
+      setGrades([]);
+      setNewSubjectMetadata(null);
+      setAssessments([]);
     }
-  }, [location.state]);
+  }, [location.state, location.key]); // location.key change à chaque navigation
   const [assessments, setAssessments] = useState<Assessment[]>([]);
 
   const currentYear = new Date().getFullYear();
