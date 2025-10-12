@@ -180,7 +180,7 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
     setLoading(true);
 
     try {
-      // Fetch existing students to check for matches
+      // Fetch all existing students (no longer filtered by teacher_id)
       const { data: existingStudents, error: fetchError } = await supabase
         .from("students")
         .select("id, first_name, last_name, class_name");
@@ -192,7 +192,7 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
 
       // Process each student
       for (const student of validStudents) {
-        // Find existing student by first_name, last_name, and class_name
+        // Find existing student by first_name, last_name, and class_name (case insensitive)
         const existing = existingStudents?.find(
           (s) =>
             s.first_name.toLowerCase() === student.first_name.toLowerCase() &&
