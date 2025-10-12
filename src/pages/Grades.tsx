@@ -89,6 +89,9 @@ export default function Grades() {
       if (prefilledSubject) setSelectedSubject(prefilledSubject);
       if (prefilledSchoolYear) setSelectedSchoolYear(prefilledSchoolYear);
       if (prefilledSemester) setSelectedSemester(prefilledSemester);
+      
+      // Clear location state after reading it to avoid re-applying on re-renders
+      window.history.replaceState({}, document.title);
     }
   }, [location.state]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);

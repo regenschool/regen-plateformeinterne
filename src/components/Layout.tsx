@@ -80,7 +80,7 @@ export const Layout = ({ children }: LayoutProps) => {
               <div className="flex items-center gap-2">
                 <Button
                   variant={isActive("/directory") ? "default" : "ghost"}
-                  onClick={() => navigate("/directory")}
+                  onClick={() => navigate("/directory", { replace: true })}
                   className="gap-2"
                 >
                   <Network className="w-4 h-4" />
@@ -88,7 +88,7 @@ export const Layout = ({ children }: LayoutProps) => {
                 </Button>
                 <Button
                   variant={isActive("/quiz") ? "default" : "ghost"}
-                  onClick={() => navigate("/quiz")}
+                  onClick={() => navigate("/quiz", { replace: true })}
                   className="gap-2"
                 >
                   <Lightbulb className="w-4 h-4" />
@@ -96,7 +96,7 @@ export const Layout = ({ children }: LayoutProps) => {
                 </Button>
                 <Button
                   variant={isActive("/grades") ? "default" : "ghost"}
-                  onClick={() => navigate("/grades")}
+                  onClick={() => navigate("/grades", { replace: true })}
                   className="gap-2"
                 >
                   <ClipboardList className="w-4 h-4" />
@@ -104,7 +104,7 @@ export const Layout = ({ children }: LayoutProps) => {
                 </Button>
                 <Button
                   variant={isActive("/profile") ? "default" : "ghost"}
-                  onClick={() => navigate("/profile")}
+                  onClick={() => navigate("/profile", { replace: true })}
                   className="gap-2"
                 >
                   <User className="w-4 h-4" />
@@ -113,7 +113,7 @@ export const Layout = ({ children }: LayoutProps) => {
                 {isAdmin && (
                   <Button
                     variant={isActive("/users") ? "default" : "ghost"}
-                    onClick={() => navigate("/users")}
+                    onClick={() => navigate("/users", { replace: true })}
                     className="gap-2"
                   >
                     <Users className="w-4 h-4" />
