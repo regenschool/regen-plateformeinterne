@@ -47,6 +47,7 @@ const Quiz = () => {
   const [showLinksDialog, setShowLinksDialog] = useState(false);
   const [publicLinks, setPublicLinks] = useState<PublicLink[]>([]);
   const [expirationDays, setExpirationDays] = useState<string>("7");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     fetchClasses();
@@ -66,7 +67,20 @@ const Quiz = () => {
 
   const getCurrentUser = async () => {
     const { data } = await supabase.auth.getUser();
-    setUserId(data.user?.id || null);
+    const currentUserId = data.user?.id || null;
+    setUserId(currentUserId);
+
+    // Check if user has admin role
+    if (currentUserId) {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", currentUserId)
+        .eq("role", "admin")
+        .maybeSingle();
+      
+      setIsAdmin(!!roleData);
+    }
   };
 
   const fetchClasses = async () => {
@@ -378,16 +392,17 @@ const Quiz = () => {
                 <Button onClick={startQuiz} disabled={!selectedClass} className="flex-1" size="lg">
                   {t("quiz.startQuiz")}
                 </Button>
-                <Dialog open={showLinksDialog} onOpenChange={(open) => {
-                  setShowLinksDialog(open);
-                  if (open) fetchPublicLinks();
-                }}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="lg" disabled={!selectedClass}>
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Liens publics
-                    </Button>
-                  </DialogTrigger>
+                {isAdmin && (
+                  <Dialog open={showLinksDialog} onOpenChange={(open) => {
+                    setShowLinksDialog(open);
+                    if (open) fetchPublicLinks();
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="lg" disabled={!selectedClass}>
+                        <Share2 className="w-4 h-4 mr-2" />
+                        Liens publics
+                      </Button>
+                    </DialogTrigger>
                   <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Gérer les liens publics - {selectedClass}</DialogTitle>
@@ -484,6 +499,7 @@ const Quiz = () => {
                     </div>
                   </DialogContent>
                 </Dialog>
+                )}
               </div>
             </div>
           </CardContent>
