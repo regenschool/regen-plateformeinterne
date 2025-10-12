@@ -85,7 +85,7 @@ export type Database = {
       public_quiz_links: {
         Row: {
           access_count: number
-          class_name: string
+          class_name: string | null
           created_at: string
           created_by: string
           expires_at: string | null
@@ -94,7 +94,7 @@ export type Database = {
         }
         Insert: {
           access_count?: number
-          class_name: string
+          class_name?: string | null
           created_at?: string
           created_by: string
           expires_at?: string | null
@@ -103,7 +103,7 @@ export type Database = {
         }
         Update: {
           access_count?: number
-          class_name?: string
+          class_name?: string | null
           created_at?: string
           created_by?: string
           expires_at?: string | null

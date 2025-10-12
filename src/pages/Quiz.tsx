@@ -207,7 +207,7 @@ const Quiz = () => {
   };
 
   const createPublicLink = async () => {
-    if (!selectedClass || !userId) return;
+    if (!userId) return;
 
     try {
       const expiresAt = expirationDays 
@@ -218,7 +218,7 @@ const Quiz = () => {
         .from("public_quiz_links")
         .insert({
           created_by: userId,
-          class_name: selectedClass,
+          class_name: null, // Global link - no specific class
           expires_at: expiresAt,
         })
         .select()
@@ -398,18 +398,21 @@ const Quiz = () => {
                     if (open) fetchPublicLinks();
                   }}>
                     <DialogTrigger asChild>
-                      <Button variant="outline" size="lg" disabled={!selectedClass}>
+                      <Button variant="outline" size="lg">
                         <Share2 className="w-4 h-4 mr-2" />
                         Liens publics
                       </Button>
                     </DialogTrigger>
                   <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle>Gérer les liens publics - {selectedClass}</DialogTitle>
+                      <DialogTitle>Gérer les liens publics du quiz</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-6">
                       <div className="space-y-4 border-b pb-4">
-                        <h3 className="font-semibold">Créer un nouveau lien</h3>
+                        <h3 className="font-semibold">Créer un nouveau lien global</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Le lien permettra aux enseignants de choisir leur classe
+                        </p>
                         <div className="flex gap-3 items-end">
                           <div className="flex-1">
                             <Label htmlFor="expiration">Expiration (jours)</Label>
@@ -435,7 +438,7 @@ const Quiz = () => {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead>Classe</TableHead>
+                                <TableHead>Créé le</TableHead>
                                 <TableHead>Accès</TableHead>
                                 <TableHead>Expire le</TableHead>
                                 <TableHead>Statut</TableHead>
@@ -445,7 +448,9 @@ const Quiz = () => {
                             <TableBody>
                               {publicLinks.map((link) => (
                                 <TableRow key={link.id}>
-                                  <TableCell className="font-medium">{link.class_name}</TableCell>
+                                  <TableCell className="font-medium">
+                                    {new Date(link.created_at).toLocaleDateString()}
+                                  </TableCell>
                                   <TableCell>{link.access_count}</TableCell>
                                   <TableCell>
                                     {link.expires_at 

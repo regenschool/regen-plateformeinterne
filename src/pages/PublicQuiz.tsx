@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Sparkles, Check, X } from "lucide-react";
 
@@ -26,7 +27,8 @@ const PublicQuiz = () => {
   const [options, setOptions] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [linkValid, setLinkValid] = useState(false);
-  const [className, setClassName] = useState("");
+  const [classes, setClasses] = useState<string[]>([]);
+  const [selectedClass, setSelectedClass] = useState("");
 
   useEffect(() => {
     if (linkId) {
@@ -60,7 +62,6 @@ const PublicQuiz = () => {
         return;
       }
 
-      setClassName(linkData.class_name);
       setLinkValid(true);
       
       // Increment access count
@@ -69,6 +70,9 @@ const PublicQuiz = () => {
         .update({ access_count: linkData.access_count + 1 })
         .eq("id", linkId);
 
+      // Fetch all available classes
+      await fetchClasses();
+      
       setLoading(false);
     } catch (error) {
       console.error("Error validating link:", error);
@@ -78,12 +82,36 @@ const PublicQuiz = () => {
     }
   };
 
+  const fetchClasses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("students")
+        .select("class_name")
+        .order("class_name");
+
+      if (error) throw error;
+
+      if (data) {
+        const uniqueClasses = Array.from(new Set(data.map((s) => s.class_name)));
+        setClasses(uniqueClasses);
+      }
+    } catch (error) {
+      console.error("Error fetching classes:", error);
+      toast.error("Erreur lors du chargement des classes");
+    }
+  };
+
   const startQuiz = async () => {
+    if (!selectedClass) {
+      toast.error("Veuillez sélectionner une classe");
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from("students")
         .select("id, first_name, last_name, photo_url, class_name")
-        .eq("class_name", className);
+        .eq("class_name", selectedClass);
 
       if (error) throw error;
 
@@ -236,12 +264,29 @@ const PublicQuiz = () => {
               </div>
               <h2 className="text-3xl font-bold text-foreground">Quiz d'Entraînement</h2>
               <p className="text-muted-foreground max-w-md mx-auto">
-                Testez vos connaissances et apprenez à reconnaître les élèves de la classe <strong>{className}</strong>
+                Testez vos connaissances et apprenez à reconnaître les élèves
               </p>
             </div>
-            <Button onClick={startQuiz} className="w-full" size="lg">
-              Commencer le Quiz
-            </Button>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Choisissez votre classe</label>
+                <Select value={selectedClass} onValueChange={setSelectedClass}>
+                  <SelectTrigger className="border-primary/20">
+                    <SelectValue placeholder="Sélectionner une classe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {classes.map((className) => (
+                      <SelectItem key={className} value={className}>
+                        {className}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={startQuiz} disabled={!selectedClass} className="w-full" size="lg">
+                Commencer le Quiz
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
