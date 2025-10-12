@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      dev_role_overrides: {
+        Row: {
+          is_admin: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          is_admin?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          is_admin?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       grades: {
         Row: {
           appreciation: string | null

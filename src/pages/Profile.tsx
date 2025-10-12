@@ -128,7 +128,6 @@ const Profile = () => {
     const currentUserId = data.user?.id || null;
     setUserId(currentUserId);
     
-    // Vérifier si l'utilisateur est admin
     if (currentUserId) {
       const { data: roleData } = await supabase
         .from("user_roles")
@@ -136,8 +135,14 @@ const Profile = () => {
         .eq("user_id", currentUserId)
         .eq("role", "admin")
         .maybeSingle();
+
+      const { data: override } = await (supabase as any)
+        .from("dev_role_overrides")
+        .select("is_admin")
+        .eq("user_id", currentUserId)
+        .maybeSingle();
       
-      setIsAdmin(!!roleData);
+      setIsAdmin(!!roleData || !!override?.is_admin);
     }
     
     setLoading(false);
@@ -548,9 +553,9 @@ const Profile = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>{(devMode || isAdmin) ? "Toutes les Matières" : "Mes Matières"}</CardTitle>
+                  <CardTitle>{isAdmin ? "Toutes les Matières" : "Mes Matières"}</CardTitle>
                   <CardDescription>
-                    {(devMode || isAdmin)
+                    {isAdmin
                       ? "Liste de toutes les matières de l'école" 
                       : "Liste des matières que vous enseignez"}
                   </CardDescription>
@@ -562,7 +567,7 @@ const Profile = () => {
                       Export CSV
                     </Button>
                   )}
-                  {(devMode || isAdmin) && (
+                  {isAdmin && (
                     <>
                       <Button variant="outline" onClick={() => setShowAddSubjectDialog(true)}>
                         <Plus className="w-4 h-4 mr-2" />
@@ -580,7 +585,7 @@ const Profile = () => {
             <CardContent>
               {subjects.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">
-                  {(devMode || isAdmin)
+                  {isAdmin
                     ? "Aucune matière enregistrée. Commencez par importer des matières." 
                     : "Aucune matière enregistrée. Créez vos matières depuis l'onglet Notes."}
                 </p>
