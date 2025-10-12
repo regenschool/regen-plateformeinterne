@@ -51,25 +51,27 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      // Get all users from auth
-      const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers();
-      
-      if (authError) throw authError;
-
-      // Get all user roles
+      // Get all user roles with their associated user data
       const { data: rolesData, error: rolesError } = await supabase
         .from("user_roles")
         .select("*");
 
       if (rolesError) throw rolesError;
 
+      // Get teacher profiles to get email addresses
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("teacher_profiles")
+        .select("user_id, email, created_at");
+
+      if (profilesError) throw profilesError;
+
       // Combine data
-      const usersWithRoles = authUsers.map(user => {
-        const userRole = rolesData?.find(r => r.user_id === user.id);
+      const usersWithRoles = (profilesData || []).map(profile => {
+        const userRole = rolesData?.find(r => r.user_id === profile.user_id);
         return {
-          id: user.id,
-          email: user.email || "",
-          created_at: user.created_at,
+          id: profile.user_id,
+          email: profile.email,
+          created_at: profile.created_at,
           role: userRole?.role as "admin" | "user" | undefined
         };
       });
@@ -90,11 +92,10 @@ const UserManagement = () => {
     }
 
     try {
-      // Create user via admin API
-      const { data, error } = await supabase.auth.admin.createUser({
+      // Create user via standard signup (since we enabled auto-confirm)
+      const { data, error } = await supabase.auth.signUp({
         email: newUserEmail,
         password: newUserPassword,
-        email_confirm: true
       });
 
       if (error) throw error;
@@ -116,7 +117,9 @@ const UserManagement = () => {
       setNewUserEmail("");
       setNewUserPassword("");
       setNewUserRole("user");
-      fetchUsers();
+      
+      // Wait a bit for profile creation trigger then fetch
+      setTimeout(() => fetchUsers(), 1000);
     } catch (error: any) {
       console.error("Error creating user:", error);
       toast.error(error.message || "Erreur lors de la création de l'utilisateur");
@@ -161,18 +164,7 @@ const UserManagement = () => {
   };
 
   const deleteUser = async (userId: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) return;
-
-    try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
-      if (error) throw error;
-
-      toast.success("Utilisateur supprimé");
-      fetchUsers();
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      toast.error("Erreur lors de la suppression");
-    }
+    toast.error("La suppression d'utilisateurs nécessite une edge function. Contactez l'administrateur système.");
   };
 
   if (!isAdmin) {
