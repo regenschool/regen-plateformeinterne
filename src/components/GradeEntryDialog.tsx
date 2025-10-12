@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -38,6 +38,7 @@ type GradeEntryDialogProps = {
     customLabel: string | null;
   } | null;
   onAssessmentDeselected?: () => void;
+  openExternal?: boolean;
 };
 
 const assessmentTypes = [
@@ -54,7 +55,7 @@ const weightingOptions = [
   "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5"
 ];
 
-export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpdated, preselectedAssessment, onAssessmentDeselected }: GradeEntryDialogProps) => {
+export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpdated, preselectedAssessment, onAssessmentDeselected, openExternal }: GradeEntryDialogProps) => {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [existingAssessments, setExistingAssessments] = useState<Array<{name: string, type: string, customLabel: string | null}>>([]);
@@ -67,6 +68,12 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
   const [weighting, setWeighting] = useState("1");
   const [appreciation, setAppreciation] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (openExternal) {
+      setOpen(true);
+    }
+  }, [openExternal]);
 
   const fetchExistingAssessments = async () => {
     try {

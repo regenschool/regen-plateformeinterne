@@ -84,6 +84,7 @@ export default function Grades() {
     type: string;
     customLabel: string | null;
   } | null>(null);
+  const [studentToCompleteId, setStudentToCompleteId] = useState<string | null>(null);
 
   // Handle prefilled data from navigation
   useEffect(() => {
@@ -821,11 +822,26 @@ export default function Grades() {
                               size="sm"
                               variant="outline"
                               onClick={() => {
-                                setSelectedAssessment({
+                                const sel = {
                                   name: assessment.name,
                                   type: assessment.type,
-                                  customLabel: assessment.customLabel
+                                  customLabel: assessment.customLabel || null,
+                                };
+                                // Trouver le premier élève sans note pour cette épreuve
+                                const missing = students.filter((st) => {
+                                  const sg = grades.filter((g) => g.student_id === st.id);
+                                  return !sg.some((g) => {
+                                    const gradeKey = g.assessment_name || (g.assessment_type === "autre" ? `${g.assessment_type}_${g.assessment_custom_label}` : g.assessment_type);
+                                    const assessmentKey = sel.name || (sel.type === "autre" ? `${sel.type}_${sel.customLabel || ""}` : sel.type);
+                                    return gradeKey === assessmentKey || g.assessment_name === sel.name;
+                                  });
                                 });
+                                if (missing.length === 0) {
+                                  toast.info("Toutes les notes sont déjà saisies pour cette épreuve");
+                                  return;
+                                }
+                                setSelectedAssessment(sel);
+                                setStudentToCompleteId(missing[0].id);
                               }}
                               className="gap-2"
                             >
@@ -965,7 +981,11 @@ export default function Grades() {
                         subjectMetadata={newSubjectMetadata}
                         onGradeUpdated={handleGradeUpdated}
                         preselectedAssessment={selectedAssessment}
-                        onAssessmentDeselected={() => setSelectedAssessment(null)}
+                        openExternal={student.id === studentToCompleteId}
+                        onAssessmentDeselected={() => {
+                          setSelectedAssessment(null);
+                          setStudentToCompleteId(null);
+                        }}
                       />
                     </CardContent>
                   </Card>
