@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 import { syncExistingDataToReferentials } from '@/utils/syncReferentials';
 import {
   AlertDialog,
@@ -17,6 +18,7 @@ import {
 
 export const SyncReferentialsButton = () => {
   const [isSyncing, setIsSyncing] = useState(false);
+  const queryClient = useQueryClient();
 
   const handleSync = async () => {
     setIsSyncing(true);
@@ -25,6 +27,16 @@ export const SyncReferentialsButton = () => {
       const result = await syncExistingDataToReferentials();
       
       if (result.success) {
+        // Invalidate caches to reflect latest backend state immediately
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['school_years'] }),
+          queryClient.invalidateQueries({ queryKey: ['classes_referential'] }),
+          queryClient.invalidateQueries({ queryKey: ['academic_periods'] }),
+          queryClient.invalidateQueries({ queryKey: ['classes'] }),
+          queryClient.invalidateQueries({ queryKey: ['subjects'] }),
+          queryClient.invalidateQueries({ queryKey: ['students'] }),
+        ]);
+
         toast.success(
           `Synchronisation réussie ! ${result.stats.classesAdded} classes, ${result.stats.yearsAdded} années, ${result.stats.periodsAdded} périodes ajoutées.`,
           { duration: 5000 }

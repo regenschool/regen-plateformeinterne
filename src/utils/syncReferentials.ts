@@ -62,7 +62,20 @@ export const syncExistingDataToReferentials = async () => {
       console.log(`✅ ${classesToInsert.length} classes ajoutées au référentiel`);
     }
     
-    // 5. Synchroniser les années scolaires depuis grades et subjects
+    // 4b. Harmoniser l'état d'activation des classes : activer utilisées, désactiver le reste
+    if (allUniqueClasses.length > 0) {
+      await supabase
+        .from('classes')
+        .update({ is_active: false })
+        .not('name', 'in', allUniqueClasses as any);
+
+      await supabase
+        .from('classes')
+        .update({ is_active: true })
+        .in('name', allUniqueClasses as any);
+    }
+    
+    // 5. Synchroniser les années scolaires depuis grades et subjects (et forcer 2025-2026)
     const { data: gradesWithYear } = await supabase.from('grades').select('school_year');
     const { data: subjectsWithYear } = await supabase.from('subjects').select('school_year');
     
@@ -135,7 +148,7 @@ export const syncExistingDataToReferentials = async () => {
       .from('school_years')
       .select('id, label');
     
-    const periodsToInsert = [];
+    const periodsToInsert = [] as any[];
     
     for (const semester of uniqueSemesters) {
       for (const schoolYear of schoolYears || []) {
@@ -153,6 +166,27 @@ export const syncExistingDataToReferentials = async () => {
             start_date: isSemester1 ? `${startYear}-09-01` : `${endYear}-01-01`,
             end_date: isSemester1 ? `${endYear}-01-31` : `${endYear}-06-30`,
             is_active: schoolYear.label === '2025-2026'
+          });
+        }
+      }
+    }
+
+    // 9b. S'assurer que 2025-2026 a bien Semestre 1 et Semestre 2
+    const activeYear = (schoolYears || []).find(y => y.label === '2025-2026');
+    if (activeYear) {
+      const [startYear, endYear] = activeYear.label.split('-').map(y => parseInt(y));
+      const need = ['Semestre 1', 'Semestre 2'];
+      for (const label of need) {
+        const alreadyExists = (existingPeriods || []).some(p => p.label === label && p.school_year_id === activeYear.id)
+          || periodsToInsert.some(p => p.label === label && p.school_year_id === activeYear.id);
+        if (!alreadyExists) {
+          const isS1 = label === 'Semestre 1';
+          periodsToInsert.push({
+            school_year_id: activeYear.id,
+            label,
+            start_date: isS1 ? `${startYear}-09-01` : `${endYear}-01-01`,
+            end_date: isS1 ? `${endYear}-01-31` : `${endYear}-06-30`,
+            is_active: true,
           });
         }
       }
