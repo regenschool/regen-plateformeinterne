@@ -102,7 +102,7 @@ export function ImportSubjectsDialog({ open, onClose, onImportComplete }: Import
 
       for (const subject of validSubjects) {
         // Résoudre le teacher_id depuis l'email si fourni
-        let targetTeacherId = user.id; // Par défaut, l'admin qui importe
+        let targetTeacherId: string | null = null;
         
         if (subject.teacher_email) {
           // Chercher l'utilisateur avec cet email
@@ -113,8 +113,23 @@ export function ImportSubjectsDialog({ open, onClose, onImportComplete }: Import
           if (teacherUser) {
             targetTeacherId = teacherUser;
           } else {
-            console.warn(`Aucun utilisateur trouvé pour l'email ${subject.teacher_email}, matière assignée à l'admin`);
+            // Créer un nouvel utilisateur enseignant sans mot de passe (invitation)
+            console.log(`Création d'un enseignant pour ${subject.teacher_email}`);
+            
+            // Créer l'entrée dans teachers sans user_id (sera lié plus tard quand l'enseignant se connecte)
+            const teacherInsert = {
+              full_name: subject.teacher_name || subject.teacher_email.split('@')[0],
+              email: subject.teacher_email,
+            };
+            
+            // Teachers table nécessite user_id, on ne peut pas créer sans
+            // Pour l'instant, on laisse targetTeacherId à null
+            // L'enseignant devra être invité à créer son compte plus tard
+            console.warn(`Enseignant ${subject.teacher_email} pas encore inscrit - matière créée sans teacher_id`);
           }
+        } else {
+          // Si pas d'email fourni, assigner à l'utilisateur qui importe
+          targetTeacherId = user.id;
         }
 
         // Chercher une matière existante avec les mêmes critères
@@ -133,7 +148,7 @@ export function ImportSubjectsDialog({ open, onClose, onImportComplete }: Import
           subject_name: subject.subject_name,
           teacher_email: subject.teacher_email || null,
           teacher_name: subject.teacher_name || (subject.teacher_email ? subject.teacher_email.split("@")[0] : "Admin Import"),
-          teacher_id: targetTeacherId,
+          teacher_id: targetTeacherId, // Peut être null si l'enseignant n'est pas encore inscrit
         };
 
         if (existing) {
