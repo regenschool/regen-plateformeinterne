@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StudentCard } from "@/components/StudentCard";
 import { AddStudentDialog } from "@/components/AddStudentDialog";
 import { ImportStudentsDialog } from "@/components/ImportStudentsDialog";
-import { Sprout, Download, ArrowUpDown, Trash2 } from "lucide-react";
+import { Sprout, Download, ArrowUpDown, Trash2, UserMinus, UserX } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -25,6 +25,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 
 const Directory = () => {
@@ -35,6 +42,7 @@ const Directory = () => {
   const [showActiveSearchOnly, setShowActiveSearchOnly] = useState(false);
   const [sortBy, setSortBy] = useState<"nameAsc" | "nameDesc" | "class" | "ageAsc" | "ageDesc" | "createdAt">("nameAsc");
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  const [showPermanentDeleteAllDialog, setShowPermanentDeleteAllDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -175,9 +183,30 @@ const Directory = () => {
         await supabase.from('student_enrollments').delete().eq('id', id);
       }
       
-      toast.success(`${enrollmentIds.length} étudiants désinscrit(s) de cette année`);
+      toast.success(`${enrollmentIds.length} étudiant(s) désinscrit(s) de cette année`);
       refetch();
       setShowDeleteAllDialog(false);
+    } catch (error: any) {
+      toast.error('Erreur lors de la désinscription : ' + error.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handlePermanentDeleteAllDisplayed = async () => {
+    setIsDeleting(true);
+    try {
+      // Supprimer définitivement tous les étudiants affichés (cascade supprimera les enrollments)
+      const studentIds = filteredEnrollments.map(e => e.student_id);
+      const uniqueStudentIds = [...new Set(studentIds)];
+      
+      for (const id of uniqueStudentIds) {
+        await supabase.from('students').delete().eq('id', id);
+      }
+      
+      toast.success(`${uniqueStudentIds.length} étudiant(s) supprimé(s) définitivement de toutes les années`);
+      refetch();
+      setShowPermanentDeleteAllDialog(false);
     } catch (error: any) {
       toast.error('Erreur lors de la suppression : ' + error.message);
     } finally {
@@ -206,8 +235,8 @@ const Directory = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <AlertDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
-            <AlertDialogTrigger asChild>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button 
                 variant="outline" 
                 size="default"
@@ -217,19 +246,42 @@ const Directory = () => {
                 <Trash2 className="w-4 h-4 mr-2" />
                 Supprimer tout ({filteredEnrollments.length})
               </Button>
-            </AlertDialogTrigger>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem
+                onClick={() => setShowDeleteAllDialog(true)}
+                className="text-orange-600 focus:text-orange-600"
+              >
+                <UserMinus className="w-4 h-4 mr-2" />
+                Désinscrire de {schoolYears?.find(y => y.id === selectedSchoolYearId)?.label || "cette année"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setShowPermanentDeleteAllDialog(true)}
+                className="text-destructive focus:text-destructive"
+              >
+                <UserX className="w-4 h-4 mr-2" />
+                Supprimer définitivement
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Dialog pour désinscription groupée */}
+          <AlertDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>⚠️ Supprimer tous les étudiants affichés ?</AlertDialogTitle>
+                <AlertDialogTitle>
+                  Désinscrire {filteredEnrollments.length} étudiant(s) de {schoolYears?.find(y => y.id === selectedSchoolYearId)?.label} ?
+                </AlertDialogTitle>
                 <AlertDialogDescription>
-                  Vous allez <strong>désinscrire {filteredEnrollments.length} étudiant(s)</strong> de l'année sélectionnée.
+                  Les {filteredEnrollments.length} étudiant(s) affiché(s) seront désinscrit(s) de cette année scolaire.
                   {searchTerm || selectedClass !== "all" ? (
-                    <span className="block mt-2 text-orange-600">
-                      ⚠️ Attention : seuls les étudiants filtrés seront supprimés !
+                    <span className="block mt-2 text-orange-600 font-medium">
+                      ⚠️ Attention : seuls les étudiants filtrés seront désinscrit(s) !
                     </span>
                   ) : null}
                   <span className="block mt-2">
-                    Les étudiants resteront dans les autres années scolaires.
+                    Ils resteront visibles dans les autres années scolaires.
                   </span>
                 </AlertDialogDescription>
               </AlertDialogHeader>
@@ -238,9 +290,39 @@ const Directory = () => {
                 <AlertDialogAction 
                   onClick={handleDeleteAllDisplayed}
                   disabled={isDeleting}
+                  className="bg-orange-600 hover:bg-orange-700"
+                >
+                  {isDeleting ? "Désinscription..." : "Désinscrire"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Dialog pour suppression définitive groupée */}
+          <AlertDialog open={showPermanentDeleteAllDialog} onOpenChange={setShowPermanentDeleteAllDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>⚠️ Suppression définitive de {[...new Set(filteredEnrollments.map(e => e.student_id))].length} étudiant(s)</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Les {filteredEnrollments.length} étudiant(s) affiché(s) seront supprimés de <strong>toutes les années scolaires</strong>.
+                  {searchTerm || selectedClass !== "all" ? (
+                    <span className="block mt-2 text-orange-600 font-medium">
+                      ⚠️ Attention : seuls les étudiants filtrés seront supprimés !
+                    </span>
+                  ) : null}
+                  <span className="block mt-2 font-bold text-destructive">
+                    Cette action est irréversible.
+                  </span>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handlePermanentDeleteAllDisplayed}
+                  disabled={isDeleting}
                   className="bg-destructive hover:bg-destructive/90"
                 >
-                  {isDeleting ? "Suppression..." : "Supprimer tout"}
+                  {isDeleting ? "Suppression..." : "Supprimer définitivement"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
