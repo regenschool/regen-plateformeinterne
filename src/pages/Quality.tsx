@@ -61,10 +61,14 @@ export default function Quality() {
 
   const fetchStats = async () => {
     try {
-      // Compter les utilisateurs (via user_roles)
-      const { count: usersCount } = await supabase
+      // Compter les utilisateurs UNIQUES (via user_roles)
+      const { data: uniqueUsers } = await supabase
         .from('user_roles')
-        .select('*', { count: 'exact', head: true });
+        .select('user_id');
+      
+      const usersCount = uniqueUsers 
+        ? new Set(uniqueUsers.map(u => u.user_id)).size 
+        : 0;
 
       // Compter les étudiants
       const { count: studentsCount } = await supabase
