@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StudentCard } from "@/components/StudentCard";
 import { AddStudentDialog } from "@/components/AddStudentDialog";
 import { ImportStudentsDialog } from "@/components/ImportStudentsDialog";
-import { Sprout, Download, ArrowUpDown, Trash2, UserMinus, UserX } from "lucide-react";
+import { Sprout, Download, ArrowUpDown, Trash2, UserMinus, UserX, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -235,6 +235,14 @@ const Directory = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            onClick={() => refetch()} 
+            variant="outline" 
+            size="default"
+            title="Actualiser les données"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 
