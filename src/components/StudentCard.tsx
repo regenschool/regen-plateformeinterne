@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -78,7 +78,11 @@ export const StudentCard = ({ student, enrollmentId, schoolYear, onUpdate }: Stu
     return age;
   };
 
-  const displayAge = student.birth_date ? calculateAge(student.birth_date) : student.age;
+  // Force recalculation when student data changes
+  const displayAge = React.useMemo(
+    () => student.birth_date ? calculateAge(student.birth_date) : student.age,
+    [student.birth_date, student.age]
+  );
 
   useEffect(() => {
     getCurrentUser();
