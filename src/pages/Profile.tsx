@@ -149,14 +149,14 @@ const Profile = () => {
         if (error) throw error;
         setSubjects(data || []);
       } else {
-        // Mode enseignant : voir seulement ses matières (assignées via email)
+        // Mode enseignant : voir seulement ses matières (assignées via email ou créées par lui)
         const { data: userData } = await supabase.auth.getUser();
         const userEmail = userData.user?.email;
 
         const { data, error } = await supabase
           .from("subjects")
           .select("*")
-          .eq('teacher_email', userEmail) // Filtrer UNIQUEMENT par email
+          .or(`teacher_email.eq.${userEmail},and(teacher_id.eq.${userId},teacher_email.is.null)`)
           .order("school_year", { ascending: false })
           .order("class_name");
 
