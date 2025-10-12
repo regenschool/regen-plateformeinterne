@@ -195,8 +195,11 @@ const Profile = () => {
     if (!userId) return;
 
     try {
-      if (isAdmin || devMode) {
-        // Les admins voient toutes les matières
+      // En mode dev, on force l'affichage admin. Sinon, on suit le vrai statut admin
+      const showAsAdmin = devMode || isAdmin;
+      
+      if (showAsAdmin) {
+        // Mode admin : voir toutes les matières
         const { data, error } = await supabase
           .from("subjects")
           .select("*")
@@ -206,7 +209,7 @@ const Profile = () => {
         if (error) throw error;
         setSubjects(data || []);
       } else {
-        // Les enseignants voient leurs matières (créées par eux ou assignées via email)
+        // Mode enseignant : voir seulement ses matières (créées par lui ou assignées via email)
         const { data: userData } = await supabase.auth.getUser();
         const userEmail = userData.user?.email;
 
@@ -453,7 +456,7 @@ const Profile = () => {
           </TabsTrigger>
           <TabsTrigger value="subjects">
             <BookOpen className="w-4 h-4 mr-2" />
-            {(isAdmin || devMode) ? "Toutes les Matières" : "Mes Matières"}
+            {(devMode || isAdmin) ? "Toutes les Matières" : "Mes Matières"}
           </TabsTrigger>
           <TabsTrigger value="documents">
             <FileText className="w-4 h-4 mr-2" />
@@ -558,9 +561,9 @@ const Profile = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>{(isAdmin || devMode) ? "Toutes les Matières" : "Mes Matières"}</CardTitle>
+                  <CardTitle>{(devMode || isAdmin) ? "Toutes les Matières" : "Mes Matières"}</CardTitle>
                   <CardDescription>
-                    {(isAdmin || devMode)
+                    {(devMode || isAdmin)
                       ? "Liste de toutes les matières de l'école" 
                       : "Liste des matières que vous enseignez"}
                   </CardDescription>
@@ -572,7 +575,7 @@ const Profile = () => {
                       Export CSV
                     </Button>
                   )}
-                  {(isAdmin || devMode) && (
+                  {(devMode || isAdmin) && (
                     <>
                       <Button variant="outline" onClick={() => setShowAddSubjectDialog(true)}>
                         <Plus className="w-4 h-4 mr-2" />
@@ -590,7 +593,7 @@ const Profile = () => {
             <CardContent>
               {subjects.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">
-                  {(isAdmin || devMode)
+                  {(devMode || isAdmin)
                     ? "Aucune matière enregistrée. Commencez par importer des matières." 
                     : "Aucune matière enregistrée. Créez vos matières depuis l'onglet Notes."}
                 </p>
