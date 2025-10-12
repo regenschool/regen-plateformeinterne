@@ -10,6 +10,7 @@ import { parse, format, isValid } from "date-fns";
 
 type ImportStudentsDialogProps = {
   onImportComplete: () => void;
+  selectedSchoolYearId: string;
 };
 
 type StudentRow = {
@@ -23,7 +24,7 @@ type StudentRow = {
   company: string;
 };
 
-export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogProps) => {
+export const ImportStudentsDialog = ({ onImportComplete, selectedSchoolYearId }: ImportStudentsDialogProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<StudentRow[]>([
@@ -142,87 +143,140 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
   };
 
   const handleImport = async () => {
+    if (!selectedSchoolYearId) {
+      toast.error("Veuillez sélectionner une année scolaire avant d'importer");
+      return;
+    }
+
     const { syncClassToReferential } = await import('@/hooks/useReferentialMutations');
     
     const validStudents = rows
       .filter((row) => row.first_name && row.last_name && row.class_name)
       .map((row) => {
         let birth_date = null;
-        
-        if (row.birth_date) {
+        if (row.birth_date && row.birth_date.trim()) {
           birth_date = parseDateString(row.birth_date);
-        } else if (row.age) {
-          const age = parseInt(row.age);
-          if (!isNaN(age)) {
-            const currentYear = new Date().getFullYear();
-            const birthYear = currentYear - age;
-            birth_date = `${birthYear}-01-01`;
-          }
         }
-        
+
         return {
-          first_name: row.first_name,
-          last_name: row.last_name,
-          class_name: row.class_name,
-          photo_url: row.photo_url || null,
+          first_name: row.first_name.trim(),
+          last_name: row.last_name.trim(),
+          class_name: row.class_name.trim(),
+          photo_url: row.photo_url?.trim() || null,
+          age: row.age ? parseInt(row.age, 10) : null,
           birth_date,
-          academic_background: row.academic_background || null,
+          academic_background: row.academic_background?.trim() || null,
           company: row.company || null,
         };
       });
 
     if (validStudents.length === 0) {
-      toast.error("Please fill in at least one student with First Name, Last Name, and Class.");
+      toast.error("Veuillez remplir au moins un étudiant avec Prénom, Nom et Classe");
       return;
     }
 
     setLoading(true);
 
     try {
-      const { data: existingStudents, error: fetchError } = await supabase
-        .from("students")
-        .select("id, first_name, last_name, class_name");
-
-      if (fetchError) throw fetchError;
-
-      // Synchroniser toutes les classes uniques
+      // Synchroniser toutes les classes uniques vers le référentiel
       const uniqueClasses = [...new Set(validStudents.map(s => s.class_name))];
       await Promise.all(uniqueClasses.map(className => syncClassToReferential(className)));
 
-      let updatedCount = 0;
-      let createdCount = 0;
+      // Récupérer les IDs des classes depuis le référentiel
+      const { data: classesData, error: classesError } = await supabase
+        .from('classes')
+        .select('id, name')
+        .in('name', uniqueClasses);
 
-      for (const student of validStudents) {
-        const existing = existingStudents?.find(
-          (s) =>
-            s.first_name.toLowerCase() === student.first_name.toLowerCase() &&
-            s.last_name.toLowerCase() === student.last_name.toLowerCase() &&
-            s.class_name.toLowerCase() === student.class_name.toLowerCase()
-        );
+      if (classesError) throw classesError;
 
-        if (existing) {
+      const classIdMap = new Map(classesData?.map(c => [c.name, c.id]) || []);
+
+      let createdStudents = 0;
+      let updatedStudents = 0;
+      let createdEnrollments = 0;
+      let updatedEnrollments = 0;
+
+      for (const studentData of validStudents) {
+        // 1. Vérifier si l'étudiant existe déjà (par nom complet)
+        const { data: existingStudent } = await supabase
+          .from('students')
+          .select('id')
+          .eq('first_name', studentData.first_name)
+          .eq('last_name', studentData.last_name)
+          .maybeSingle();
+
+        let studentId: string;
+
+        if (existingStudent) {
+          // Mettre à jour les infos de l'étudiant
           const { error: updateError } = await supabase
-            .from("students")
-            .update(student)
-            .eq("id", existing.id);
+            .from('students')
+            .update(studentData)
+            .eq('id', existingStudent.id);
 
           if (updateError) throw updateError;
-          updatedCount++;
+          studentId = existingStudent.id;
+          updatedStudents++;
         } else {
-          const { error: insertError } = await supabase
-            .from("students")
-            .insert([student]);
+          // Créer un nouveau student
+          const { data: newStudent, error: insertError } = await supabase
+            .from('students')
+            .insert([studentData])
+            .select('id')
+            .single();
 
           if (insertError) throw insertError;
-          createdCount++;
+          studentId = newStudent.id;
+          createdStudents++;
+        }
+
+        // 2. Créer ou mettre à jour l'enrollment pour l'année sélectionnée
+        const classId = classIdMap.get(studentData.class_name) || null;
+
+        const { data: existingEnrollment } = await supabase
+          .from('student_enrollments')
+          .select('id')
+          .eq('student_id', studentId)
+          .eq('school_year_id', selectedSchoolYearId)
+          .maybeSingle();
+
+        const enrollmentData = {
+          student_id: studentId,
+          school_year_id: selectedSchoolYearId,
+          class_id: classId,
+          class_name: studentData.class_name,
+          company: studentData.company,
+          academic_background: studentData.academic_background,
+        };
+
+        if (existingEnrollment) {
+          // Mettre à jour l'enrollment existant
+          const { error: updateEnrollmentError } = await supabase
+            .from('student_enrollments')
+            .update(enrollmentData)
+            .eq('id', existingEnrollment.id);
+
+          if (updateEnrollmentError) throw updateEnrollmentError;
+          updatedEnrollments++;
+        } else {
+          // Créer un nouvel enrollment
+          const { error: insertEnrollmentError } = await supabase
+            .from('student_enrollments')
+            .insert([enrollmentData]);
+
+          if (insertEnrollmentError) throw insertEnrollmentError;
+          createdEnrollments++;
         }
       }
 
-      const message = [];
-      if (createdCount > 0) message.push(`${createdCount} créé(s)`);
-      if (updatedCount > 0) message.push(`${updatedCount} mis à jour`);
+      const messages = [];
+      if (createdStudents > 0) messages.push(`${createdStudents} étudiant(s) créé(s)`);
+      if (updatedStudents > 0) messages.push(`${updatedStudents} étudiant(s) mis à jour`);
+      if (createdEnrollments > 0) messages.push(`${createdEnrollments} inscription(s) créée(s)`);
+      if (updatedEnrollments > 0) messages.push(`${updatedEnrollments} inscription(s) mise(s) à jour`);
       
-      toast.success(`Import réussi : ${message.join(", ")}`);
+      toast.success(`Import réussi : ${messages.join(", ")}`);
       setOpen(false);
       setRows([
         { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", birth_date: "", academic_background: "", company: "" },

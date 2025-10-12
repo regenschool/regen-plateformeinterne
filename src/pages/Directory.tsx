@@ -250,8 +250,11 @@ const Directory = () => {
             <Download className="w-4 h-4 mr-2" />
             {t("directory.exportCSV")}
           </Button>
-          <ImportStudentsDialog onImportComplete={() => {}} />
-          <AddStudentDialog onStudentAdded={() => {}} />
+          <ImportStudentsDialog 
+            onImportComplete={() => refetch()} 
+            selectedSchoolYearId={selectedSchoolYearId}
+          />
+          <AddStudentDialog onStudentAdded={() => refetch()} />
         </div>
       </div>
 
