@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { Upload, Plus, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { parse, format, isValid } from "date-fns";
+import { checkRateLimit, RATE_LIMITS, RateLimitError } from "@/lib/rateLimiter";
+import { logAuditAction } from "@/hooks/useAuditLog";
 
 type ImportStudentsDialogProps = {
   onImportComplete: () => void;
@@ -146,6 +148,17 @@ export const ImportStudentsDialog = ({ onImportComplete, selectedSchoolYearId }:
     if (!selectedSchoolYearId) {
       toast.error("Veuillez sélectionner une année scolaire avant d'importer");
       return;
+    }
+
+    // Vérifier le rate limiting
+    try {
+      await checkRateLimit(RATE_LIMITS.IMPORT_STUDENTS);
+    } catch (error) {
+      if (error instanceof RateLimitError) {
+        toast.error(`Limite d'import atteinte. Réessayez dans ${error.retryAfter} secondes`);
+        return;
+      }
+      throw error;
     }
 
     const { syncClassToReferential } = await import('@/hooks/useReferentialMutations');
@@ -306,7 +319,14 @@ export const ImportStudentsDialog = ({ onImportComplete, selectedSchoolYearId }:
         );
       }
 
-      // 10. Messages de succès détaillés
+      // 10. Logger l'action d'audit
+      await logAuditAction('IMPORT', 'students', {
+        total_students: validStudents.length,
+        created: studentsToInsert.length,
+        updated: studentsToUpdate.length,
+      });
+
+      // 11. Messages de succès détaillés
       const messages = [];
       if (studentsToInsert.length > 0) messages.push(`${studentsToInsert.length} étudiant(s) créé(s)`);
       if (studentsToUpdate.length > 0) messages.push(`${studentsToUpdate.length} étudiant(s) mis à jour`);

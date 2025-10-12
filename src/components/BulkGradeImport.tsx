@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Upload, FileSpreadsheet } from "lucide-react";
+import { checkRateLimit, RATE_LIMITS, RateLimitError } from "@/lib/rateLimiter";
+import { logAuditAction } from "@/hooks/useAuditLog";
 
 type Student = {
   id: string;
@@ -130,6 +132,17 @@ export const BulkGradeImport = ({ students, classname, subject, subjectMetadata,
       return;
     }
 
+    // Vérifier le rate limiting
+    try {
+      await checkRateLimit(RATE_LIMITS.BULK_GRADES);
+    } catch (error) {
+      if (error instanceof RateLimitError) {
+        toast.error(`Limite d'import atteinte. Réessayez dans ${error.retryAfter} secondes`);
+        return;
+      }
+      throw error;
+    }
+
     if (!assessmentName.trim()) {
       toast.error("Veuillez saisir un nom d'épreuve");
       return;
@@ -175,6 +188,14 @@ export const BulkGradeImport = ({ students, classname, subject, subjectMetadata,
       toast.error("Erreur lors de l'import des notes");
       return;
     }
+
+    // Logger l'action d'audit
+    await logAuditAction('IMPORT', 'grades', {
+      assessment_name: assessmentName,
+      total_grades: gradeEntries.length,
+      class_name: classname,
+      subject,
+    });
 
     toast.success(`${gradeEntries.length} notes importées avec succès`);
     onImportComplete();

@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Upload, Plus, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { checkRateLimit, RATE_LIMITS, RateLimitError } from "@/lib/rateLimiter";
+import { logAuditAction } from "@/hooks/useAuditLog";
 
 interface ImportSubjectsDialogProps {
   open: boolean;
@@ -82,6 +84,17 @@ export function ImportSubjectsDialog({ open, onClose, onImportComplete }: Import
     if (validSubjects.length === 0) {
       toast.error("Veuillez remplir au moins une matière complète (année, semestre, classe, matière)");
       return;
+    }
+
+    // Vérifier le rate limiting
+    try {
+      await checkRateLimit(RATE_LIMITS.IMPORT_SUBJECTS);
+    } catch (error) {
+      if (error instanceof RateLimitError) {
+        toast.error(`Limite d'import atteinte. Réessayez dans ${error.retryAfter} secondes`);
+        return;
+      }
+      throw error;
     }
 
     setLoading(true);
@@ -170,6 +183,13 @@ export function ImportSubjectsDialog({ open, onClose, onImportComplete }: Import
           createdCount++;
         }
       }
+
+      // Logger l'action d'audit
+      await logAuditAction('IMPORT', 'subjects', {
+        total_subjects: validSubjects.length,
+        created: createdCount,
+        updated: updatedCount,
+      });
 
       const message = [];
       if (createdCount > 0) message.push(`${createdCount} créée(s)`);
