@@ -89,9 +89,6 @@ export default function Grades() {
       if (prefilledSubject) setSelectedSubject(prefilledSubject);
       if (prefilledSchoolYear) setSelectedSchoolYear(prefilledSchoolYear);
       if (prefilledSemester) setSelectedSemester(prefilledSemester);
-      
-      // Clear location state after reading it to avoid re-applying on re-renders
-      window.history.replaceState({}, document.title);
     }
   }, [location.state]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
@@ -191,22 +188,22 @@ export default function Grades() {
         const uniqueSubjects = Array.from(new Set(data.map(s => s.subject_name)));
         setSubjects(uniqueSubjects);
         
-        // Vérifier si la matière sélectionnée existe toujours dans la BDD
+        // Vérifier si la matière sélectionnée existe dans la BDD
         const currentSubjectExists = data.find(s => s.subject_name === selectedSubject);
         
-        if (selectedSubject && !currentSubjectExists) {
-          // La matière sélectionnée n'existe plus, réinitialiser
-          setSelectedSubject("");
-          setNewSubjectMetadata(null);
-          setGrades([]);
-          toast.warning("La matière sélectionnée n'existe pas pour cette combinaison classe/année/semestre");
-        } else if (currentSubjectExists) {
+        if (selectedSubject && currentSubjectExists) {
           // Récupérer les métadonnées de la matière sélectionnée
           setNewSubjectMetadata({
             teacherName: currentSubjectExists.teacher_name,
             schoolYear: currentSubjectExists.school_year,
             semester: currentSubjectExists.semester,
           });
+        } else if (selectedSubject && !currentSubjectExists) {
+          // La matière sélectionnée n'existe plus, réinitialiser
+          setSelectedSubject("");
+          setNewSubjectMetadata(null);
+          setGrades([]);
+          toast.warning("La matière sélectionnée n'existe pas pour cette combinaison classe/année/semestre");
         } else {
           setNewSubjectMetadata(null);
         }
