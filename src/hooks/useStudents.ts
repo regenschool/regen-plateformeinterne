@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useMemo } from 'react';
 
 type Student = {
   id: string;
@@ -11,17 +12,16 @@ type Student = {
   birth_date: string | null;
   academic_background: string | null;
   company: string | null;
-  class_name: string; // Kept for compatibility
+  class_name: string;
   special_needs: string | null;
   created_at: string;
-  // New normalized fields
   class_id: string | null;
   level_id: string | null;
   school_year_id: string | null;
   assigned_teacher_id: string | null;
 };
 
-// Hook pour récupérer tous les étudiants avec cache et relations
+// Hook optimisé pour récupérer tous les étudiants avec cache et relations
 export const useStudents = (classFilter?: string) => {
   return useQuery({
     queryKey: ['students', classFilter],
@@ -46,6 +46,8 @@ export const useStudents = (classFilter?: string) => {
       if (error) throw error;
       return data as Student[];
     },
+    staleTime: 5 * 60 * 1000, // Cache 5 minutes
+    gcTime: 10 * 60 * 1000, // Garbage collection après 10 minutes
   });
 };
 

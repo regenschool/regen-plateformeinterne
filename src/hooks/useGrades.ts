@@ -30,7 +30,7 @@ type GradesFilters = {
   teacherId?: string;
 };
 
-// Hook pour récupérer les notes avec filtres
+// Hook optimisé pour récupérer les notes avec filtres et cache
 export const useGrades = (filters: GradesFilters) => {
   const { className, subject, schoolYear, semester, teacherId } = filters;
   
@@ -51,6 +51,8 @@ export const useGrades = (filters: GradesFilters) => {
       return data as Grade[];
     },
     enabled: !!(className && subject && schoolYear && semester),
+    staleTime: 2 * 60 * 1000, // Cache 2 minutes
+    gcTime: 5 * 60 * 1000, // Garbage collection après 5 minutes
   });
 };
 

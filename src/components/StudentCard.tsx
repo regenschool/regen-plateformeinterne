@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, memo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { EditStudentDialog } from "./EditStudentDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeleteEnrollment, useDeleteStudentPermanently } from "@/hooks/useEnrollments";
 import { calculateAge } from "@/lib/utils";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -88,7 +89,8 @@ export const StudentCard = ({
     [student.birth_date, student.age]
   );
 
-  const saveNote = async () => {
+  // Callbacks optimisés avec useCallback
+  const saveNote = useCallback(async () => {
     if (!propUserId) {
       toast.error(t("studentCard.loginToSaveNotes"));
       return;
@@ -98,7 +100,11 @@ export const StudentCard = ({
       const { error } = await supabase
         .from("user_notes")
         .upsert(
-          { user_id: propUserId, student_id: student.id, note: note.trim() },
+          {
+            user_id: propUserId,
+            student_id: student.id,
+            note: note,
+          },
           { onConflict: "user_id,student_id" }
         );
 
@@ -106,51 +112,67 @@ export const StudentCard = ({
 
       setSavedNote(note);
       setIsEditingNote(false);
-      onNoteUpdate?.(student.id, note);
+      if (onNoteUpdate) {
+        onNoteUpdate(student.id, note);
+      }
       toast.success(t("studentCard.noteSaved"));
     } catch (error: any) {
-      toast.error(t("studentCard.failedToSaveNote"));
+      toast.error(t("studentCard.errorSavingNote") + " : " + error.message);
     }
-  };
+  }, [propUserId, student.id, note, onNoteUpdate, t]);
 
-  const cancelEdit = () => {
-    setNote(savedNote);
-    setIsEditingNote(false);
-  };
-
-  const handleDeleteEnrollment = async () => {
-    if (!enrollmentId) {
-      toast.error("ID d'inscription manquant");
-      return;
-    }
-    await deleteEnrollment.mutateAsync(enrollmentId);
-    onUpdate();
-    setShowDeleteDialog(false);
-  };
-
-  const handleDeleteStudentPermanently = async () => {
-    await deleteStudentPermanently.mutateAsync(student.id);
-    onUpdate();
-    setShowPermanentDeleteDialog(false);
-  };
-
-  const saveAcademicBackground = async () => {
+  const updateStudentField = useCallback(async (field: "academic_background" | "company", value: string) => {
     try {
       const { error } = await supabase
         .from("students")
-        .update({ academic_background: academicValue.trim() || null })
+        .update({ [field]: value })
         .eq("id", student.id);
 
       if (error) throw error;
 
-      setIsEditingAcademic(false);
-      toast.success("Parcours académique mis à jour");
+      toast.success("Information mise à jour");
+      onUpdate();
+
+      if (field === "academic_background") {
+        setIsEditingAcademic(false);
+      } else {
+        setIsEditingCompany(false);
+      }
+    } catch (error: any) {
+      toast.error("Erreur lors de la mise à jour : " + error.message);
+    }
+  }, [student.id, onUpdate]);
+
+  const handleDeleteEnrollment = useCallback(async () => {
+    if (!enrollmentId) return;
+    
+    try {
+      await deleteEnrollment.mutateAsync(enrollmentId);
+      setShowDeleteDialog(false);
       onUpdate();
     } catch (error: any) {
-      toast.error("Échec de la mise à jour");
-      console.error("Failed to update academic background:", error);
+      console.error('Error deleting enrollment:', error);
     }
-  };
+  }, [enrollmentId, deleteEnrollment, onUpdate]);
+
+  const handleDeletePermanently = useCallback(async () => {
+    try {
+      await deleteStudentPermanently.mutateAsync(student.id);
+      setShowPermanentDeleteDialog(false);
+      onUpdate();
+    } catch (error: any) {
+      console.error('Error deleting student:', error);
+    }
+  }, [student.id, deleteStudentPermanently, onUpdate]);
+
+  const saveAcademicBackground = useCallback(async () => {
+    await updateStudentField("academic_background", academicValue);
+  }, [updateStudentField, academicValue]);
+
+  const cancelEdit = useCallback(() => {
+    setNote(savedNote);
+    setIsEditingNote(false);
+  }, [savedNote]);
 
   const saveCompany = async () => {
     try {
@@ -272,7 +294,7 @@ export const StudentCard = ({
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Annuler</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteStudentPermanently} className="bg-destructive hover:bg-destructive/90">
+                  <AlertDialogAction onClick={handleDeletePermanently} className="bg-destructive hover:bg-destructive/90">
                     Supprimer définitivement
                   </AlertDialogAction>
                 </AlertDialogFooter>
@@ -409,3 +431,6 @@ export const StudentCard = ({
     </Card>
   );
 };
+
+// Memo pour éviter les re-renders inutiles
+export default memo(StudentCard);

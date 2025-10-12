@@ -1,11 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StudentCard } from "@/components/StudentCard";
-import { AddStudentDialog } from "@/components/AddStudentDialog";
-import { ImportStudentsDialog } from "@/components/ImportStudentsDialog";
-import { Sprout, Download, ArrowUpDown, Trash2, UserMinus, UserX, RefreshCw } from "lucide-react";
+import { Sprout, Download, ArrowUpDown, Trash2, UserMinus, UserX, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -24,7 +22,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
@@ -34,6 +31,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+// Lazy load dialogs pour réduire le bundle initial
+const AddStudentDialog = lazy(() => import("@/components/AddStudentDialog").then(m => ({ default: m.AddStudentDialog })));
+const ImportStudentsDialog = lazy(() => import("@/components/ImportStudentsDialog").then(m => ({ default: m.ImportStudentsDialog })));
+
+const ITEMS_PER_PAGE = 24; // Pagination : 24 étudiants par page
 
 const Directory = () => {
   const { t } = useLanguage();
@@ -47,6 +49,7 @@ const Directory = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [userNotes, setUserNotes] = useState<Record<string, string>>({});
   const [userId, setUserId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
@@ -94,7 +97,7 @@ const Directory = () => {
     loadAllNotes();
   }, [userId, enrollments]);
 
-  // Auto-sélectionner l'année en cours au chargement (celle qui contient la date actuelle)
+  // Auto-sélectionner l'année en cours au chargement
   useEffect(() => {
     if (schoolYears?.length && !selectedSchoolYearId) {
       const today = new Date();
@@ -104,19 +107,23 @@ const Directory = () => {
         return today >= start && today <= end;
       });
       
-      // Si on trouve une année en cours, on la sélectionne, sinon on prend l'année active ou la plus récente
       const yearToSelect = currentYear || schoolYears.find(sy => sy.is_active) || schoolYears[0];
       if (yearToSelect) setSelectedSchoolYearId(yearToSelect.id);
     }
   }, [schoolYears, selectedSchoolYearId]);
 
-  // Extraire les classes uniques des enrollments
+  // Réinitialiser la page lors du changement de filtres
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedClass, debouncedSearchTerm, showActiveSearchOnly, sortBy]);
+
+  // Extraire les classes uniques avec useMemo
   const classes = useMemo(() => {
     const uniqueClasses = new Set(enrollments.map(e => e.class_name_from_ref || e.class_name).filter(Boolean));
     return Array.from(uniqueClasses).sort();
   }, [enrollments]);
 
-  // Filtrage et tri avec useMemo pour optimiser les performances
+  // Filtrage et tri optimisé avec useMemo
   const filteredEnrollments = useMemo(() => {
     let filtered = enrollments;
 
@@ -143,7 +150,7 @@ const Directory = () => {
       );
     }
 
-    // Tri optimisé avec calcul dynamique de l'âge
+    // Tri optimisé
     return [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "nameAsc":
@@ -155,20 +162,16 @@ const Directory = () => {
             b.class_name_from_ref || b.class_name || ''
           );
         case "ageAsc": {
-          // Calculer l'âge dynamiquement à partir de birth_date
           const ageA = calculateAge(a.birth_date);
           const ageB = calculateAge(b.birth_date);
-          // Jeune → Âgé : nulls à la fin
           if (ageA === null && ageB === null) return 0;
           if (ageA === null) return 1;
           if (ageB === null) return -1;
           return ageA - ageB;
         }
         case "ageDesc": {
-          // Calculer l'âge dynamiquement à partir de birth_date
           const ageA = calculateAge(a.birth_date);
           const ageB = calculateAge(b.birth_date);
-          // Âgé → Jeune : nulls à la fin
           if (ageA === null && ageB === null) return 0;
           if (ageA === null) return 1;
           if (ageB === null) return -1;
@@ -182,7 +185,16 @@ const Directory = () => {
     });
   }, [enrollments, selectedClass, debouncedSearchTerm, showActiveSearchOnly, sortBy]);
 
-  const exportToCSV = () => {
+  // Pagination des résultats filtrés
+  const paginatedEnrollments = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredEnrollments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredEnrollments, currentPage]);
+
+  const totalPages = Math.ceil(filteredEnrollments.length / ITEMS_PER_PAGE);
+
+  // Callbacks optimisés avec useCallback
+  const exportToCSV = useCallback(() => {
     const headers = [
       "Prénom",
       "Nom",
@@ -221,12 +233,11 @@ const Directory = () => {
     link.click();
     document.body.removeChild(link);
     toast.success(t("directory.exportSuccess"));
-  };
+  }, [filteredEnrollments, t]);
 
-  const handleDeleteAllDisplayed = async () => {
+  const handleDeleteAllDisplayed = useCallback(async () => {
     setIsDeleting(true);
     try {
-      // Supprimer tous les enrollments affichés
       const enrollmentIds = filteredEnrollments.map(e => e.id);
       
       for (const id of enrollmentIds) {
@@ -241,12 +252,11 @@ const Directory = () => {
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [filteredEnrollments, refetch]);
 
-  const handlePermanentDeleteAllDisplayed = async () => {
+  const handlePermanentDeleteAllDisplayed = useCallback(async () => {
     setIsDeleting(true);
     try {
-      // Supprimer définitivement tous les étudiants affichés (cascade supprimera les enrollments)
       const studentIds = filteredEnrollments.map(e => e.student_id);
       const uniqueStudentIds = [...new Set(studentIds)];
       
@@ -262,7 +272,12 @@ const Directory = () => {
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [filteredEnrollments, refetch]);
+
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   if (isLoading) {
     return (
@@ -324,7 +339,7 @@ const Directory = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Dialog pour désinscription groupée */}
+          {/* Dialogs de suppression */}
           <AlertDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -356,7 +371,6 @@ const Directory = () => {
             </AlertDialogContent>
           </AlertDialog>
 
-          {/* Dialog pour suppression définitive groupée */}
           <AlertDialog open={showPermanentDeleteAllDialog} onOpenChange={setShowPermanentDeleteAllDialog}>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -390,11 +404,15 @@ const Directory = () => {
             <Download className="w-4 h-4 mr-2" />
             {t("directory.exportCSV")}
           </Button>
-          <ImportStudentsDialog 
-            onImportComplete={() => refetch()} 
-            selectedSchoolYearId={selectedSchoolYearId}
-          />
-          <AddStudentDialog onStudentAdded={() => refetch()} />
+          <Suspense fallback={<Button variant="outline" disabled>Chargement...</Button>}>
+            <ImportStudentsDialog 
+              onImportComplete={() => refetch()} 
+              selectedSchoolYearId={selectedSchoolYearId}
+            />
+          </Suspense>
+          <Suspense fallback={<Button disabled>Chargement...</Button>}>
+            <AddStudentDialog onStudentAdded={() => refetch()} />
+          </Suspense>
         </div>
       </div>
 
@@ -446,62 +464,114 @@ const Directory = () => {
             </SelectContent>
           </Select>
         </div>
-        
-        <div className="flex items-center space-x-2">
+
+        <div className="flex items-center gap-2">
           <Checkbox
             id="active-search"
             checked={showActiveSearchOnly}
             onCheckedChange={(checked) => setShowActiveSearchOnly(checked === true)}
           />
-          <Label
-            htmlFor="active-search"
-            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-          >
-            {t("directory.showActiveSearch")}
+          <Label htmlFor="active-search" className="cursor-pointer">
+            {t("directory.showOnlyActiveSearch")}
           </Label>
         </div>
       </div>
 
-      {filteredEnrollments.length === 0 ? (
-        <div className="text-center py-12 space-y-4">
-          <Sprout className="w-16 h-16 text-muted-foreground mx-auto opacity-50" />
-          <div>
-            <p className="text-lg font-medium text-foreground">{t("directory.noStudents")}</p>
-            <p className="text-muted-foreground">
-              {searchTerm || selectedClass !== "all"
-                ? t("directory.adjustFilters")
-                : t("directory.addFirstStudent")}
-            </p>
-          </div>
+      {paginatedEnrollments.length === 0 ? (
+        <div className="text-center py-12">
+          <Sprout className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+          <p className="text-muted-foreground">{t("directory.noStudents")}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {filteredEnrollments.map((enrollment) => (
-            <StudentCard 
-              key={enrollment.id}
-              enrollmentId={enrollment.id}
-              schoolYear={enrollment.school_year_label}
-              userId={userId}
-              initialNote={userNotes[enrollment.student_id] || ""}
-              onNoteUpdate={(studentId, note) => {
-                setUserNotes(prev => ({ ...prev, [studentId]: note }));
-              }}
-              student={{
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {paginatedEnrollments.map((enrollment) => {
+              const student = {
                 id: enrollment.student_id,
-                first_name: enrollment.first_name || '',
-                last_name: enrollment.last_name || '',
-                class_name: enrollment.class_name_from_ref || enrollment.class_name || '',
-                photo_url: enrollment.photo_url || null,
-                birth_date: enrollment.birth_date || null,
-                age: enrollment.age || null,
-                company: enrollment.company || null,
-                academic_background: enrollment.academic_background || null,
-                special_needs: enrollment.special_needs || null,
-              }} 
-              onUpdate={() => {}} 
-            />
-          ))}
-        </div>
+                first_name: enrollment.first_name,
+                last_name: enrollment.last_name,
+                photo_url: enrollment.photo_url,
+                age: enrollment.age,
+                birth_date: enrollment.birth_date,
+                academic_background: enrollment.academic_background,
+                company: enrollment.company,
+                class_name: enrollment.class_name_from_ref || enrollment.class_name,
+                special_needs: enrollment.special_needs,
+              };
+
+              return (
+                <StudentCard
+                  key={enrollment.id}
+                  student={student}
+                  enrollmentId={enrollment.id}
+                  schoolYear={schoolYears?.find(y => y.id === selectedSchoolYearId)?.label}
+                  userId={userId}
+                  initialNote={userNotes[enrollment.student_id]}
+                  onUpdate={() => refetch()}
+                  onNoteUpdate={(studentId, note) => {
+                    setUserNotes(prev => ({
+                      ...prev,
+                      [studentId]: note
+                    }));
+                  }}
+                />
+              );
+            })}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Précédent
+              </Button>
+              
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                  // Afficher les 3 premières pages, la page courante +/- 1, et les 3 dernières
+                  if (
+                    page <= 3 || 
+                    page >= totalPages - 2 || 
+                    Math.abs(page - currentPage) <= 1
+                  ) {
+                    return (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                        className="min-w-[40px]"
+                      >
+                        {page}
+                      </Button>
+                    );
+                  } else if (page === 4 && currentPage > 5) {
+                    return <span key="dots1" className="px-2">...</span>;
+                  } else if (page === totalPages - 3 && currentPage < totalPages - 4) {
+                    return <span key="dots2" className="px-2">...</span>;
+                  }
+                  return null;
+                })}
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Suivant
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

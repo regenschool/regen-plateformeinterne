@@ -5,7 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { queryClient } from "@/lib/queryClient";
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
 import Index from "./pages/Index";
@@ -15,15 +15,17 @@ import Quiz from "./pages/Quiz";
 import PublicQuiz from "./pages/PublicQuiz";
 import Grades from "./pages/Grades";
 import Profile from "./pages/Profile";
-import UserManagement from "./pages/UserManagement";
-import Settings from "./pages/Settings";
-import Tests from "./pages/Tests";
-import YearTransition from "./pages/YearTransition";
 import NotFound from "./pages/NotFound";
 import { Layout } from "./components/Layout";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AdminProvider } from "./contexts/AdminContext";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+
+// Lazy load des pages lourdes
+const UserManagement = lazy(() => import("./pages/UserManagement"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Tests = lazy(() => import("./pages/Tests"));
+const YearTransition = lazy(() => import("./pages/YearTransition"));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -107,7 +109,9 @@ const App = () => (
                 path="/users"
                 element={
                   <ProtectedRoute>
-                    <UserManagement />
+                    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+                      <UserManagement />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -115,7 +119,9 @@ const App = () => (
                 path="/settings"
                 element={
                   <ProtectedRoute>
-                    <Settings />
+                    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+                      <Settings />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -123,7 +129,9 @@ const App = () => (
                 path="/tests"
                 element={
                   <ProtectedRoute>
-                    <Tests />
+                    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+                      <Tests />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
@@ -131,7 +139,9 @@ const App = () => (
                 path="/year-transition"
                 element={
                   <ProtectedRoute>
-                    <YearTransition />
+                    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+                      <YearTransition />
+                    </Suspense>
                   </ProtectedRoute>
                 }
               />
