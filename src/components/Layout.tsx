@@ -3,9 +3,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Leaf, Network, Lightbulb, LogOut, Languages, ClipboardList, User, Users } from "lucide-react";
-import { toast } from "sonner";
 import { Session } from "@supabase/supabase-js";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAdmin } from "@/contexts/AdminContext";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -23,60 +23,22 @@ export const Layout = ({ children }: LayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [session, setSession] = useState<Session | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { isAdmin, toggleAdmin } = useAdmin();
   const { t, language, setLanguage } = useLanguage();
 
-  const toggleAdmin = async (checked: boolean) => {
-    if (!session?.user) return;
-    const { error } = await (supabase as any)
-      .from("dev_role_overrides")
-      .upsert({ user_id: session.user.id, is_admin: checked, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-    if (error) {
-      console.error("Failed to toggle admin override", error);
-      toast.error("Impossible de changer de rôle");
-      return;
-    }
-    setIsAdmin(checked);
-    // Notify other parts of the app (e.g., Profile page) about role changes
-    window.dispatchEvent(new CustomEvent('role-override-change', { detail: { isAdmin: checked } }));
-    toast.success(checked ? "Mode administrateur activé" : "Mode enseignant activé");
-  };
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session?.user) {
-        checkAdminStatus(session.user.id);
-      }
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session?.user) {
-        checkAdminStatus(session.user.id);
-      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const checkAdminStatus = async (userId: string) => {
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
-
-    const { data: override } = await (supabase as any)
-      .from("dev_role_overrides")
-      .select("is_admin")
-      .eq("user_id", userId)
-      .maybeSingle();
-    
-    setIsAdmin(!!roleData || !!override?.is_admin);
-  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

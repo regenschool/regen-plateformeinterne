@@ -18,6 +18,7 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ImportSubjectsDialog } from "@/components/ImportSubjectsDialog";
 import { AddSubjectDialog } from "@/components/AddSubjectDialog";
+import { useAdmin } from "@/contexts/AdminContext";
 
 type TeacherProfile = {
   id: string;
@@ -62,10 +63,10 @@ type Invoice = {
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { isAdmin } = useAdmin();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [profile, setProfile] = useState<TeacherProfile | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [documents, setDocuments] = useState<SchoolDocument[]>([]);
@@ -88,79 +89,14 @@ const Profile = () => {
     getCurrentUser();
   }, []);
 
-  // Listen to role override changes from the Layout toggle
-  useEffect(() => {
-    const onRoleChange = (e: Event) => {
-      const detail = (e as CustomEvent<{ isAdmin: boolean }>).detail;
-      setIsAdmin(!!detail?.isAdmin);
-    };
-    window.addEventListener('role-override-change', onRoleChange as EventListener);
-    return () => {
-      window.removeEventListener('role-override-change', onRoleChange as EventListener);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (userId) {
-      fetchProfile();
-      fetchSubjects();
-      fetchDocuments();
-      fetchInvoices();
-    }
-  }, [userId, isAdmin]);
-
-
-  // Real-time subscription for subjects
-  useEffect(() => {
-    if (!userId) return;
-
-    const channel = supabase
-      .channel('subjects-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'subjects',
-          filter: `teacher_id=eq.${userId}`,
-        },
-        () => {
-          fetchSubjects();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [userId]);
-
   const getCurrentUser = async () => {
     const { data } = await supabase.auth.getUser();
     const currentUserId = data.user?.id || null;
     setUserId(currentUserId);
-    
-    if (currentUserId) {
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", currentUserId)
-        .eq("role", "admin")
-        .maybeSingle();
-
-      const { data: override } = await (supabase as any)
-        .from("dev_role_overrides")
-        .select("is_admin")
-        .eq("user_id", currentUserId)
-        .maybeSingle();
-      
-      setIsAdmin(!!roleData || !!override?.is_admin);
-    }
-    
     setLoading(false);
   };
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     if (!userId) return;
 
     try {
@@ -194,7 +130,7 @@ const Profile = () => {
       console.error("Error fetching profile:", error);
       toast.error("Erreur lors du chargement du profil");
     }
-  };
+  }, [userId]);
 
   const fetchSubjects = useCallback(async () => {
     if (!userId) return;
@@ -265,6 +201,41 @@ const Profile = () => {
       console.error("Error fetching invoices:", error);
     }
   }, [userId]);
+
+  // Fetch data when userId or isAdmin changes
+  useEffect(() => {
+    if (userId) {
+      fetchProfile();
+      fetchSubjects();
+      fetchDocuments();
+      fetchInvoices();
+    }
+  }, [userId, isAdmin, fetchProfile, fetchSubjects, fetchDocuments, fetchInvoices]);
+
+  // Real-time subscription for subjects
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel('subjects-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'subjects',
+          filter: `teacher_id=eq.${userId}`,
+        },
+        () => {
+          fetchSubjects();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, fetchSubjects]);
 
   const saveProfile = async () => {
     if (!profile || !userId) return;

@@ -17,6 +17,7 @@ import UserManagement from "./pages/UserManagement";
 import NotFound from "./pages/NotFound";
 import { Layout } from "./components/Layout";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import { AdminProvider } from "./contexts/AdminContext";
 
 const queryClient = new QueryClient();
 
@@ -55,60 +56,62 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => (
   <LanguageProvider>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route
-              path="/directory"
-              element={
-                <ProtectedRoute>
-                  <Directory />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/quiz"
-              element={
-                <ProtectedRoute>
-                  <Quiz />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/quiz/:linkId" element={<PublicQuiz />} />
-            <Route
-              path="/grades"
-              element={
-                <ProtectedRoute>
-                  <Grades />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/users"
-              element={
-                <ProtectedRoute>
-                  <UserManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <AdminProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route
+                path="/directory"
+                element={
+                  <ProtectedRoute>
+                    <Directory />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/quiz"
+                element={
+                  <ProtectedRoute>
+                    <Quiz />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/quiz/:linkId" element={<PublicQuiz />} />
+              <Route
+                path="/grades"
+                element={
+                  <ProtectedRoute>
+                    <Grades />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/users"
+                element={
+                  <ProtectedRoute>
+                    <UserManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </AdminProvider>
   </LanguageProvider>
 );
 

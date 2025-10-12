@@ -10,6 +10,7 @@ import { BulkGradeImport } from "@/components/BulkGradeImport";
 import { NewSubjectDialog } from "@/components/NewSubjectDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import { useAdmin } from "@/contexts/AdminContext";
 import { toast } from "sonner";
 import { ClipboardList, Upload, TrendingUp, FileText, AlertTriangle, Trash2, ArrowLeft, ChevronLeft, ChevronRight, PlusCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -62,6 +63,7 @@ type Assessment = {
 
 export default function Grades() {
   const { t } = useLanguage();
+  const { isAdmin } = useAdmin();
   const location = useLocation();
   const [students, setStudents] = useState<Student[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
@@ -109,40 +111,6 @@ export default function Grades() {
     }
   }, [location.state, location.key]); // location.key change à chaque navigation
   const [assessments, setAssessments] = useState<Assessment[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    const init = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      try {
-        const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("role", "admin")
-          .maybeSingle();
-
-        const { data: override } = await supabase
-          .from("dev_role_overrides")
-          .select("is_admin")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        setIsAdmin(!!roleData || !!override?.is_admin);
-      } catch (e) {
-        console.error("Error checking admin status:", e);
-      }
-    };
-    init();
-
-    const onRoleChange = (e: Event) => {
-      const detail = (e as CustomEvent<{ isAdmin: boolean }>).detail;
-      setIsAdmin(!!detail?.isAdmin);
-    };
-    window.addEventListener("role-override-change", onRoleChange as EventListener);
-    return () => window.removeEventListener("role-override-change", onRoleChange as EventListener);
-  }, []);
 
   useEffect(() => {
     if (selectedClass && selectedSchoolYear && selectedSemester) {
