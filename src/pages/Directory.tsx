@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StudentCard } from "@/components/StudentCard";
 import { AddStudentDialog } from "@/components/AddStudentDialog";
 import { ImportStudentsDialog } from "@/components/ImportStudentsDialog";
-import { Sprout, Download, ArrowUpDown } from "lucide-react";
+import { Sprout, Download, ArrowUpDown, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,19 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useEnrollments } from "@/hooks/useEnrollments";
 import { useSchoolYears } from "@/hooks/useReferentials";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 const Directory = () => {
   const { t } = useLanguage();
@@ -21,11 +34,13 @@ const Directory = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showActiveSearchOnly, setShowActiveSearchOnly] = useState(false);
   const [sortBy, setSortBy] = useState<"nameAsc" | "nameDesc" | "class" | "ageAsc" | "ageDesc" | "createdAt">("nameAsc");
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
   const { data: schoolYears } = useSchoolYears();
-  const { data: enrollments = [], isLoading } = useEnrollments({ 
+  const { data: enrollments = [], isLoading, refetch } = useEnrollments({ 
     schoolYearId: selectedSchoolYearId 
   });
 
@@ -150,6 +165,26 @@ const Directory = () => {
     toast.success(t("directory.exportSuccess"));
   };
 
+  const handleDeleteAllDisplayed = async () => {
+    setIsDeleting(true);
+    try {
+      // Supprimer tous les enrollments affichés
+      const enrollmentIds = filteredEnrollments.map(e => e.id);
+      
+      for (const id of enrollmentIds) {
+        await supabase.from('student_enrollments').delete().eq('id', id);
+      }
+      
+      toast.success(`${enrollmentIds.length} étudiants désinscrit(s) de cette année`);
+      refetch();
+      setShowDeleteAllDialog(false);
+    } catch (error: any) {
+      toast.error('Erreur lors de la suppression : ' + error.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -171,6 +206,46 @@ const Directory = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <AlertDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="default"
+                disabled={filteredEnrollments.length === 0}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Supprimer tout ({filteredEnrollments.length})
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>⚠️ Supprimer tous les étudiants affichés ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Vous allez <strong>désinscrire {filteredEnrollments.length} étudiant(s)</strong> de l'année sélectionnée.
+                  {searchTerm || selectedClass !== "all" ? (
+                    <span className="block mt-2 text-orange-600">
+                      ⚠️ Attention : seuls les étudiants filtrés seront supprimés !
+                    </span>
+                  ) : null}
+                  <span className="block mt-2">
+                    Les étudiants resteront dans les autres années scolaires.
+                  </span>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={handleDeleteAllDisplayed}
+                  disabled={isDeleting}
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  {isDeleting ? "Suppression..." : "Supprimer tout"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          
           <Button onClick={exportToCSV} variant="outline" size="default">
             <Download className="w-4 h-4 mr-2" />
             {t("directory.exportCSV")}
