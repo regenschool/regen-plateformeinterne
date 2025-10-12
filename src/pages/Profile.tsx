@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -196,7 +196,7 @@ const Profile = () => {
     }
   };
 
-  const fetchSubjects = async () => {
+  const fetchSubjects = useCallback(async () => {
     if (!userId) return;
 
     try {
@@ -230,9 +230,9 @@ const Profile = () => {
     } catch (error: any) {
       console.error("Error fetching subjects:", error);
     }
-  };
+  }, [userId, isAdmin]);
 
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     if (!userId) return;
 
     try {
@@ -247,9 +247,9 @@ const Profile = () => {
     } catch (error: any) {
       console.error("Error fetching documents:", error);
     }
-  };
+  }, [userId]);
 
-  const fetchInvoices = async () => {
+  const fetchInvoices = useCallback(async () => {
     if (!userId) return;
 
     try {
@@ -264,7 +264,7 @@ const Profile = () => {
     } catch (error: any) {
       console.error("Error fetching invoices:", error);
     }
-  };
+  }, [userId]);
 
   const saveProfile = async () => {
     if (!profile || !userId) return;
