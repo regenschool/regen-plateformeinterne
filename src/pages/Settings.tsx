@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, GraduationCap, Calendar, BookOpen, Award } from "lucide-react";
+import { Settings as SettingsIcon, GraduationCap, Calendar, BookOpen, Award, Users } from "lucide-react";
 import { SchoolYearsManager } from "@/components/settings/SchoolYearsManager";
 import { ClassesManager } from "@/components/settings/ClassesManager";
 import { AcademicPeriodsManager } from "@/components/settings/AcademicPeriodsManager";
 import { LevelsManager } from "@/components/settings/LevelsManager";
+import { UsersManager } from "@/components/settings/UsersManager";
 import { SyncReferentialsButton } from "@/components/settings/SyncReferentialsButton";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Navigate } from "react-router-dom";
@@ -27,14 +28,14 @@ export default function Settings() {
             <h1 className="text-4xl font-bold">Paramètres</h1>
           </div>
           <p className="text-muted-foreground">
-            Gérez les référentiels de l'école : années scolaires, classes, niveaux et périodes académiques
+            Gérez les référentiels de l'école et les utilisateurs
           </p>
         </div>
         <SyncReferentialsButton />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-[800px]">
+        <TabsList className="grid w-full grid-cols-5 lg:w-[1000px]">
           <TabsTrigger value="school-years" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             <span className="hidden sm:inline">Années scolaires</span>
@@ -50,6 +51,10 @@ export default function Settings() {
           <TabsTrigger value="periods" className="flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
             <span className="hidden sm:inline">Semestres</span>
+          </TabsTrigger>
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Utilisateurs</span>
           </TabsTrigger>
         </TabsList>
 
@@ -106,6 +111,20 @@ export default function Settings() {
             </CardHeader>
             <CardContent>
               <AcademicPeriodsManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="users">
+          <Card>
+            <CardHeader>
+              <CardTitle>Utilisateurs</CardTitle>
+              <CardDescription>
+                Gérez les accès et les rôles des utilisateurs de l'école.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <UsersManager />
             </CardContent>
           </Card>
         </TabsContent>
