@@ -101,6 +101,22 @@ export function ImportSubjectsDialog({ open, onClose, onImportComplete }: Import
       let createdCount = 0;
 
       for (const subject of validSubjects) {
+        // Résoudre le teacher_id depuis l'email si fourni
+        let targetTeacherId = user.id; // Par défaut, l'admin qui importe
+        
+        if (subject.teacher_email) {
+          // Chercher l'utilisateur avec cet email
+          const { data: teacherUser } = await supabase.rpc('get_user_id_from_email', { 
+            _email: subject.teacher_email 
+          });
+          
+          if (teacherUser) {
+            targetTeacherId = teacherUser;
+          } else {
+            console.warn(`Aucun utilisateur trouvé pour l'email ${subject.teacher_email}, matière assignée à l'admin`);
+          }
+        }
+
         // Chercher une matière existante avec les mêmes critères
         const existing = existingSubjects?.find(
           (s) =>
@@ -117,7 +133,7 @@ export function ImportSubjectsDialog({ open, onClose, onImportComplete }: Import
           subject_name: subject.subject_name,
           teacher_email: subject.teacher_email || null,
           teacher_name: subject.teacher_name || (subject.teacher_email ? subject.teacher_email.split("@")[0] : "Admin Import"),
-          teacher_id: user.id,
+          teacher_id: targetTeacherId,
         };
 
         if (existing) {

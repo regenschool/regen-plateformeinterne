@@ -42,10 +42,26 @@ export function AddSubjectDialog({ open, onClose, onSubjectAdded }: AddSubjectDi
         return;
       }
 
+      // Résoudre le teacher_id depuis l'email si fourni
+      let targetTeacherId = user.id; // Par défaut, l'admin qui crée la matière
+      
+      if (teacherEmail) {
+        // Chercher l'utilisateur avec cet email
+        const { data: teacherUser } = await supabase.rpc('get_user_id_from_email', { 
+          _email: teacherEmail 
+        });
+        
+        if (teacherUser) {
+          targetTeacherId = teacherUser;
+        } else {
+          toast.warning(`Aucun utilisateur trouvé pour ${teacherEmail}, matière assignée à vous-même`);
+        }
+      }
+
       const { error } = await supabase
         .from("subjects")
         .insert({
-          teacher_id: user.id,
+          teacher_id: targetTeacherId,
           teacher_email: teacherEmail || null,
           teacher_name: teacherName || (teacherEmail ? teacherEmail.split("@")[0] : "Admin"),
           school_year: schoolYear,
