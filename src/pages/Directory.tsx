@@ -29,11 +29,19 @@ const Directory = () => {
     schoolYearId: selectedSchoolYearId 
   });
 
-  // Auto-sélectionner l'année active au chargement
+  // Auto-sélectionner l'année en cours au chargement (celle qui contient la date actuelle)
   useEffect(() => {
     if (schoolYears?.length && !selectedSchoolYearId) {
-      const activeYear = schoolYears.find(sy => sy.is_active);
-      if (activeYear) setSelectedSchoolYearId(activeYear.id);
+      const today = new Date();
+      const currentYear = schoolYears.find(sy => {
+        const start = new Date(sy.start_date);
+        const end = new Date(sy.end_date);
+        return today >= start && today <= end;
+      });
+      
+      // Si on trouve une année en cours, on la sélectionne, sinon on prend l'année active ou la plus récente
+      const yearToSelect = currentYear || schoolYears.find(sy => sy.is_active) || schoolYears[0];
+      if (yearToSelect) setSelectedSchoolYearId(yearToSelect.id);
     }
   }, [schoolYears, selectedSchoolYearId]);
 
