@@ -17,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ImportSubjectsDialog } from "@/components/ImportSubjectsDialog";
+import { AddSubjectDialog } from "@/components/AddSubjectDialog";
 
 type TeacherProfile = {
   id: string;
@@ -73,6 +74,7 @@ const Profile = () => {
   const [documents, setDocuments] = useState<SchoolDocument[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showAddSubjectDialog, setShowAddSubjectDialog] = useState(false);
   
   // Invoice form state
   const [showInvoiceForm, setShowInvoiceForm] = useState(false);
@@ -572,10 +574,16 @@ const Profile = () => {
                     </Button>
                   )}
                   {(isAdmin || devMode) && (
-                    <Button onClick={() => setShowImportDialog(true)}>
-                      <Upload className="w-4 h-4 mr-2" />
-                      Import CSV
-                    </Button>
+                    <>
+                      <Button variant="outline" onClick={() => setShowAddSubjectDialog(true)}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Ajouter
+                      </Button>
+                      <Button onClick={() => setShowImportDialog(true)}>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Import CSV
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
@@ -887,6 +895,12 @@ const Profile = () => {
         open={showImportDialog}
         onClose={() => setShowImportDialog(false)}
         onImportComplete={fetchSubjects}
+      />
+
+      <AddSubjectDialog
+        open={showAddSubjectDialog}
+        onClose={() => setShowAddSubjectDialog(false)}
+        onSubjectAdded={fetchSubjects}
       />
     </div>
   );
