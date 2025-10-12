@@ -7,7 +7,6 @@ import { ClassesManager } from "@/components/settings/ClassesManager";
 import { AcademicPeriodsManager } from "@/components/settings/AcademicPeriodsManager";
 import { LevelsManager } from "@/components/settings/LevelsManager";
 import { UsersManager } from "@/components/settings/UsersManager";
-import { TeachersManager } from "@/components/settings/TeachersManager";
 import { SyncReferentialsButton } from "@/components/settings/SyncReferentialsButton";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Navigate } from "react-router-dom";
@@ -36,7 +35,7 @@ export default function Settings() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6 lg:w-[1200px]">
+        <TabsList className="grid w-full grid-cols-5 lg:w-[1000px]">
           <TabsTrigger value="school-years" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             <span className="hidden sm:inline">Années scolaires</span>
@@ -52,10 +51,6 @@ export default function Settings() {
           <TabsTrigger value="periods" className="flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
             <span className="hidden sm:inline">Semestres</span>
-          </TabsTrigger>
-          <TabsTrigger value="teachers" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Enseignants</span>
           </TabsTrigger>
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
@@ -120,16 +115,12 @@ export default function Settings() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="teachers" className="space-y-4">
-          <TeachersManager />
-        </TabsContent>
-
         <TabsContent value="users">
           <Card>
             <CardHeader>
-              <CardTitle>Utilisateurs</CardTitle>
+              <CardTitle>Utilisateurs & Enseignants</CardTitle>
               <CardDescription>
-                Gérez les accès et les rôles des utilisateurs de l'école.
+                Gérez tous les utilisateurs de la plateforme : accès, rôles (Admin, Enseignant, Modérateur) et informations personnelles.
               </CardDescription>
             </CardHeader>
             <CardContent>
