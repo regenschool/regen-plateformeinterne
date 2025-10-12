@@ -11,10 +11,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useStudents, useClasses } from "@/hooks/useStudents";
+import { useEnrollments } from "@/hooks/useEnrollments";
+import { useSchoolYears } from "@/hooks/useReferentials";
 
 const Directory = () => {
   const { t } = useLanguage();
+  const [selectedSchoolYearId, setSelectedSchoolYearId] = useState<string>("");
   const [selectedClass, setSelectedClass] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showActiveSearchOnly, setShowActiveSearchOnly] = useState(false);
@@ -22,31 +24,49 @@ const Directory = () => {
   
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
-  const { data: students = [], isLoading } = useStudents();
-  const { data: classes = [] } = useClasses();
+  const { data: schoolYears } = useSchoolYears();
+  const { data: enrollments = [], isLoading } = useEnrollments({ 
+    schoolYearId: selectedSchoolYearId 
+  });
+
+  // Auto-sélectionner l'année active au chargement
+  useEffect(() => {
+    if (schoolYears?.length && !selectedSchoolYearId) {
+      const activeYear = schoolYears.find(sy => sy.is_active);
+      if (activeYear) setSelectedSchoolYearId(activeYear.id);
+    }
+  }, [schoolYears, selectedSchoolYearId]);
+
+  // Extraire les classes uniques des enrollments
+  const classes = useMemo(() => {
+    const uniqueClasses = new Set(enrollments.map(e => e.class_name_from_ref || e.class_name).filter(Boolean));
+    return Array.from(uniqueClasses).sort();
+  }, [enrollments]);
 
   // Filtrage et tri avec useMemo pour optimiser les performances
-  const filteredStudents = useMemo(() => {
-    let filtered = students;
+  const filteredEnrollments = useMemo(() => {
+    let filtered = enrollments;
 
     if (selectedClass !== "all") {
-      filtered = filtered.filter((s) => s.class_name === selectedClass);
+      filtered = filtered.filter((e) => 
+        (e.class_name_from_ref || e.class_name) === selectedClass
+      );
     }
 
     if (showActiveSearchOnly) {
       filtered = filtered.filter(
-        (s) => s.company?.toLowerCase() === "en recherche active"
+        (e) => e.company?.toLowerCase() === "en recherche active"
       );
     }
 
     if (debouncedSearchTerm) {
       const term = debouncedSearchTerm.toLowerCase();
       filtered = filtered.filter(
-        (s) =>
-          s.first_name.toLowerCase().includes(term) ||
-          s.last_name.toLowerCase().includes(term) ||
-          s.company?.toLowerCase().includes(term) ||
-          s.academic_background?.toLowerCase().includes(term)
+        (e) =>
+          e.first_name?.toLowerCase().includes(term) ||
+          e.last_name?.toLowerCase().includes(term) ||
+          e.company?.toLowerCase().includes(term) ||
+          e.academic_background?.toLowerCase().includes(term)
       );
     }
 
@@ -54,26 +74,28 @@ const Directory = () => {
     return [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "nameAsc":
-          return a.last_name.localeCompare(b.last_name);
+          return (a.last_name || '').localeCompare(b.last_name || '');
         case "nameDesc":
-          return b.last_name.localeCompare(a.last_name);
+          return (b.last_name || '').localeCompare(a.last_name || '');
         case "class":
-          return a.class_name.localeCompare(b.class_name);
+          return (a.class_name_from_ref || a.class_name || '').localeCompare(
+            b.class_name_from_ref || b.class_name || ''
+          );
         case "ageAsc":
           if (a.age === null) return 1;
           if (b.age === null) return -1;
-          return a.age - b.age;
+          return (a.age || 0) - (b.age || 0);
         case "ageDesc":
           if (a.age === null) return 1;
           if (b.age === null) return -1;
-          return b.age - a.age;
+          return (b.age || 0) - (a.age || 0);
         case "createdAt":
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         default:
           return 0;
       }
     });
-  }, [students, selectedClass, debouncedSearchTerm, showActiveSearchOnly, sortBy]);
+  }, [enrollments, selectedClass, debouncedSearchTerm, showActiveSearchOnly, sortBy]);
 
   const exportToCSV = () => {
     const headers = [
@@ -85,13 +107,13 @@ const Directory = () => {
       "Classe",
     ];
 
-    const csvData = filteredStudents.map((student) => [
-      student.first_name,
-      student.last_name,
-      student.age || "",
-      student.academic_background || "",
-      student.company || "",
-      student.class_name,
+    const csvData = filteredEnrollments.map((enrollment) => [
+      enrollment.first_name || '',
+      enrollment.last_name || '',
+      enrollment.age || "",
+      enrollment.academic_background || "",
+      enrollment.company || "",
+      enrollment.class_name_from_ref || enrollment.class_name || '',
     ]);
 
     const csvContent = [
@@ -133,7 +155,7 @@ const Directory = () => {
         <div>
           <h2 className="text-3xl font-bold text-foreground">{t("directory.title")}</h2>
           <p className="text-muted-foreground">
-            {filteredStudents.length} / {students.length} {filteredStudents.length === 1 ? t("directory.student") : t("directory.studentsCount")} · {t("directory.subtitle")}
+            {filteredEnrollments.length} / {enrollments.length} {filteredEnrollments.length === 1 ? t("directory.student") : t("directory.studentsCount")} · {t("directory.subtitle")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -148,6 +170,18 @@ const Directory = () => {
 
       <div className="space-y-4">
         <div className="flex flex-col md:flex-row gap-4">
+          <Select value={selectedSchoolYearId} onValueChange={setSelectedSchoolYearId}>
+            <SelectTrigger className="md:w-[200px]">
+              <SelectValue placeholder="Année scolaire" />
+            </SelectTrigger>
+            <SelectContent>
+              {schoolYears?.map((year) => (
+                <SelectItem key={year.id} value={year.id}>
+                  {year.label} {year.is_active && '✓'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Input
             placeholder={t("directory.searchPlaceholder")}
             value={searchTerm}
@@ -198,7 +232,7 @@ const Directory = () => {
         </div>
       </div>
 
-      {filteredStudents.length === 0 ? (
+      {filteredEnrollments.length === 0 ? (
         <div className="text-center py-12 space-y-4">
           <Sprout className="w-16 h-16 text-muted-foreground mx-auto opacity-50" />
           <div>
@@ -212,8 +246,23 @@ const Directory = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {filteredStudents.map((student) => (
-            <StudentCard key={student.id} student={student} onUpdate={() => {}} />
+          {filteredEnrollments.map((enrollment) => (
+            <StudentCard 
+              key={enrollment.id} 
+              student={{
+                id: enrollment.student_id,
+                first_name: enrollment.first_name || '',
+                last_name: enrollment.last_name || '',
+                class_name: enrollment.class_name_from_ref || enrollment.class_name || '',
+                photo_url: enrollment.photo_url || null,
+                birth_date: enrollment.birth_date || null,
+                age: enrollment.age || null,
+                company: enrollment.company || null,
+                academic_background: enrollment.academic_background || null,
+                special_needs: enrollment.special_needs || null,
+              }} 
+              onUpdate={() => {}} 
+            />
           ))}
         </div>
       )}
