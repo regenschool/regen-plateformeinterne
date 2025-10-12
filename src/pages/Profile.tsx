@@ -65,6 +65,9 @@ const Profile = () => {
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [devMode, setDevMode] = useState(() => {
+    return localStorage.getItem("dev-admin-mode") === "true";
+  });
   const [profile, setProfile] = useState<TeacherProfile | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [documents, setDocuments] = useState<SchoolDocument[]>([]);
@@ -93,6 +96,17 @@ const Profile = () => {
       fetchDocuments();
       fetchInvoices();
     }
+  }, [userId]);
+
+  useEffect(() => {
+    const handleDevModeChange = () => {
+      setDevMode(localStorage.getItem("dev-admin-mode") === "true");
+      if (userId) {
+        fetchSubjects();
+      }
+    };
+    window.addEventListener("dev-mode-change", handleDevModeChange);
+    return () => window.removeEventListener("dev-mode-change", handleDevModeChange);
   }, [userId]);
 
   // Real-time subscription for subjects
@@ -180,7 +194,7 @@ const Profile = () => {
     if (!userId) return;
 
     try {
-      if (isAdmin) {
+      if (isAdmin || devMode) {
         // Les admins voient toutes les matières
         const { data, error } = await supabase
           .from("subjects")
@@ -406,7 +420,7 @@ const Profile = () => {
           </TabsTrigger>
           <TabsTrigger value="subjects">
             <BookOpen className="w-4 h-4 mr-2" />
-            {isAdmin ? "Toutes les Matières" : "Mes Matières"}
+            {(isAdmin || devMode) ? "Toutes les Matières" : "Mes Matières"}
           </TabsTrigger>
           <TabsTrigger value="documents">
             <FileText className="w-4 h-4 mr-2" />
@@ -511,14 +525,14 @@ const Profile = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>{isAdmin ? "Toutes les Matières" : "Mes Matières"}</CardTitle>
+                  <CardTitle>{(isAdmin || devMode) ? "Toutes les Matières" : "Mes Matières"}</CardTitle>
                   <CardDescription>
-                    {isAdmin 
+                    {(isAdmin || devMode)
                       ? "Liste de toutes les matières de l'école" 
                       : "Liste des matières que vous enseignez"}
                   </CardDescription>
                 </div>
-                {isAdmin && (
+                {(isAdmin || devMode) && (
                   <Button onClick={() => setShowImportDialog(true)}>
                     <Plus className="w-4 h-4 mr-2" />
                     Importer une matière
@@ -529,7 +543,7 @@ const Profile = () => {
             <CardContent>
               {subjects.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">
-                  {isAdmin 
+                  {(isAdmin || devMode)
                     ? "Aucune matière enregistrée. Commencez par importer des matières." 
                     : "Aucune matière enregistrée. Créez vos matières depuis l'onglet Notes."}
                 </p>

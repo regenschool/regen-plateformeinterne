@@ -2,9 +2,11 @@ import { ReactNode, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Leaf, Network, Lightbulb, LogOut, Languages, ClipboardList, User, Users } from "lucide-react";
+import { Leaf, Network, Lightbulb, LogOut, Languages, ClipboardList, User, Users, TestTube } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +23,16 @@ export const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [devMode, setDevMode] = useState(() => {
+    return localStorage.getItem("dev-admin-mode") === "true";
+  });
   const { t, language, setLanguage } = useLanguage();
+
+  const toggleDevMode = (checked: boolean) => {
+    setDevMode(checked);
+    localStorage.setItem("dev-admin-mode", String(checked));
+    window.dispatchEvent(new Event("dev-mode-change"));
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -77,7 +88,22 @@ export const Layout = ({ children }: LayoutProps) => {
             </div>
 
             {session && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                {/* DEV MODE TOGGLE */}
+                <div className="flex items-center gap-2 px-3 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                  <TestTube className="w-4 h-4 text-yellow-600" />
+                  <Label htmlFor="dev-mode" className="text-xs text-yellow-700 cursor-pointer whitespace-nowrap">
+                    {devMode ? "Admin" : "Prof"}
+                  </Label>
+                  <Switch
+                    id="dev-mode"
+                    checked={devMode}
+                    onCheckedChange={toggleDevMode}
+                  />
+                </div>
+
+                <div className="h-6 w-px bg-border" />
+
                 <Button
                   variant={isActive("/directory") ? "default" : "ghost"}
                   onClick={() => navigate("/directory", { replace: true })}
@@ -110,7 +136,7 @@ export const Layout = ({ children }: LayoutProps) => {
                   <User className="w-4 h-4" />
                   <span className="hidden sm:inline">Profil</span>
                 </Button>
-                {isAdmin && (
+                {(isAdmin || devMode) && (
                   <Button
                     variant={isActive("/users") ? "default" : "ghost"}
                     onClick={() => navigate("/users", { replace: true })}
