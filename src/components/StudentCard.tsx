@@ -44,19 +44,29 @@ type Student = {
 
 type StudentCardProps = {
   student: Student;
-  enrollmentId?: string; // ID de l'inscription pour pouvoir la supprimer
-  schoolYear?: string; // Année scolaire pour le message de confirmation
+  enrollmentId?: string;
+  schoolYear?: string;
+  userId?: string | null;
+  initialNote?: string;
   onUpdate: () => void;
+  onNoteUpdate?: (studentId: string, note: string) => void;
 };
 
-export const StudentCard = ({ student, enrollmentId, schoolYear, onUpdate }: StudentCardProps) => {
+export const StudentCard = ({ 
+  student, 
+  enrollmentId, 
+  schoolYear, 
+  userId: propUserId, 
+  initialNote = "",
+  onUpdate,
+  onNoteUpdate 
+}: StudentCardProps) => {
   const { t } = useLanguage();
   const deleteEnrollment = useDeleteEnrollment();
   const deleteStudentPermanently = useDeleteStudentPermanently();
-  const [note, setNote] = useState("");
-  const [savedNote, setSavedNote] = useState("");
+  const [note, setNote] = useState(initialNote);
+  const [savedNote, setSavedNote] = useState(initialNote);
   const [isEditingNote, setIsEditingNote] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showPermanentDeleteDialog, setShowPermanentDeleteDialog] = useState(false);
   
@@ -66,46 +76,20 @@ export const StudentCard = ({ student, enrollmentId, schoolYear, onUpdate }: Stu
   const [isEditingCompany, setIsEditingCompany] = useState(false);
   const [companyValue, setCompanyValue] = useState(student.company || "");
 
+  // Mettre à jour les notes quand initialNote change
+  useEffect(() => {
+    setNote(initialNote);
+    setSavedNote(initialNote);
+  }, [initialNote]);
+
   // Force recalculation when student data changes
   const displayAge = React.useMemo(
     () => student.birth_date ? calculateAge(student.birth_date) : student.age,
     [student.birth_date, student.age]
   );
 
-  useEffect(() => {
-    getCurrentUser();
-  }, []);
-
-  useEffect(() => {
-    if (userId) {
-      fetchNote();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, student.id]);
-
-  const getCurrentUser = async () => {
-    const { data } = await supabase.auth.getUser();
-    setUserId(data.user?.id || null);
-  };
-
-  const fetchNote = async () => {
-    if (!userId) return;
-
-    const { data } = await supabase
-      .from("user_notes")
-      .select("note")
-      .eq("user_id", userId)
-      .eq("student_id", student.id)
-      .maybeSingle();
-
-    if (data?.note) {
-      setNote(data.note);
-      setSavedNote(data.note);
-    }
-  };
-
   const saveNote = async () => {
-    if (!userId) {
+    if (!propUserId) {
       toast.error(t("studentCard.loginToSaveNotes"));
       return;
     }
@@ -114,7 +98,7 @@ export const StudentCard = ({ student, enrollmentId, schoolYear, onUpdate }: Stu
       const { error } = await supabase
         .from("user_notes")
         .upsert(
-          { user_id: userId, student_id: student.id, note: note.trim() },
+          { user_id: propUserId, student_id: student.id, note: note.trim() },
           { onConflict: "user_id,student_id" }
         );
 
@@ -122,6 +106,7 @@ export const StudentCard = ({ student, enrollmentId, schoolYear, onUpdate }: Stu
 
       setSavedNote(note);
       setIsEditingNote(false);
+      onNoteUpdate?.(student.id, note);
       toast.success(t("studentCard.noteSaved"));
     } catch (error: any) {
       toast.error(t("studentCard.failedToSaveNote"));

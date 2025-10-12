@@ -45,6 +45,8 @@ const Directory = () => {
   const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
   const [showPermanentDeleteAllDialog, setShowPermanentDeleteAllDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [userNotes, setUserNotes] = useState<Record<string, string>>({});
+  const [userId, setUserId] = useState<string | null>(null);
   
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
@@ -52,6 +54,45 @@ const Directory = () => {
   const { data: enrollments = [], isLoading, refetch } = useEnrollments({ 
     schoolYearId: selectedSchoolYearId 
   });
+
+  // Récupérer l'userId au montage
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUserId(data.user?.id || null);
+    };
+    getCurrentUser();
+  }, []);
+
+  // Charger toutes les notes en une seule requête quand les enrollments changent
+  useEffect(() => {
+    const loadAllNotes = async () => {
+      if (!userId || enrollments.length === 0) return;
+
+      const studentIds = enrollments.map(e => e.student_id);
+      
+      const { data, error } = await supabase
+        .from('user_notes')
+        .select('student_id, note')
+        .eq('user_id', userId)
+        .in('student_id', studentIds);
+
+      if (error) {
+        console.error('Error loading notes:', error);
+        return;
+      }
+
+      const notesMap: Record<string, string> = {};
+      data?.forEach(note => {
+        if (note.note) {
+          notesMap[note.student_id] = note.note;
+        }
+      });
+      setUserNotes(notesMap);
+    };
+
+    loadAllNotes();
+  }, [userId, enrollments]);
 
   // Auto-sélectionner l'année en cours au chargement (celle qui contient la date actuelle)
   useEffect(() => {
@@ -440,6 +481,11 @@ const Directory = () => {
               key={enrollment.id}
               enrollmentId={enrollment.id}
               schoolYear={enrollment.school_year_label}
+              userId={userId}
+              initialNote={userNotes[enrollment.student_id] || ""}
+              onNoteUpdate={(studentId, note) => {
+                setUserNotes(prev => ({ ...prev, [studentId]: note }));
+              }}
               student={{
                 id: enrollment.student_id,
                 first_name: enrollment.first_name || '',
