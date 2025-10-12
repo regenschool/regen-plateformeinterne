@@ -105,10 +105,12 @@ export type Database = {
       }
       grades: {
         Row: {
+          academic_period_fk_id: string | null
           appreciation: string | null
           assessment_custom_label: string | null
           assessment_name: string | null
           assessment_type: Database["public"]["Enums"]["assessment_type"]
+          class_fk_id: string | null
           class_name: string
           created_at: string
           grade: number
@@ -125,10 +127,12 @@ export type Database = {
           weighting: number
         }
         Insert: {
+          academic_period_fk_id?: string | null
           appreciation?: string | null
           assessment_custom_label?: string | null
           assessment_name?: string | null
           assessment_type: Database["public"]["Enums"]["assessment_type"]
+          class_fk_id?: string | null
           class_name: string
           created_at?: string
           grade: number
@@ -145,10 +149,12 @@ export type Database = {
           weighting?: number
         }
         Update: {
+          academic_period_fk_id?: string | null
           appreciation?: string | null
           assessment_custom_label?: string | null
           assessment_name?: string | null
           assessment_type?: Database["public"]["Enums"]["assessment_type"]
+          class_fk_id?: string | null
           class_name?: string
           created_at?: string
           grade?: number
@@ -166,10 +172,31 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "grades_academic_period_fk_id_fkey"
+            columns: ["academic_period_fk_id"]
+            isOneToOne: false
+            referencedRelation: "academic_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_class_fk_id_fkey"
+            columns: ["class_fk_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "grades_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_students_enriched"
             referencedColumns: ["id"]
           },
         ]
@@ -322,14 +349,18 @@ export type Database = {
         Row: {
           academic_background: string | null
           age: number | null
+          assigned_teacher_id: string | null
           birth_date: string | null
+          class_id: string | null
           class_name: string
           company: string | null
           created_at: string
           first_name: string
           id: string
           last_name: string
+          level_id: string | null
           photo_url: string | null
+          school_year_id: string | null
           special_needs: string | null
           teacher_id: string | null
           updated_at: string
@@ -337,14 +368,18 @@ export type Database = {
         Insert: {
           academic_background?: string | null
           age?: number | null
+          assigned_teacher_id?: string | null
           birth_date?: string | null
+          class_id?: string | null
           class_name: string
           company?: string | null
           created_at?: string
           first_name: string
           id?: string
           last_name: string
+          level_id?: string | null
           photo_url?: string | null
+          school_year_id?: string | null
           special_needs?: string | null
           teacher_id?: string | null
           updated_at?: string
@@ -352,58 +387,132 @@ export type Database = {
         Update: {
           academic_background?: string | null
           age?: number | null
+          assigned_teacher_id?: string | null
           birth_date?: string | null
+          class_id?: string | null
           class_name?: string
           company?: string | null
           created_at?: string
           first_name?: string
           id?: string
           last_name?: string
+          level_id?: string | null
           photo_url?: string | null
+          school_year_id?: string | null
           special_needs?: string | null
           teacher_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "students_assigned_teacher_id_fkey"
+            columns: ["assigned_teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_school_year_id_fkey"
+            columns: ["school_year_id"]
+            isOneToOne: false
+            referencedRelation: "school_years"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       subjects: {
         Row: {
+          academic_period_id: string | null
+          class_fk_id: string | null
           class_name: string
           created_at: string
           id: string
           school_year: string
+          school_year_fk_id: string | null
           semester: string
           subject_name: string
           teacher_email: string | null
+          teacher_fk_id: string | null
           teacher_id: string
           teacher_name: string
           updated_at: string
         }
         Insert: {
+          academic_period_id?: string | null
+          class_fk_id?: string | null
           class_name: string
           created_at?: string
           id?: string
           school_year: string
+          school_year_fk_id?: string | null
           semester: string
           subject_name: string
           teacher_email?: string | null
+          teacher_fk_id?: string | null
           teacher_id: string
           teacher_name: string
           updated_at?: string
         }
         Update: {
+          academic_period_id?: string | null
+          class_fk_id?: string | null
           class_name?: string
           created_at?: string
           id?: string
           school_year?: string
+          school_year_fk_id?: string | null
           semester?: string
           subject_name?: string
           teacher_email?: string | null
+          teacher_fk_id?: string | null
           teacher_id?: string
           teacher_name?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "subjects_academic_period_id_fkey"
+            columns: ["academic_period_id"]
+            isOneToOne: false
+            referencedRelation: "academic_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subjects_class_fk_id_fkey"
+            columns: ["class_fk_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subjects_school_year_fk_id_fkey"
+            columns: ["school_year_fk_id"]
+            isOneToOne: false
+            referencedRelation: "school_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subjects_teacher_fk_id_fkey"
+            columns: ["teacher_fk_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       teacher_invoices: {
         Row: {
@@ -495,6 +604,36 @@ export type Database = {
         }
         Relationships: []
       }
+      teachers: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_notes: {
         Row: {
           created_at: string
@@ -528,6 +667,13 @@ export type Database = {
             referencedRelation: "students"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_notes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_students_enriched"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_roles: {
@@ -553,7 +699,123 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_grades_enriched: {
+        Row: {
+          academic_period_fk_id: string | null
+          academic_period_label: string | null
+          appreciation: string | null
+          assessment_custom_label: string | null
+          assessment_name: string | null
+          assessment_type: Database["public"]["Enums"]["assessment_type"] | null
+          class_fk_id: string | null
+          class_name: string | null
+          class_name_from_ref: string | null
+          created_at: string | null
+          grade: number | null
+          id: string | null
+          is_absent: boolean | null
+          max_grade: number | null
+          school_year: string | null
+          school_year_from_ref: string | null
+          semester: string | null
+          student_first_name: string | null
+          student_id: string | null
+          student_last_name: string | null
+          subject: string | null
+          teacher_email_from_ref: string | null
+          teacher_full_name: string | null
+          teacher_id: string | null
+          teacher_name: string | null
+          updated_at: string | null
+          weighting: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grades_academic_period_fk_id_fkey"
+            columns: ["academic_period_fk_id"]
+            isOneToOne: false
+            referencedRelation: "academic_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_class_fk_id_fkey"
+            columns: ["class_fk_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_students_enriched"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_students_enriched: {
+        Row: {
+          academic_background: string | null
+          age: number | null
+          assigned_teacher_email: string | null
+          assigned_teacher_id: string | null
+          assigned_teacher_name: string | null
+          birth_date: string | null
+          class_id: string | null
+          class_level: string | null
+          class_name: string | null
+          class_name_from_ref: string | null
+          company: string | null
+          created_at: string | null
+          first_name: string | null
+          id: string | null
+          last_name: string | null
+          level_id: string | null
+          level_name: string | null
+          photo_url: string | null
+          school_year_id: string | null
+          school_year_label: string | null
+          special_needs: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_assigned_teacher_id_fkey"
+            columns: ["assigned_teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_school_year_id_fkey"
+            columns: ["school_year_id"]
+            isOneToOne: false
+            referencedRelation: "school_years"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calculate_age: {
