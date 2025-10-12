@@ -299,7 +299,7 @@ export default function Quality() {
                   </div>
                 </div>
                 <Badge variant={metric.status === 'good' ? 'default' : 'secondary'}>
-                  {metric.value < 1 ? (metric.value * 100).toFixed(2) : metric.value.toFixed(0)}
+                  {metric.name.includes('CLS') ? metric.value.toFixed(2) : metric.value < 1 ? (metric.value * 100).toFixed(2) : metric.value.toFixed(0)}
                   {metric.name.includes('CLS') ? '' : metric.name.includes('ms') ? 'ms' : metric.name.includes('LCP') ? 's' : ''}
                 </Badge>
               </div>
