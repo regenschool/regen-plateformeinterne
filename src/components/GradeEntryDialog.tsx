@@ -86,9 +86,7 @@ export const GradeEntryDialog = ({
   const [isAbsent, setIsAbsent] = useState(false);
 
   useEffect(() => {
-    if (openExternal) {
-      setOpen(true);
-    }
+    setOpen(!!openExternal);
   }, [openExternal]);
 
   const fetchExistingAssessments = async () => {
