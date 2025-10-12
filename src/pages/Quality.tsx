@@ -121,8 +121,8 @@ export default function Quality() {
       },
       {
         name: 'Stabilité Visuelle (CLS)',
-        value: webVitals.cls * 100,
-        max: 25,
+        value: webVitals.cls,
+        max: 0.25,
         status: webVitals.cls < 0.1 ? 'good' : webVitals.cls < 0.25 ? 'warning' : 'critical',
         description: 'Décalages visuels (doit être < 0.1)',
       },
