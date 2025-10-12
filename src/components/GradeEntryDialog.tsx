@@ -208,18 +208,20 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
   }
 };
 
+  useEffect(() => {
+    if (open && preselectedAssessment) {
+      setAssessmentName(preselectedAssessment.name);
+      setAssessmentType(preselectedAssessment.type);
+      setCustomLabel(preselectedAssessment.customLabel || "");
+      setSelectedAssessment(preselectedAssessment.name);
+    }
+  }, [open, preselectedAssessment]);
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
       setOpen(isOpen);
       if (isOpen) {
         fetchExistingAssessments();
-        // Si une épreuve est présélectionnée, l'appliquer
-        if (preselectedAssessment) {
-          setAssessmentName(preselectedAssessment.name);
-          setAssessmentType(preselectedAssessment.type);
-          setCustomLabel(preselectedAssessment.customLabel || "");
-          setSelectedAssessment(preselectedAssessment.name);
-        }
       } else {
         // Réinitialiser la présélection quand on ferme le dialog
         if (onAssessmentDeselected) {
