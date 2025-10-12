@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Leaf, Network, Lightbulb, LogOut, Languages, ClipboardList, User, Settings, Calendar, FlaskConical, ChevronDown, Shield } from "lucide-react";
+import { Leaf, Network, Lightbulb, LogOut, Languages, ClipboardList, User, Settings, Calendar, FlaskConical, ChevronDown, Shield, Activity } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAdmin } from "@/contexts/AdminContext";
@@ -124,7 +124,7 @@ export const Layout = ({ children }: LayoutProps) => {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button 
-                        variant={["/profile", "/settings", "/tests", "/year-transition", "/audit"].some(path => isActive(path)) ? "default" : "ghost"}
+                        variant={["/profile", "/settings", "/tests", "/year-transition", "/audit", "/quality"].some(path => isActive(path)) ? "default" : "ghost"}
                         className="gap-2"
                       >
                         <Settings className="w-4 h-4" />
@@ -144,6 +144,10 @@ export const Layout = ({ children }: LayoutProps) => {
                       <DropdownMenuItem onClick={() => navigate("/year-transition", { replace: true })}>
                         <Calendar className="w-4 h-4 mr-2" />
                         Passage d'année
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/quality", { replace: true })}>
+                        <Activity className="w-4 h-4 mr-2" />
+                        Qualité & Performance
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate("/audit", { replace: true })}>
                         <Shield className="w-4 h-4 mr-2" />
