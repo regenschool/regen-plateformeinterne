@@ -109,6 +109,15 @@ const Directory = () => {
       );
     }
 
+    // Dédupliquer par (first_name, last_name, class_name) pour éviter doublons multi-professeurs
+    const seen = new Set<string>();
+    filtered = filtered.filter((s) => {
+      const key = `${s.first_name.toLowerCase()}|${s.last_name.toLowerCase()}|${s.class_name.toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
     // Apply sorting
     filtered = [...filtered].sort((a, b) => {
       switch (sortBy) {

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { RealtimeChannel } from "@supabase/supabase-js";
 
@@ -21,6 +21,18 @@ export const useRealtimeSubscription = ({
   onDelete,
   onChange,
 }: SubscriptionConfig) => {
+  const onChangeRef = useRef(onChange);
+  const onInsertRef = useRef(onInsert);
+  const onUpdateRef = useRef(onUpdate);
+  const onDeleteRef = useRef(onDelete);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+    onInsertRef.current = onInsert;
+    onUpdateRef.current = onUpdate;
+    onDeleteRef.current = onDelete;
+  }, [onChange, onInsert, onUpdate, onDelete]);
+
   useEffect(() => {
     let channel: RealtimeChannel;
 
@@ -36,18 +48,18 @@ export const useRealtimeSubscription = ({
           },
           (payload: any) => {
             // Call the appropriate handler based on event type
-            if (onChange) {
-              onChange(payload);
+            if (onChangeRef.current) {
+              onChangeRef.current(payload);
             } else {
               switch (payload.eventType) {
                 case "INSERT":
-                  onInsert?.(payload);
+                  onInsertRef.current?.(payload);
                   break;
                 case "UPDATE":
-                  onUpdate?.(payload);
+                  onUpdateRef.current?.(payload);
                   break;
                 case "DELETE":
-                  onDelete?.(payload);
+                  onDeleteRef.current?.(payload);
                   break;
               }
             }
@@ -63,5 +75,5 @@ export const useRealtimeSubscription = ({
         supabase.removeChannel(channel);
       }
     };
-  }, [table, event, schema, onInsert, onUpdate, onDelete, onChange]);
+  }, [table, event, schema]);
 };
