@@ -275,45 +275,138 @@ export const AcademicPeriodsManager = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {periods?.map((period) => (
-            <TableRow key={period.id}>
-              <TableCell>{getSchoolYearLabel(period.school_year_id)}</TableCell>
-              <TableCell className="font-medium">{period.label}</TableCell>
-              <TableCell>{format(new Date(period.start_date), "dd/MM/yyyy")}</TableCell>
-              <TableCell>{format(new Date(period.end_date), "dd/MM/yyyy")}</TableCell>
-              <TableCell>
-                <span
-                  className={cn(
-                    "px-2 py-1 rounded-full text-xs",
-                    period.is_active
-                      ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-800"
-                  )}
-                >
-                  {period.is_active ? "Oui" : "Non"}
-                </span>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex gap-2 justify-end">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEdit(period)}
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteMutation.mutate(period.id)}
-                    disabled={deleteMutation.isPending}
-                  >
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+          {periods?.map((period) => {
+            const isEditing = editingId === period.id;
+            
+            return (
+              <TableRow key={period.id}>
+                {isEditing ? (
+                  <>
+                    <TableCell>
+                      <Select value={schoolYearId} onValueChange={setSchoolYearId}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="z-50 bg-popover">
+                          {schoolYears?.map((year) => (
+                            <SelectItem key={year.id} value={year.id}>
+                              {year.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <Select value={label} onValueChange={setLabel}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="z-50 bg-popover">
+                          <SelectItem value="Semestre 1">Semestre 1</SelectItem>
+                          <SelectItem value="Semestre 2">Semestre 2</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" className="w-full">
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {startDate ? format(startDate, "dd/MM/yyyy") : "Date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 z-50 bg-popover">
+                          <Calendar
+                            mode="single"
+                            selected={startDate}
+                            onSelect={setStartDate}
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+                    <TableCell>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" className="w-full">
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {endDate ? format(endDate, "dd/MM/yyyy") : "Date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 z-50 bg-popover">
+                          <Calendar
+                            mode="single"
+                            selected={endDate}
+                            onSelect={setEndDate}
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+                    <TableCell>
+                      <Switch checked={isActive} onCheckedChange={setIsActive} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleUpdate}
+                          disabled={updateMutation.isPending}
+                        >
+                          <Check className="w-4 h-4 text-green-600" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditingId(null)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </>
+                ) : (
+                  <>
+                    <TableCell>{getSchoolYearLabel(period.school_year_id)}</TableCell>
+                    <TableCell className="font-medium">{period.label}</TableCell>
+                    <TableCell>{format(new Date(period.start_date), "dd/MM/yyyy")}</TableCell>
+                    <TableCell>{format(new Date(period.end_date), "dd/MM/yyyy")}</TableCell>
+                    <TableCell>
+                      <Switch 
+                        checked={period.is_active}
+                        onCheckedChange={(checked) => {
+                          updateMutation.mutate({
+                            id: period.id,
+                            data: { is_active: checked }
+                          });
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(period)}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteMutation.mutate(period.id)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </>
+                )}
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

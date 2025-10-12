@@ -247,44 +247,119 @@ export const SchoolYearsManager = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {schoolYears?.map((year) => (
-            <TableRow key={year.id}>
-              <TableCell className="font-medium">{year.label}</TableCell>
-              <TableCell>{format(new Date(year.start_date), "dd/MM/yyyy")}</TableCell>
-              <TableCell>{format(new Date(year.end_date), "dd/MM/yyyy")}</TableCell>
-              <TableCell>
-                <span
-                  className={cn(
-                    "px-2 py-1 rounded-full text-xs",
-                    year.is_active
-                      ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-800"
-                  )}
-                >
-                  {year.is_active ? "Oui" : "Non"}
-                </span>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex gap-2 justify-end">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEdit(year)}
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteMutation.mutate(year.id)}
-                    disabled={deleteMutation.isPending}
-                  >
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+          {schoolYears?.map((year) => {
+            const isEditing = editingId === year.id;
+            
+            return (
+              <TableRow key={year.id}>
+                {isEditing ? (
+                  <>
+                    <TableCell>
+                      <Input
+                        value={label}
+                        onChange={(e) => setLabel(e.target.value)}
+                        placeholder="2024-2025"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" className="w-full">
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {startDate ? format(startDate, "dd/MM/yyyy") : "Date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 z-50 bg-popover">
+                          <Calendar
+                            mode="single"
+                            selected={startDate}
+                            onSelect={setStartDate}
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+                    <TableCell>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" className="w-full">
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {endDate ? format(endDate, "dd/MM/yyyy") : "Date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 z-50 bg-popover">
+                          <Calendar
+                            mode="single"
+                            selected={endDate}
+                            onSelect={setEndDate}
+                            className={cn("p-3 pointer-events-auto")}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+                    <TableCell>
+                      <Switch checked={isActive} onCheckedChange={setIsActive} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleUpdate}
+                          disabled={updateMutation.isPending}
+                        >
+                          <Check className="w-4 h-4 text-green-600" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditingId(null)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </>
+                ) : (
+                  <>
+                    <TableCell className="font-medium">{year.label}</TableCell>
+                    <TableCell>{format(new Date(year.start_date), "dd/MM/yyyy")}</TableCell>
+                    <TableCell>{format(new Date(year.end_date), "dd/MM/yyyy")}</TableCell>
+                    <TableCell>
+                      <Switch 
+                        checked={year.is_active}
+                        onCheckedChange={(checked) => {
+                          updateMutation.mutate({
+                            id: year.id,
+                            data: { is_active: checked }
+                          });
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(year)}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteMutation.mutate(year.id)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </>
+                )}
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

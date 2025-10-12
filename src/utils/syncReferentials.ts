@@ -90,7 +90,7 @@ export const syncExistingDataToReferentials = async () => {
           label: year,
           start_date: `${startYear}-09-01`,
           end_date: `${endYear}-06-30`,
-          is_active: year === '2025-2026' // Activer 2025-2026 par défaut
+          is_active: false // On va activer 2025-2026 séparément
         };
       });
     
@@ -101,6 +101,18 @@ export const syncExistingDataToReferentials = async () => {
       
       if (insertError) throw insertError;
       console.log(`✅ ${yearsToInsert.length} années scolaires ajoutées`);
+    }
+    
+    // 7b. Activer spécifiquement l'année 2025-2026
+    const { error: activateError } = await supabase
+      .from('school_years')
+      .update({ is_active: true })
+      .eq('label', '2025-2026');
+    
+    if (activateError) {
+      console.error('Erreur lors de l\'activation de 2025-2026:', activateError);
+    } else {
+      console.log('✅ Année 2025-2026 activée');
     }
     
     // 8. Synchroniser les semestres depuis grades et subjects

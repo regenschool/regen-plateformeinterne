@@ -48,19 +48,21 @@ export const SyncReferentialsButton = () => {
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Synchroniser les référentiels</AlertDialogTitle>
-          <AlertDialogDescription className="space-y-2">
-            <p>
-              Cette action va analyser toutes les données existantes (étudiants, notes, matières)
-              et créer automatiquement les entrées manquantes dans les référentiels :
-            </p>
-            <ul className="list-disc list-inside space-y-1 text-sm">
-              <li>Classes trouvées dans le Directory et les notes</li>
-              <li>Années scolaires mentionnées dans les notes et matières</li>
-              <li>Périodes académiques (semestres) utilisées</li>
-            </ul>
-            <p className="text-sm font-medium mt-3">
-              L'année scolaire 2025-2026 sera activée par défaut.
-            </p>
+          <AlertDialogDescription asChild>
+            <div className="space-y-2">
+              <p>
+                Cette action va analyser toutes les données existantes (étudiants, notes, matières)
+                et créer automatiquement les entrées manquantes dans les référentiels :
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                <li>Classes trouvées dans le Directory et les notes</li>
+                <li>Années scolaires mentionnées dans les notes et matières</li>
+                <li>Périodes académiques (semestres) utilisées</li>
+              </ul>
+              <p className="text-sm font-medium mt-3">
+                L'année scolaire 2025-2026 sera activée par défaut.
+              </p>
+            </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

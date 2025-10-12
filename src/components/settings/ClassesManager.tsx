@@ -205,44 +205,102 @@ export const ClassesManager = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {classes?.map((classItem) => (
-            <TableRow key={classItem.id}>
-              <TableCell className="font-medium">{classItem.name}</TableCell>
-              <TableCell>{classItem.level || "-"}</TableCell>
-              <TableCell>{classItem.capacity || "-"}</TableCell>
-              <TableCell>
-                <span
-                  className={cn(
-                    "px-2 py-1 rounded-full text-xs",
-                    classItem.is_active
-                      ? "bg-green-100 text-green-800"
-                      : "bg-gray-100 text-gray-800"
-                  )}
-                >
-                  {classItem.is_active ? "Oui" : "Non"}
-                </span>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex gap-2 justify-end">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEdit(classItem)}
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => deleteMutation.mutate(classItem.id)}
-                    disabled={deleteMutation.isPending}
-                  >
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+          {classes?.map((classItem) => {
+            const isEditing = editingId === classItem.id;
+            
+            return (
+              <TableRow key={classItem.id}>
+                {isEditing ? (
+                  <>
+                    <TableCell>
+                      <Input
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="B1, M2..."
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Select value={level || ""} onValueChange={setLevel}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Niveau" />
+                        </SelectTrigger>
+                        <SelectContent className="z-50 bg-popover">
+                          <SelectItem value="Bachelor">Bachelor</SelectItem>
+                          <SelectItem value="Master">Master</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        value={capacity || ""}
+                        onChange={(e) => setCapacity(e.target.value ? parseInt(e.target.value) : undefined)}
+                        placeholder="30"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Switch checked={isActive} onCheckedChange={setIsActive} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleUpdate}
+                          disabled={updateMutation.isPending}
+                        >
+                          <Check className="w-4 h-4 text-green-600" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditingId(null)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </>
+                ) : (
+                  <>
+                    <TableCell className="font-medium">{classItem.name}</TableCell>
+                    <TableCell>{classItem.level || "-"}</TableCell>
+                    <TableCell>{classItem.capacity || "-"}</TableCell>
+                    <TableCell>
+                      <Switch 
+                        checked={classItem.is_active}
+                        onCheckedChange={(checked) => {
+                          updateMutation.mutate({
+                            id: classItem.id,
+                            data: { is_active: checked }
+                          });
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(classItem)}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteMutation.mutate(classItem.id)}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </>
+                )}
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
