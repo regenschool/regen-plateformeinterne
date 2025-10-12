@@ -17,6 +17,7 @@ import Grades from "./pages/Grades";
 import Profile from "./pages/Profile";
 import UserManagement from "./pages/UserManagement";
 import Settings from "./pages/Settings";
+import Tests from "./pages/Tests";
 import YearTransition from "./pages/YearTransition";
 import NotFound from "./pages/NotFound";
 import { Layout } from "./components/Layout";
@@ -115,6 +116,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Settings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tests"
+                element={
+                  <ProtectedRoute>
+                    <Tests />
                   </ProtectedRoute>
                 }
               />
