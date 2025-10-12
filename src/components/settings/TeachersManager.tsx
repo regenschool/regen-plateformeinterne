@@ -1,12 +1,22 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTeachers, useAddTeacher, useUpdateTeacher, useDeleteTeacher } from "@/hooks/useTeachers";
-import { Trash2, Plus, Save, X, Edit } from "lucide-react";
+import { Trash2, Plus, Save, X, Users } from "lucide-react";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export const TeachersManager = () => {
   const { data: teachers = [], isLoading } = useTeachers();
@@ -15,7 +25,7 @@ export const TeachersManager = () => {
   const deleteTeacher = useDeleteTeacher();
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingData, setEditingData] = useState<{ full_name: string; email: string; phone: string }>({
+  const [editValues, setEditValues] = useState<{ full_name: string; email: string; phone: string }>({
     full_name: "",
     email: "",
     phone: "",
@@ -25,55 +35,55 @@ export const TeachersManager = () => {
 
   const handleEdit = (teacher: any) => {
     setEditingId(teacher.id);
-    setEditingData({
+    setEditValues({
       full_name: teacher.full_name,
       email: teacher.email || "",
       phone: teacher.phone || "",
     });
   };
 
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    setEditingData({ full_name: "", email: "", phone: "" });
-  };
-
-  const handleSave = async (teacherId: string) => {
-    if (!editingData.full_name.trim()) {
-      toast.error("Le nom complet est obligatoire");
+  const handleSave = async (id: string) => {
+    if (!editValues.full_name.trim()) {
+      toast.error("Le nom est obligatoire");
       return;
     }
 
-    await updateTeacher.mutateAsync({
-      id: teacherId,
-      updates: {
-        full_name: editingData.full_name.trim(),
-        email: editingData.email.trim() || null,
-        phone: editingData.phone.trim() || null,
-      },
-    });
-    
-    setEditingId(null);
+    try {
+      await updateTeacher.mutateAsync({
+        id,
+        updates: editValues,
+      });
+      setEditingId(null);
+    } catch (error) {
+      console.error("Error updating teacher:", error);
+    }
   };
 
-  const handleAddTeacher = async () => {
+  const handleCancel = () => {
+    setEditingId(null);
+    setEditValues({ full_name: "", email: "", phone: "" });
+  };
+
+  const handleAdd = async () => {
     if (!newTeacher.full_name.trim()) {
-      toast.error("Le nom complet est obligatoire");
+      toast.error("Le nom est obligatoire");
       return;
     }
 
-    await addTeacher.mutateAsync({
-      full_name: newTeacher.full_name.trim(),
-      email: newTeacher.email.trim() || null,
-      phone: newTeacher.phone.trim() || null,
-    });
-
-    setNewTeacher({ full_name: "", email: "", phone: "" });
-    setIsAdding(false);
+    try {
+      await addTeacher.mutateAsync(newTeacher);
+      setNewTeacher({ full_name: "", email: "", phone: "" });
+      setIsAdding(false);
+    } catch (error) {
+      console.error("Error adding teacher:", error);
+    }
   };
 
-  const handleDelete = async (teacherId: string) => {
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer cet enseignant ?")) {
-      await deleteTeacher.mutateAsync(teacherId);
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteTeacher.mutateAsync(id);
+    } catch (error) {
+      console.error("Error deleting teacher:", error);
     }
   };
 
@@ -84,24 +94,23 @@ export const TeachersManager = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Gestion des Enseignants</CardTitle>
-        <CardDescription>
-          Gérer la liste des enseignants de l'établissement
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex justify-between items-center">
-          <p className="text-sm text-muted-foreground">
-            {teachers.length} enseignant{teachers.length > 1 ? "s" : ""} enregistré{teachers.length > 1 ? "s" : ""}
-          </p>
-          {!isAdding && (
-            <Button onClick={() => setIsAdding(true)} size="sm">
-              <Plus className="w-4 h-4 mr-2" />
-              Ajouter un enseignant
-            </Button>
-          )}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            <div>
+              <CardTitle>Enseignants</CardTitle>
+              <CardDescription>
+                Gérer la liste des enseignants de l'établissement
+              </CardDescription>
+            </div>
+          </div>
+          <Button onClick={() => setIsAdding(true)} disabled={isAdding}>
+            <Plus className="h-4 w-4 mr-2" />
+            Ajouter un enseignant
+          </Button>
         </div>
-
+      </CardHeader>
+      <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
@@ -119,45 +128,33 @@ export const TeachersManager = () => {
                     value={newTeacher.full_name}
                     onChange={(e) => setNewTeacher({ ...newTeacher, full_name: e.target.value })}
                     placeholder="Nom complet"
-                    className="h-8"
                   />
                 </TableCell>
                 <TableCell>
                   <Input
+                    type="email"
                     value={newTeacher.email}
                     onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })}
                     placeholder="email@example.com"
-                    type="email"
-                    className="h-8"
                   />
                 </TableCell>
                 <TableCell>
                   <Input
+                    type="tel"
                     value={newTeacher.phone}
                     onChange={(e) => setNewTeacher({ ...newTeacher, phone: e.target.value })}
-                    placeholder="06 12 34 56 78"
-                    className="h-8"
+                    placeholder="0123456789"
                   />
                 </TableCell>
                 <TableCell>
-                  <div className="flex gap-1">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={handleAddTeacher}
-                      className="h-8 w-8"
-                    >
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleAdd}>
                       <Save className="h-4 w-4" />
                     </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => {
-                        setIsAdding(false);
-                        setNewTeacher({ full_name: "", email: "", phone: "" });
-                      }}
-                      className="h-8 w-8"
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => {
+                      setIsAdding(false);
+                      setNewTeacher({ full_name: "", email: "", phone: "" });
+                    }}>
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
@@ -169,83 +166,75 @@ export const TeachersManager = () => {
                 <TableCell>
                   {editingId === teacher.id ? (
                     <Input
-                      value={editingData.full_name}
-                      onChange={(e) =>
-                        setEditingData({ ...editingData, full_name: e.target.value })
-                      }
-                      className="h-8"
+                      value={editValues.full_name}
+                      onChange={(e) => setEditValues({ ...editValues, full_name: e.target.value })}
                     />
                   ) : (
-                    teacher.full_name
+                    <span className="font-medium">{teacher.full_name}</span>
                   )}
                 </TableCell>
                 <TableCell>
                   {editingId === teacher.id ? (
                     <Input
-                      value={editingData.email}
-                      onChange={(e) =>
-                        setEditingData({ ...editingData, email: e.target.value })
-                      }
                       type="email"
-                      className="h-8"
+                      value={editValues.email}
+                      onChange={(e) => setEditValues({ ...editValues, email: e.target.value })}
                     />
                   ) : (
-                    teacher.email || "-"
+                    <span className="text-muted-foreground">{teacher.email || "-"}</span>
                   )}
                 </TableCell>
                 <TableCell>
                   {editingId === teacher.id ? (
                     <Input
-                      value={editingData.phone}
-                      onChange={(e) =>
-                        setEditingData({ ...editingData, phone: e.target.value })
-                      }
-                      className="h-8"
+                      type="tel"
+                      value={editValues.phone}
+                      onChange={(e) => setEditValues({ ...editValues, phone: e.target.value })}
                     />
                   ) : (
-                    teacher.phone || "-"
+                    <span className="text-muted-foreground">{teacher.phone || "-"}</span>
                   )}
                 </TableCell>
                 <TableCell>
-                  {editingId === teacher.id ? (
-                    <div className="flex gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleSave(teacher.id)}
-                        className="h-8 w-8"
-                      >
-                        <Save className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={handleCancelEdit}
-                        className="h-8 w-8"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleEdit(teacher)}
-                        className="h-8 w-8"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleDelete(teacher.id)}
-                        className="h-8 w-8"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex gap-2">
+                    {editingId === teacher.id ? (
+                      <>
+                        <Button size="sm" onClick={() => handleSave(teacher.id)}>
+                          <Save className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={handleCancel}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button size="sm" variant="ghost" onClick={() => handleEdit(teacher)}>
+                          Éditer
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="ghost">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Êtes-vous sûr de vouloir supprimer {teacher.full_name} ? Cette action est irréversible.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Annuler</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(teacher.id)}>
+                                Supprimer
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

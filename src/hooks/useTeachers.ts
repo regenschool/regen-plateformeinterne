@@ -13,14 +13,16 @@ export type Teacher = {
 };
 
 // Hook pour récupérer tous les enseignants
-export const useTeachers = () => {
+export const useTeachers = (activeOnly?: boolean) => {
   return useQuery({
-    queryKey: ['teachers'],
+    queryKey: ['teachers', activeOnly],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('teachers')
         .select('*')
         .order('full_name');
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       return data as Teacher[];
@@ -46,10 +48,10 @@ export const useTeacher = (teacherId: string) => {
   });
 };
 
-// Hook pour récupérer l'enseignant de l'utilisateur courant
+// Hook pour récupérer l'enseignant de l'utilisateur connecté
 export const useCurrentTeacher = () => {
   return useQuery({
-    queryKey: ['teachers', 'current'],
+    queryKey: ['current-teacher'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
@@ -71,8 +73,8 @@ export const useAddTeacher = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (teacher: { full_name: string; email?: string | null; phone?: string | null; user_id?: string | null }) => {
-      const { data, error } = await supabase
+    mutationFn: async (teacher: Record<string, any>) => {
+      const { data, error } = await (supabase as any)
         .from('teachers')
         .insert([teacher])
         .select()
@@ -139,4 +141,28 @@ export const useDeleteTeacher = () => {
       toast.error('Erreur lors de la suppression : ' + error.message);
     },
   });
+};
+
+// Helper: Synchroniser ou créer un enseignant à partir de auth.users
+export const syncTeacherFromAuth = async (userId: string, email: string, fullName?: string) => {
+  const { data: existing } = await supabase
+    .from('teachers')
+    .select('id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (existing) return existing.id;
+
+  const { data, error } = await supabase
+    .from('teachers')
+    .insert({
+      user_id: userId,
+      email,
+      full_name: fullName || email,
+    })
+    .select('id')
+    .single();
+
+  if (error && error.code !== '23505') throw error; // Ignore duplicate errors
+  return data?.id;
 };
