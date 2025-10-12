@@ -142,13 +142,6 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
   };
 
   const handleImport = async () => {
-    // Get current user ID
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("Vous devez être connecté pour importer des étudiants");
-      return;
-    }
-
     const validStudents = rows
       .filter((row) => row.first_name && row.last_name && row.class_name)
       .map((row) => {
@@ -176,7 +169,6 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
           birth_date,
           academic_background: row.academic_background || null,
           company: row.company || null,
-          teacher_id: user.id,
         };
       });
 

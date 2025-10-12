@@ -35,14 +35,6 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
     setLoading(true);
 
     try {
-      // Get current user ID
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error("Vous devez être connecté pour ajouter un étudiant");
-        setLoading(false);
-        return;
-      }
-
       // Validate form data
       const validatedData = studentSchema.parse({
         first_name: formData.first_name,
@@ -64,7 +56,6 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
         company: validatedData.company || null,
         class_name: validatedData.class_name,
         special_needs: validatedData.special_needs || null,
-        teacher_id: user.id,
       });
 
       if (error) {
