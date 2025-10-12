@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -166,10 +166,13 @@ export function ImportSubjectsDialog({ open, onClose, onImportComplete }: Import
       <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Importer des matières (CSV)</DialogTitle>
+          <DialogDescription>
+            Copiez les données depuis Excel/Sheets et collez-les directement dans le tableau
+          </DialogDescription>
         </DialogHeader>
         
         <p className="text-sm text-muted-foreground">
-          Copiez les données depuis Excel/Sheets et collez-les directement dans le tableau. Vous pouvez coller plusieurs lignes à la fois.
+          Vous pouvez coller plusieurs lignes à la fois
         </p>
 
         <div className="overflow-auto flex-1">

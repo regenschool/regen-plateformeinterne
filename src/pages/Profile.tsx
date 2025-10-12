@@ -98,18 +98,17 @@ const Profile = () => {
       fetchDocuments();
       fetchInvoices();
     }
-  }, [userId]);
+  }, [userId, devMode]); // Ajout de devMode comme dépendance
 
   useEffect(() => {
     const handleDevModeChange = () => {
-      setDevMode(localStorage.getItem("dev-admin-mode") === "true");
-      if (userId) {
-        fetchSubjects();
-      }
+      const newDevMode = localStorage.getItem("dev-admin-mode") === "true";
+      setDevMode(newDevMode);
+      // fetchSubjects sera appelé automatiquement via le useEffect ci-dessus
     };
     window.addEventListener("dev-mode-change", handleDevModeChange);
     return () => window.removeEventListener("dev-mode-change", handleDevModeChange);
-  }, [userId]);
+  }, []);
 
   // Real-time subscription for subjects
   useEffect(() => {
