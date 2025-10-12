@@ -12,9 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, ChevronLeft, ChevronRight } from "lucide-react";
 
 type Student = {
   id: string;
@@ -39,6 +40,9 @@ type GradeEntryDialogProps = {
   } | null;
   onAssessmentDeselected?: () => void;
   openExternal?: boolean;
+  studentsToComplete?: Student[];
+  currentStudentIndex?: number;
+  onNavigateStudent?: (direction: 'prev' | 'next') => void;
 };
 
 const assessmentTypes = [
@@ -55,7 +59,18 @@ const weightingOptions = [
   "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5"
 ];
 
-export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpdated, preselectedAssessment, onAssessmentDeselected, openExternal }: GradeEntryDialogProps) => {
+export const GradeEntryDialog = ({ 
+  student, 
+  subject, 
+  subjectMetadata, 
+  onGradeUpdated, 
+  preselectedAssessment, 
+  onAssessmentDeselected, 
+  openExternal,
+  studentsToComplete,
+  currentStudentIndex,
+  onNavigateStudent 
+}: GradeEntryDialogProps) => {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [existingAssessments, setExistingAssessments] = useState<Array<{name: string, type: string, customLabel: string | null}>>([]);
@@ -68,6 +83,7 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
   const [weighting, setWeighting] = useState("1");
   const [appreciation, setAppreciation] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAbsent, setIsAbsent] = useState(false);
 
   useEffect(() => {
     if (openExternal) {
@@ -152,12 +168,12 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
       return;
     }
 
-    if (!grade || parseFloat(grade) < 0) {
+    if (!isAbsent && (!grade || parseFloat(grade) < 0)) {
       toast.error("Veuillez saisir une note valide");
       return;
     }
 
-    if (!maxGrade || parseFloat(maxGrade) <= 0) {
+    if (!isAbsent && (!maxGrade || parseFloat(maxGrade) <= 0)) {
       toast.error("La note maximale doit être supérieure à 0");
       return;
     }
@@ -173,13 +189,14 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
       assessment_name: assessmentName.trim(),
       assessment_type: assessmentType as "participation_individuelle" | "oral_groupe" | "oral_individuel" | "ecrit_groupe" | "ecrit_individuel" | "memoire" | "autre",
       assessment_custom_label: assessmentType === "autre" ? customLabel.trim() : null,
-      grade: parseFloat(grade),
-      max_grade: parseFloat(maxGrade),
+      grade: isAbsent ? 0 : parseFloat(grade),
+      max_grade: isAbsent ? parseFloat(maxGrade) : parseFloat(maxGrade),
       weighting: parseFloat(weighting),
       appreciation: appreciation.trim() || null,
       teacher_name: subjectMetadata?.teacherName || null,
       school_year: subjectMetadata?.schoolYear || null,
       semester: subjectMetadata?.semester || null,
+      is_absent: isAbsent,
     };
 
     const { error } = await supabase.from("grades").insert(gradeData);
@@ -187,7 +204,6 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
     if (error) throw error;
 
     toast.success(t("grades.gradeSuccess") || "Note enregistrée avec succès");
-    setOpen(false);
     
     // Reset form
     setSelectedAssessment("");
@@ -198,8 +214,16 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
     setMaxGrade("20");
     setWeighting("1");
     setAppreciation("");
+    setIsAbsent(false);
     
     onGradeUpdated();
+
+    // Auto-navigate to next student if in completion mode
+    if (studentsToComplete && currentStudentIndex !== undefined && currentStudentIndex < studentsToComplete.length - 1) {
+      onNavigateStudent?.('next');
+    } else {
+      setOpen(false);
+    }
   } catch (error) {
     console.error("Error saving grade:", error);
     toast.error(t("grades.gradeError") || "Erreur lors de l'enregistrement de la note");
@@ -216,6 +240,16 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
       setSelectedAssessment(preselectedAssessment.name);
     }
   }, [open, preselectedAssessment]);
+
+  useEffect(() => {
+    if (open) {
+      setGrade("");
+      setMaxGrade("20");
+      setWeighting("1");
+      setAppreciation("");
+      setIsAbsent(false);
+    }
+  }, [open, student.id]);
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => {
@@ -237,8 +271,15 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
       </DialogTrigger>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            Ajouter une note - {student.first_name} {student.last_name}
+          <DialogTitle className="flex items-center justify-between">
+            <span>
+              Ajouter une note - {student.first_name} {student.last_name}
+            </span>
+            {studentsToComplete && currentStudentIndex !== undefined && (
+              <span className="text-sm text-muted-foreground">
+                {currentStudentIndex + 1} / {studentsToComplete.length}
+              </span>
+            )}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -303,6 +344,17 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
             </div>
           )}
 
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="absent"
+              checked={isAbsent}
+              onCheckedChange={(checked) => setIsAbsent(checked as boolean)}
+            />
+            <Label htmlFor="absent" className="cursor-pointer">
+              Étudiant absent
+            </Label>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Note *</Label>
@@ -312,7 +364,8 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
                 value={grade}
                 onChange={(e) => setGrade(e.target.value)}
                 placeholder="15.5"
-                required
+                required={!isAbsent}
+                disabled={isAbsent}
               />
             </div>
             <div>
@@ -323,7 +376,8 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
                 value={maxGrade}
                 onChange={(e) => setMaxGrade(e.target.value)}
                 placeholder="20"
-                required
+                required={!isAbsent}
+                disabled={isAbsent}
               />
             </div>
           </div>
@@ -358,12 +412,39 @@ export const GradeEntryDialog = ({ student, subject, subjectMetadata, onGradeUpd
           </div>
 
           <div className="flex gap-2 pt-4">
-            <Button type="submit" className="flex-1" disabled={isSubmitting}>
-              {isSubmitting ? "Enregistrement..." : t("grades.save") || "Enregistrer"}
-            </Button>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
-              {t("grades.cancel") || "Annuler"}
-            </Button>
+            {studentsToComplete && currentStudentIndex !== undefined && onNavigateStudent && (
+              <>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => onNavigateStudent('prev')}
+                  disabled={isSubmitting || currentStudentIndex === 0}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                  {isSubmitting ? "Enregistrement..." : (currentStudentIndex < studentsToComplete.length - 1 ? "Enregistrer et suivant" : "Enregistrer")}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => onNavigateStudent('next')}
+                  disabled={isSubmitting || currentStudentIndex >= studentsToComplete.length - 1}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </>
+            )}
+            {!studentsToComplete && (
+              <>
+                <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                  {isSubmitting ? "Enregistrement..." : t("grades.save") || "Enregistrer"}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
+                  {t("grades.cancel") || "Annuler"}
+                </Button>
+              </>
+            )}
           </div>
         </form>
       </DialogContent>

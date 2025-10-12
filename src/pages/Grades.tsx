@@ -49,6 +49,7 @@ type Grade = {
   teacher_name: string | null;
   school_year: string | null;
   semester: string | null;
+  is_absent?: boolean;
 };
 
 type Assessment = {
@@ -85,6 +86,8 @@ export default function Grades() {
     customLabel: string | null;
   } | null>(null);
   const [studentToCompleteId, setStudentToCompleteId] = useState<string | null>(null);
+  const [studentsToComplete, setStudentsToComplete] = useState<Student[]>([]);
+  const [currentCompletionIndex, setCurrentCompletionIndex] = useState<number>(0);
 
   // Handle prefilled data from navigation
   useEffect(() => {
@@ -358,7 +361,7 @@ export default function Grades() {
       }
     });
     
-    // Compter les étudiants qui ont une note pour chaque épreuve
+    // Compter les étudiants qui ont une note (présents ou absents) pour chaque épreuve
     assessmentMap.forEach((assessment, key) => {
       const studentsWithThisGrade = new Set(
         allGrades
@@ -389,6 +392,7 @@ export default function Grades() {
     let totalWeighting = 0;
     
     studentGrades.forEach(grade => {
+      // Les absents comptent 0 pour la moyenne de l'étudiant
       const normalizedGrade = (grade.grade / grade.max_grade) * 20;
       totalWeightedScore += normalizedGrade * grade.weighting;
       totalWeighting += grade.weighting;
@@ -430,16 +434,20 @@ export default function Grades() {
 
     const totalAssessments = assessments.size;
 
-    // Calculate class average
+    // Calculate class average (excluding absents from class average)
     let totalAverage = 0;
     let studentsWithGrades = 0;
     
     students.forEach(student => {
       const studentGrades = getStudentGrades(student.id);
-      const average = calculateWeightedAverage(studentGrades);
-      if (average) {
-        totalAverage += parseFloat(average);
-        studentsWithGrades++;
+      // Filter out absent grades for class average calculation
+      const presentGrades = studentGrades.filter(g => !g.is_absent);
+      if (presentGrades.length > 0) {
+        const average = calculateWeightedAverage(presentGrades);
+        if (average) {
+          totalAverage += parseFloat(average);
+          studentsWithGrades++;
+        }
       }
     });
 
@@ -447,7 +455,7 @@ export default function Grades() {
       ? (totalAverage / studentsWithGrades).toFixed(2)
       : null;
 
-    // Calculate total missing grades and find students with missing grades
+    // Calculate total missing grades (absents are not missing) and find students with missing grades
     let missingGradesCount = 0;
     const studentsWithMissingGrades: string[] = [];
     
@@ -918,13 +926,13 @@ export default function Grades() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => {
+                         onClick={() => {
                                 const sel = {
                                   name: assessment.name,
                                   type: assessment.type,
                                   customLabel: assessment.customLabel || null,
                                 };
-                                // Trouver le premier élève sans note pour cette épreuve
+                                // Trouver tous les élèves sans note (hors absents) pour cette épreuve
                                 const missing = students.filter((st) => {
                                   const sg = grades.filter((g) => g.student_id === st.id);
                                   return !sg.some((g) => {
@@ -938,6 +946,8 @@ export default function Grades() {
                                   return;
                                 }
                                 setSelectedAssessment(sel);
+                                setStudentsToComplete(missing);
+                                setCurrentCompletionIndex(0);
                                 setStudentToCompleteId(missing[0].id);
                               }}
                               className="gap-2"
@@ -1042,7 +1052,7 @@ export default function Grades() {
                             </div>
                           </div>
                           
-                          <div className="space-y-2 max-h-40 overflow-y-auto">
+                           <div className="space-y-2 max-h-40 overflow-y-auto">
                             {studentGrades.map((grade) => (
                               <div key={grade.id} className="border border-border rounded p-2 space-y-1">
                                 <div className="flex items-center justify-between">
@@ -1050,9 +1060,10 @@ export default function Grades() {
                                     {grade.assessment_name || (grade.assessment_type === "autre" 
                                       ? grade.assessment_custom_label 
                                       : grade.assessment_type.replace(/_/g, ' '))}
+                                    {grade.is_absent && <span className="ml-1 text-amber-500">(Absent)</span>}
                                   </span>
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold">{grade.grade}/{grade.max_grade}</span>
+                                    <span className="text-sm font-bold">{grade.is_absent ? "ABS" : `${grade.grade}/${grade.max_grade}`}</span>
                                     <EditGradeDialog grade={grade} onGradeUpdated={handleGradeUpdated} />
                                   </div>
                                 </div>
@@ -1072,16 +1083,31 @@ export default function Grades() {
                         <p className="text-sm text-muted-foreground">{t("grades.noGradeEntered")}</p>
                       )}
 
-                      <GradeEntryDialog
+                       <GradeEntryDialog
                         student={student}
                         subject={selectedSubject}
                         subjectMetadata={newSubjectMetadata}
                         onGradeUpdated={handleGradeUpdated}
                         preselectedAssessment={selectedAssessment}
                         openExternal={student.id === studentToCompleteId}
+                        studentsToComplete={studentsToComplete.length > 0 ? studentsToComplete : undefined}
+                        currentStudentIndex={studentsToComplete.length > 0 ? currentCompletionIndex : undefined}
+                        onNavigateStudent={(direction) => {
+                          if (direction === 'next' && currentCompletionIndex < studentsToComplete.length - 1) {
+                            const newIndex = currentCompletionIndex + 1;
+                            setCurrentCompletionIndex(newIndex);
+                            setStudentToCompleteId(studentsToComplete[newIndex].id);
+                          } else if (direction === 'prev' && currentCompletionIndex > 0) {
+                            const newIndex = currentCompletionIndex - 1;
+                            setCurrentCompletionIndex(newIndex);
+                            setStudentToCompleteId(studentsToComplete[newIndex].id);
+                          }
+                        }}
                         onAssessmentDeselected={() => {
                           setSelectedAssessment(null);
                           setStudentToCompleteId(null);
+                          setStudentsToComplete([]);
+                          setCurrentCompletionIndex(0);
                         }}
                       />
                     </CardContent>

@@ -42,6 +42,7 @@ export type Database = {
           created_at: string
           grade: number
           id: string
+          is_absent: boolean
           max_grade: number
           school_year: string | null
           semester: string | null
@@ -61,6 +62,7 @@ export type Database = {
           created_at?: string
           grade: number
           id?: string
+          is_absent?: boolean
           max_grade?: number
           school_year?: string | null
           semester?: string | null
@@ -80,6 +82,7 @@ export type Database = {
           created_at?: string
           grade?: number
           id?: string
+          is_absent?: boolean
           max_grade?: number
           school_year?: string | null
           semester?: string | null
