@@ -18,6 +18,7 @@ Le code utilisait `supabase.from("grades").upsert(gradeData, { onConflict: '...'
 
 ### Fichiers concernés
 - `src/components/GradeEntryDialog.tsx` (lignes 200-230)
+- `src/hooks/useGrades.ts` (hook `useAddGrade`, lignes 82-104) - ⚠️ **RÉINTRODUIT puis RE-CORRIGÉ le 2025-10-12**
 
 ### Solution appliquée
 Remplacer l'upsert avec `onConflict` par une logique explicite :
@@ -61,9 +62,15 @@ Pour vérifier que ce bug ne revient pas :
 3. Vérifier qu'il n'y a qu'une seule note par étudiant dans la base de données
 
 ### Prévention
-- ⚠️ **NE JAMAIS** utiliser `onConflict` avec Supabase
+- ⚠️ **NE JAMAIS** utiliser `onConflict` avec Supabase (ni dans les composants, ni dans les hooks)
 - ✅ **TOUJOURS** vérifier l'existence avant insert/update pour éviter les doublons
 - ✅ Utiliser `.maybeSingle()` pour les vérifications d'existence
+- ⚠️ **ATTENTION**: Ce bug a été réintroduit dans `useGrades.ts` lors de la normalisation de la base de données
+
+### Régression détectée et corrigée
+**Date**: 2025-10-12 (même jour)
+**Contexte**: Lors de l'adaptation du code pour la nouvelle architecture normalisée, le hook `useAddGrade` dans `src/hooks/useGrades.ts` utilisait à nouveau `.upsert()` avec `onConflict`, réintroduisant le bug.
+**Correction appliquée**: Même logique check-then-update/insert implémentée dans le hook.
 
 ---
 

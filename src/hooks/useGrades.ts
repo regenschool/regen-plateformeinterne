@@ -79,18 +79,46 @@ export const useStudentGrades = (studentId: string, filters?: Omit<GradesFilters
 };
 
 // Hook pour ajouter une note
+// ⚠️ IMPORTANT: Ne pas utiliser upsert avec onConflict (non supporté par Supabase)
+// Voir BUGS_FIXES.md #1 pour détails
 export const useAddGrade = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: async (grade: Record<string, any>) => {
-      const { data, error } = await (supabase as any)
+      // Vérifier si une note existe déjà pour cette combinaison
+      const { data: existingGrade } = await supabase
         .from('grades')
-        .upsert([grade], {
-          onConflict: 'student_id,subject,school_year,semester,assessment_name,assessment_type,assessment_custom_label'
-        })
-        .select()
-        .single();
+        .select('id')
+        .eq('student_id', grade.student_id)
+        .eq('subject', grade.subject)
+        .eq('school_year', grade.school_year || '')
+        .eq('semester', grade.semester || '')
+        .eq('assessment_name', grade.assessment_name || '')
+        .eq('assessment_type', grade.assessment_type)
+        .maybeSingle();
+
+      let data, error;
+      if (existingGrade) {
+        // Update existing grade
+        const result = await supabase
+          .from('grades')
+          .update(grade)
+          .eq('id', existingGrade.id)
+          .select()
+          .single();
+        data = result.data;
+        error = result.error;
+      } else {
+        // Insert new grade
+        const result = await (supabase as any)
+          .from('grades')
+          .insert([grade])
+          .select()
+          .single();
+        data = result.data;
+        error = result.error;
+      }
       
       if (error) throw error;
       return data;
