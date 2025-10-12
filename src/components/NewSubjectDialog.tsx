@@ -11,39 +11,39 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
+import { useSchoolYears, useAcademicPeriods } from "@/hooks/useReferentials";
 
 type NewSubjectDialogProps = {
   open: boolean;
   onClose: () => void;
-  onSubjectCreated: (subject: string, teacherName: string, schoolYear: string, semester: string) => void;
+  onSubjectCreated: (subject: string, teacherName: string, schoolYear: string, semester: string, schoolYearId?: string, academicPeriodId?: string) => void;
   defaultSchoolYear?: string;
   defaultSemester?: string;
 };
 
-const currentYear = new Date().getFullYear();
-const schoolYears = [
-  `${currentYear - 1}-${currentYear}`,
-  `${currentYear}-${currentYear + 1}`,
-  `${currentYear + 1}-${currentYear + 2}`,
-];
-
 export const NewSubjectDialog = ({ open, onClose, onSubjectCreated, defaultSchoolYear, defaultSemester }: NewSubjectDialogProps) => {
   const { t } = useLanguage();
   const [teacherName, setTeacherName] = useState("");
-  const [schoolYear, setSchoolYear] = useState(defaultSchoolYear || schoolYears[1]);
-  const [semester, setSemester] = useState(defaultSemester || "");
+  const [schoolYearId, setSchoolYearId] = useState("");
+  const [academicPeriodId, setAcademicPeriodId] = useState("");
   const [subjectName, setSubjectName] = useState("");
 
-  useEffect(() => {
-    if (defaultSchoolYear) setSchoolYear(defaultSchoolYear);
-    if (defaultSemester) setSemester(defaultSemester);
-  }, [defaultSchoolYear, defaultSemester]);
+  const { data: schoolYears } = useSchoolYears();
+  const { data: academicPeriods } = useAcademicPeriods(schoolYearId);
 
-  const semesters = [
-    { value: "Semestre 1", label: t("grades.semester1") },
-    { value: "Semestre 2", label: t("grades.semester2") },
-    { value: "Année complète", label: t("grades.fullYear") },
-  ];
+  useEffect(() => {
+    if (schoolYears?.length && !schoolYearId) {
+      const activeYear = schoolYears.find(sy => sy.is_active);
+      if (activeYear) setSchoolYearId(activeYear.id);
+    }
+  }, [schoolYears, schoolYearId]);
+
+  useEffect(() => {
+    if (academicPeriods?.length && !academicPeriodId) {
+      const activePeriod = academicPeriods.find(ap => ap.is_active);
+      if (activePeriod) setAcademicPeriodId(activePeriod.id);
+    }
+  }, [academicPeriods, academicPeriodId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,12 +53,12 @@ export const NewSubjectDialog = ({ open, onClose, onSubjectCreated, defaultSchoo
       return;
     }
 
-    if (!schoolYear) {
+    if (!schoolYearId) {
       toast.error(t("grades.selectSchoolYear"));
       return;
     }
 
-    if (!semester) {
+    if (!academicPeriodId) {
       toast.error(t("grades.selectSemester"));
       return;
     }
@@ -68,12 +68,20 @@ export const NewSubjectDialog = ({ open, onClose, onSubjectCreated, defaultSchoo
       return;
     }
 
-    onSubjectCreated(subjectName.trim(), teacherName.trim(), schoolYear, semester);
+    const selectedSchoolYear = schoolYears?.find(sy => sy.id === schoolYearId);
+    const selectedPeriod = academicPeriods?.find(ap => ap.id === academicPeriodId);
+
+    onSubjectCreated(
+      subjectName.trim(), 
+      teacherName.trim(), 
+      selectedSchoolYear?.label || '', 
+      selectedPeriod?.label || '',
+      schoolYearId,
+      academicPeriodId
+    );
     
     // Reset form
     setTeacherName("");
-    setSchoolYear(defaultSchoolYear || schoolYears[1]);
-    setSemester(defaultSemester || "");
     setSubjectName("");
     onClose();
   };
@@ -97,14 +105,14 @@ export const NewSubjectDialog = ({ open, onClose, onSubjectCreated, defaultSchoo
 
           <div>
             <Label>{t("grades.schoolYearLabel")} *</Label>
-            <Select value={schoolYear} onValueChange={setSchoolYear}>
+            <Select value={schoolYearId} onValueChange={setSchoolYearId}>
               <SelectTrigger>
                 <SelectValue placeholder={t("grades.selectSchoolYear")} />
               </SelectTrigger>
               <SelectContent>
-                {schoolYears.map((year) => (
-                  <SelectItem key={year} value={year}>
-                    {year}
+                {schoolYears?.map((year) => (
+                  <SelectItem key={year.id} value={year.id}>
+                    {year.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -113,14 +121,14 @@ export const NewSubjectDialog = ({ open, onClose, onSubjectCreated, defaultSchoo
 
           <div>
             <Label>{t("grades.semesterLabel")} *</Label>
-            <Select value={semester} onValueChange={setSemester}>
+            <Select value={academicPeriodId} onValueChange={setAcademicPeriodId} disabled={!schoolYearId}>
               <SelectTrigger>
                 <SelectValue placeholder={t("grades.selectSemester")} />
               </SelectTrigger>
               <SelectContent>
-                {semesters.map((sem) => (
-                  <SelectItem key={sem.value} value={sem.value}>
-                    {sem.label}
+                {academicPeriods?.map((period) => (
+                  <SelectItem key={period.id} value={period.id}>
+                    {period.label}
                   </SelectItem>
                 ))}
               </SelectContent>

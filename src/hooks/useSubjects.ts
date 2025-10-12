@@ -13,6 +13,11 @@ type Subject = {
   subject_name: string;
   created_at: string;
   updated_at: string;
+  // FK normalisées
+  school_year_fk_id: string | null;
+  academic_period_id: string | null;
+  teacher_fk_id: string | null;
+  class_fk_id: string | null;
 };
 
 type SubjectsFilters = {

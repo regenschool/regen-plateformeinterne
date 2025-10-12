@@ -446,12 +446,19 @@ export default function Grades() {
 
   const stats = getClassStatistics();
 
-  const handleSubjectCreated = async (subject: string, teacherName: string, schoolYear: string, semester: string) => {
+  const handleSubjectCreated = async (
+    subject: string, 
+    teacherName: string, 
+    schoolYear: string, 
+    semester: string,
+    schoolYearId?: string,
+    academicPeriodId?: string
+  ) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Save the subject to the subjects table
+      // Save the subject to the subjects table avec les FK normalisées
       const { error } = await supabase.from("subjects").insert({
         teacher_id: user.id,
         class_name: selectedClass,
@@ -459,6 +466,9 @@ export default function Grades() {
         teacher_name: teacherName,
         school_year: schoolYear,
         semester: semester,
+        // FK normalisées
+        school_year_fk_id: schoolYearId,
+        academic_period_id: academicPeriodId,
       });
 
       if (error) throw error;
