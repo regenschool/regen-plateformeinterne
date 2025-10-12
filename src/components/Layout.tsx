@@ -121,42 +121,36 @@ export const Layout = ({ children }: LayoutProps) => {
                   </Button>
                 )}
                 {isAdmin && (
-                  <>
-                    <Button
-                      variant={isActive("/year-transition") ? "default" : "ghost"}
-                      onClick={() => navigate("/year-transition", { replace: true })}
-                      className="gap-2"
-                    >
-                      <Calendar className="w-4 h-4" />
-                      <span className="hidden sm:inline">Passage d'année</span>
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant={["/profile", "/settings", "/tests"].some(path => isActive(path)) ? "default" : "ghost"}
-                          className="gap-2"
-                        >
-                          <Settings className="w-4 h-4" />
-                          <span className="hidden sm:inline">Gestion</span>
-                          <ChevronDown className="w-3 h-3 ml-1" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-card z-50">
-                        <DropdownMenuItem onClick={() => navigate("/profile", { replace: true })}>
-                          <User className="w-4 h-4 mr-2" />
-                          Profil
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/settings", { replace: true })}>
-                          <Settings className="w-4 h-4 mr-2" />
-                          Paramètres
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/tests", { replace: true })}>
-                          <FlaskConical className="w-4 h-4 mr-2" />
-                          Tests
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant={["/profile", "/settings", "/tests", "/year-transition"].some(path => isActive(path)) ? "default" : "ghost"}
+                        className="gap-2"
+                      >
+                        <Settings className="w-4 h-4" />
+                        <span className="hidden sm:inline">Gestion</span>
+                        <ChevronDown className="w-3 h-3 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-card z-50">
+                      <DropdownMenuItem onClick={() => navigate("/profile", { replace: true })}>
+                        <User className="w-4 h-4 mr-2" />
+                        Profil
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/settings", { replace: true })}>
+                        <Settings className="w-4 h-4 mr-2" />
+                        Paramètres
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/year-transition", { replace: true })}>
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Passage d'année
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/tests", { replace: true })}>
+                        <FlaskConical className="w-4 h-4 mr-2" />
+                        Tests
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
