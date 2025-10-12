@@ -37,9 +37,10 @@ export const Layout = ({ children }: LayoutProps) => {
       return;
     }
     setIsAdmin(checked);
+    // Notify other parts of the app (e.g., Profile page) about role changes
+    window.dispatchEvent(new CustomEvent('role-override-change', { detail: { isAdmin: checked } }));
     toast.success(checked ? "Mode administrateur activé" : "Mode enseignant activé");
   };
-
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);

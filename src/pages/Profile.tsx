@@ -88,6 +88,18 @@ const Profile = () => {
     getCurrentUser();
   }, []);
 
+  // Listen to role override changes from the Layout toggle
+  useEffect(() => {
+    const onRoleChange = (e: Event) => {
+      const detail = (e as CustomEvent<{ isAdmin: boolean }>).detail;
+      setIsAdmin(!!detail?.isAdmin);
+    };
+    window.addEventListener('role-override-change', onRoleChange as EventListener);
+    return () => {
+      window.removeEventListener('role-override-change', onRoleChange as EventListener);
+    };
+  }, []);
+
   useEffect(() => {
     if (userId) {
       fetchProfile();
