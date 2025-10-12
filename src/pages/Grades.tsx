@@ -106,6 +106,50 @@ export default function Grades() {
     }
   }, [location.state, location.key]); // location.key change à chaque navigation
   const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      try {
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("role", "admin")
+          .maybeSingle();
+
+        const { data: override } = await supabase
+          .from("dev_role_overrides")
+          .select("is_admin")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        setIsAdmin(!!roleData || !!override?.is_admin);
+      } catch (e) {
+        console.error("Error checking admin status:", e);
+      }
+    };
+    init();
+
+    const onRoleChange = (e: Event) => {
+      const detail = (e as CustomEvent<{ isAdmin: boolean }>).detail;
+      setIsAdmin(!!detail?.isAdmin);
+    };
+    window.addEventListener("role-override-change", onRoleChange as EventListener);
+    return () => window.removeEventListener("role-override-change", onRoleChange as EventListener);
+  }, []);
+
+  useEffect(() => {
+    if (selectedClass && selectedSchoolYear && selectedSemester) {
+      fetchSubjects();
+      if (selectedSubject) {
+        fetchGrades();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin]);
 
   const currentYear = new Date().getFullYear();
   const schoolYears = [
@@ -264,14 +308,19 @@ export default function Grades() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
+      let gradesQuery = supabase
         .from("grades")
         .select("*")
-        .eq("teacher_id", user.id)
         .eq("class_name", selectedClass)
         .eq("subject", selectedSubject)
         .eq("school_year", selectedSchoolYear)
         .eq("semester", selectedSemester);
+
+      if (!isAdmin) {
+        gradesQuery = gradesQuery.eq("teacher_id", user.id);
+      }
+
+      const { data, error } = await gradesQuery;
 
       if (error) throw error;
 
@@ -808,7 +857,55 @@ export default function Grades() {
                     {assessments.map((assessment, index) => (
                       <div 
                         key={index}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/5 transition-colors"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
+                          const sel = {
+                            name: assessment.name,
+                            type: assessment.type,
+                            customLabel: assessment.customLabel || null,
+                          };
+                          // Trouver le premier  e9l e8ve sans note pour cette  e9preuve
+                          const missing = students.filter((st) => {
+                            const sg = grades.filter((g) => g.student_id === st.id);
+                            return !sg.some((g) => {
+                              const gradeKey = g.assessment_name || (g.assessment_type === "autre" ? `${g.assessment_type}_${g.assessment_custom_label}` : g.assessment_type);
+                              const assessmentKey = sel.name || (sel.type === "autre" ? `${sel.type}_${sel.customLabel || ""}` : sel.type);
+                              return gradeKey === assessmentKey || g.assessment_name === sel.name;
+                            });
+                          });
+                          if (missing.length === 0) {
+                            toast.info("Toutes les notes sont d e9j e0 saisies pour cette  e9preuve");
+                            return;
+                          }
+                          setSelectedAssessment(sel);
+                          setStudentToCompleteId(missing[0].id);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            const sel = {
+                              name: assessment.name,
+                              type: assessment.type,
+                              customLabel: assessment.customLabel || null,
+                            };
+                            const missing = students.filter((st) => {
+                              const sg = grades.filter((g) => g.student_id === st.id);
+                              return !sg.some((g) => {
+                                const gradeKey = g.assessment_name || (g.assessment_type === "autre" ? `${g.assessment_type}_${g.assessment_custom_label}` : g.assessment_type);
+                                const assessmentKey = sel.name || (sel.type === "autre" ? `${sel.type}_${sel.customLabel || ""}` : sel.type);
+                                return gradeKey === assessmentKey || g.assessment_name === sel.name;
+                              });
+                            });
+                            if (missing.length === 0) {
+                              toast.info("Toutes les notes sont d e9j e0 saisies pour cette  e9preuve");
+                              return;
+                            }
+                            setSelectedAssessment(sel);
+                            setStudentToCompleteId(missing[0].id);
+                          }
+                        }}
+                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/5 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50"
                       >
                         <div className="flex-1">
                           <p className="font-medium">{assessment.name}</p>
@@ -816,7 +913,7 @@ export default function Grades() {
                             {assessment.studentsWithGrades}/{assessment.totalStudents} étudiants notés
                           </p>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                           {assessment.studentsWithGrades < assessment.totalStudents && (
                             <Button
                               size="sm"
