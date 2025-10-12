@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Leaf, Network, Lightbulb, LogOut, Languages, ClipboardList, User, Settings, Calendar, FlaskConical } from "lucide-react";
+import { Leaf, Network, Lightbulb, LogOut, Languages, ClipboardList, User, Settings, Calendar, FlaskConical, ChevronDown } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAdmin } from "@/contexts/AdminContext";
@@ -126,22 +126,32 @@ export const Layout = ({ children }: LayoutProps) => {
                       <Calendar className="w-4 h-4" />
                       <span className="hidden sm:inline">Passage d'année</span>
                     </Button>
-                    <Button
-                      variant={isActive("/tests") ? "default" : "ghost"}
-                      onClick={() => navigate("/tests", { replace: true })}
-                      className="gap-2"
-                    >
-                      <FlaskConical className="w-4 h-4" />
-                      <span className="hidden sm:inline">Tests</span>
-                    </Button>
-                    <Button
-                      variant={isActive("/settings") ? "default" : "ghost"}
-                      onClick={() => navigate("/settings", { replace: true })}
-                      className="gap-2"
-                    >
-                      <Settings className="w-4 h-4" />
-                      <span className="hidden sm:inline">Paramètres</span>
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant={["/profile", "/settings", "/tests"].some(path => isActive(path)) ? "default" : "ghost"}
+                          className="gap-2"
+                        >
+                          <Settings className="w-4 h-4" />
+                          <span className="hidden sm:inline">Gestion</span>
+                          <ChevronDown className="w-3 h-3 ml-1" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="bg-card z-50">
+                        <DropdownMenuItem onClick={() => navigate("/profile", { replace: true })}>
+                          <User className="w-4 h-4 mr-2" />
+                          Profil
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/settings", { replace: true })}>
+                          <Settings className="w-4 h-4 mr-2" />
+                          Paramètres
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/tests", { replace: true })}>
+                          <FlaskConical className="w-4 h-4 mr-2" />
+                          Tests
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </>
                 )}
                 <DropdownMenu>

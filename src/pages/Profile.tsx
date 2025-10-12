@@ -428,23 +428,27 @@ const Profile = () => {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-1' : 'grid-cols-4'}`}>
           <TabsTrigger value="profile">
             <User className="w-4 h-4 mr-2" />
             Profil
           </TabsTrigger>
-          <TabsTrigger value="subjects">
-            <BookOpen className="w-4 h-4 mr-2" />
-            {isAdmin ? "Toutes les Matières" : "Mes Matières"}
-          </TabsTrigger>
-          <TabsTrigger value="documents">
-            <FileText className="w-4 h-4 mr-2" />
-            Documents
-          </TabsTrigger>
-          <TabsTrigger value="invoices">
-            <Receipt className="w-4 h-4 mr-2" />
-            Factures
-          </TabsTrigger>
+          {!isAdmin && (
+            <>
+              <TabsTrigger value="subjects">
+                <BookOpen className="w-4 h-4 mr-2" />
+                Mes Matières
+              </TabsTrigger>
+              <TabsTrigger value="documents">
+                <FileText className="w-4 h-4 mr-2" />
+                Documents
+              </TabsTrigger>
+              <TabsTrigger value="invoices">
+                <Receipt className="w-4 h-4 mr-2" />
+                Factures
+              </TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         <TabsContent value="profile" className="space-y-4">
@@ -535,92 +539,79 @@ const Profile = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="subjects" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>{isAdmin ? "Toutes les Matières" : "Mes Matières"}</CardTitle>
-                  <CardDescription>
-                    {isAdmin
-                      ? "Liste de toutes les matières de l'école" 
-                      : "Liste des matières que vous enseignez"}
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  {subjects.length > 0 && (
-                    <Button variant="outline" onClick={exportSubjectsToCSV}>
-                      <Download className="w-4 h-4 mr-2" />
-                      Export CSV
-                    </Button>
-                  )}
-                  {isAdmin && (
-                    <>
-                      <Button variant="outline" onClick={() => setShowAddSubjectDialog(true)}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Ajouter
+        {!isAdmin && (
+          <TabsContent value="subjects" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Mes Matières</CardTitle>
+                    <CardDescription>
+                      Liste des matières que vous enseignez
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    {subjects.length > 0 && (
+                      <Button variant="outline" onClick={exportSubjectsToCSV}>
+                        <Download className="w-4 h-4 mr-2" />
+                        Export CSV
                       </Button>
-                      <Button onClick={() => setShowImportDialog(true)}>
-                        <Upload className="w-4 h-4 mr-2" />
-                        Import CSV
-                      </Button>
-                    </>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {subjects.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
-                  {isAdmin
-                    ? "Aucune matière enregistrée. Commencez par importer des matières." 
-                    : "Aucune matière enregistrée. Créez vos matières depuis l'onglet Notes."}
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {subjects.map((subject) => (
-                    <div
-                      key={subject.id}
-                      onClick={() => navigateToGrades(subject)}
-                      className="p-4 border border-border rounded-lg hover:bg-accent/50 hover:border-primary/50 cursor-pointer transition-all group"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                            {subject.subject_name}
-                          </h3>
-                          <div className="flex gap-4 text-sm text-muted-foreground">
-                            <span>📚 {subject.class_name}</span>
-                            <span>📅 {subject.school_year}</span>
-                            <span>📆 {subject.semester}</span>
+              </CardHeader>
+              <CardContent>
+                {subjects.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">
+                    Aucune matière enregistrée. Créez vos matières depuis l'onglet Notes.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {subjects.map((subject) => (
+                      <div
+                        key={subject.id}
+                        onClick={() => navigateToGrades(subject)}
+                        className="p-4 border border-border rounded-lg hover:bg-accent/50 hover:border-primary/50 cursor-pointer transition-all group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                              {subject.subject_name}
+                            </h3>
+                            <div className="flex gap-4 text-sm text-muted-foreground">
+                              <span>📚 {subject.class_name}</span>
+                              <span>📅 {subject.school_year}</span>
+                              <span>📆 {subject.semester}</span>
+                            </div>
+                          </div>
+                          <div className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="24"
+                              height="24"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M5 12h14" />
+                              <path d="m12 5 7 7-7 7" />
+                            </svg>
                           </div>
                         </div>
-                        <div className="text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="24"
-                            height="24"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M5 12h14" />
-                            <path d="m12 5 7 7-7 7" />
-                          </svg>
-                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
-        <TabsContent value="documents" className="space-y-4">
+        {!isAdmin && (
+          <TabsContent value="documents" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Documents de l'École</CardTitle>
@@ -666,9 +657,11 @@ const Profile = () => {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+          </TabsContent>
+        )}
 
-        <TabsContent value="invoices" className="space-y-4">
+        {!isAdmin && (
+          <TabsContent value="invoices" className="space-y-4">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -869,7 +862,8 @@ const Profile = () => {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
+          </TabsContent>
+        )}
       </Tabs>
 
       <ImportSubjectsDialog
