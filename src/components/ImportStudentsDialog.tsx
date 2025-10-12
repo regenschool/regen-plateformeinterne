@@ -386,7 +386,8 @@ export const ImportStudentsDialog = ({ onImportComplete, selectedSchoolYearId }:
                       value={row.class_name}
                       onChange={(e) => handleCellChange(index, "class_name", e.target.value)}
                       onPaste={(e) => handlePaste(e, index, "class_name")}
-                      placeholder="2024 Cohort A"
+                      placeholder="B3, M1..."
+                      maxLength={5}
                       className="h-8"
                     />
                   </TableCell>

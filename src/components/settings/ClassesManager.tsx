@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Plus, Trash2, Edit2, Check, X } from "lucide-react";
 import {
@@ -25,6 +26,7 @@ export const ClassesManager = () => {
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   
   // Form states
   const [name, setName] = useState("");
@@ -78,6 +80,25 @@ export const ClassesManager = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["classes_referential"] });
       toast.success("Classe supprimée");
+      setSelectedIds(new Set());
+    },
+    onError: (error: any) => {
+      toast.error("Erreur : " + error.message);
+    },
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase
+        .from("classes")
+        .delete()
+        .in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["classes_referential"] });
+      toast.success("Classes supprimées");
+      setSelectedIds(new Set());
     },
     onError: (error: any) => {
       toast.error("Erreur : " + error.message);
@@ -95,6 +116,11 @@ export const ClassesManager = () => {
   const handleAdd = () => {
     if (!name) {
       toast.error("Le nom de la classe est obligatoire");
+      return;
+    }
+    
+    if (name.length > 5) {
+      toast.error("Le nom de la classe ne peut pas dépasser 5 caractères");
       return;
     }
 
@@ -116,6 +142,11 @@ export const ClassesManager = () => {
 
   const handleUpdate = () => {
     if (!editingId || !name) return;
+    
+    if (name.length > 5) {
+      toast.error("Le nom de la classe ne peut pas dépasser 5 caractères");
+      return;
+    }
 
     updateMutation.mutate({
       id: editingId,
@@ -128,13 +159,54 @@ export const ClassesManager = () => {
     });
   };
 
+  const toggleSelectAll = () => {
+    if (selectedIds.size === classes?.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(classes?.map(c => c.id) || []));
+    }
+  };
+
+  const toggleSelectClass = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) {
+      toast.error("Aucune classe sélectionnée");
+      return;
+    }
+    
+    if (confirm(`Êtes-vous sûr de vouloir supprimer ${selectedIds.size} classe(s) ?`)) {
+      bulkDeleteMutation.mutate(Array.from(selectedIds));
+    }
+  };
+
   if (isLoading || levelsLoading) {
     return <div className="text-center py-4">Chargement...</div>;
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center">
+        <div className="flex gap-2">
+          {selectedIds.size > 0 && (
+            <Button 
+              variant="destructive" 
+              onClick={handleBulkDelete}
+              disabled={bulkDeleteMutation.isPending}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Supprimer ({selectedIds.size})
+            </Button>
+          )}
+        </div>
         <Button onClick={() => setIsAdding(true)} disabled={isAdding}>
           <Plus className="w-4 h-4 mr-2" />
           Ajouter une classe
@@ -151,6 +223,7 @@ export const ClassesManager = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="B3, M1..."
+                maxLength={5}
               />
             </div>
             <div>
@@ -200,6 +273,12 @@ export const ClassesManager = () => {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-12">
+              <Checkbox
+                checked={selectedIds.size === classes?.length && classes?.length > 0}
+                onCheckedChange={toggleSelectAll}
+              />
+            </TableHead>
             <TableHead>Nom</TableHead>
             <TableHead>Niveau</TableHead>
             <TableHead>Capacité</TableHead>
@@ -216,10 +295,17 @@ export const ClassesManager = () => {
                 {isEditing ? (
                   <>
                     <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(classItem.id)}
+                        onCheckedChange={() => toggleSelectClass(classItem.id)}
+                      />
+                    </TableCell>
+                    <TableCell>
                       <Input
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="B1, M2..."
+                        maxLength={5}
                       />
                     </TableCell>
                     <TableCell>
@@ -269,6 +355,12 @@ export const ClassesManager = () => {
                   </>
                 ) : (
                   <>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(classItem.id)}
+                        onCheckedChange={() => toggleSelectClass(classItem.id)}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">{classItem.name}</TableCell>
                     <TableCell>{classItem.level || "-"}</TableCell>
                     <TableCell>{classItem.capacity || "-"}</TableCell>

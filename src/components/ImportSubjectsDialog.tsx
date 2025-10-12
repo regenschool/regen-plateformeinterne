@@ -231,6 +231,7 @@ export function ImportSubjectsDialog({ open, onClose, onImportComplete }: Import
                       onChange={(e) => handleCellChange(index, "class_name", e.target.value)}
                       onPaste={(e) => handlePaste(e, index, "class_name")}
                       placeholder="B3"
+                      maxLength={5}
                       className="h-8"
                     />
                   </TableCell>

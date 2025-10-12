@@ -13,7 +13,7 @@ export const studentSchema = z.object({
   class_name: z.string()
     .trim()
     .min(1, { message: "La classe est requise" })
-    .max(100, { message: "La classe ne peut pas dépasser 100 caractères" }),
+    .max(5, { message: "La classe ne peut pas dépasser 5 caractères" }),
   photo_url: z.string().url({ message: "URL invalide" }).optional().or(z.literal("")),
   birth_date: z.string().optional().nullable(),
   academic_background: z.string().max(500, { message: "Maximum 500 caractères" }).optional().or(z.literal("")),
@@ -77,7 +77,7 @@ export const subjectSchema = z.object({
   class_name: z.string()
     .trim()
     .min(1, { message: "La classe est requise" })
-    .max(100, { message: "Maximum 100 caractères" }),
+    .max(5, { message: "Maximum 5 caractères" }),
 });
 
 export type StudentFormData = z.infer<typeof studentSchema>;
