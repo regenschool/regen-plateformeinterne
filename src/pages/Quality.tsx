@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useAdmin } from "@/contexts/AdminContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Users, GraduationCap, ClipboardList, Database, TrendingUp, AlertTriangle, CheckCircle, Shield } from "lucide-react";
+import { Activity, Users, GraduationCap, ClipboardList, Database, TrendingUp, AlertTriangle, CheckCircle, Shield, HardDrive } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
@@ -14,6 +14,7 @@ type AppStats = {
   totalSubjects: number;
   activeSchoolYears: number;
   auditLogsCount: number;
+  storageUsedMB: number;
 };
 
 type HealthMetric = {
@@ -33,6 +34,7 @@ export default function Quality() {
     totalSubjects: 0,
     activeSchoolYears: 0,
     auditLogsCount: 0,
+    storageUsedMB: 0,
   });
   const [loading, setLoading] = useState(true);
   const [webVitals, setWebVitals] = useState<{ lcp: number; cls: number; inp: number }>({
@@ -84,6 +86,19 @@ export default function Quality() {
         .select('*', { count: 'exact', head: true })
         .gte('created_at', yesterday.toISOString());
 
+      // Calculer l'espace de stockage utilisé
+      const { data: buckets } = await supabase.storage.listBuckets();
+      let totalSize = 0;
+      
+      if (buckets) {
+        for (const bucket of buckets) {
+          const { data: files } = await supabase.storage.from(bucket.name).list();
+          if (files) {
+            totalSize += files.reduce((sum, file) => sum + (file.metadata?.size || 0), 0);
+          }
+        }
+      }
+
       setStats({
         totalUsers: usersCount || 0,
         totalStudents: studentsCount || 0,
@@ -91,6 +106,7 @@ export default function Quality() {
         totalSubjects: subjectsCount || 0,
         activeSchoolYears: activeYearsCount || 0,
         auditLogsCount: auditCount || 0,
+        storageUsedMB: Math.round(totalSize / (1024 * 1024) * 100) / 100,
       });
     } catch (error) {
       console.error('Erreur lors du chargement des statistiques:', error);
@@ -211,7 +227,7 @@ export default function Quality() {
       </Card>
 
       {/* Statistiques de l'App */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Utilisateurs</CardTitle>
@@ -275,6 +291,17 @@ export default function Quality() {
           <CardContent>
             <div className="text-3xl font-bold">{stats.auditLogsCount}</div>
             <p className="text-xs text-muted-foreground mt-1">Actions dans l'audit</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Stockage</CardTitle>
+            <HardDrive className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{stats.storageUsedMB} MB</div>
+            <p className="text-xs text-muted-foreground mt-1">Espace utilisé</p>
           </CardContent>
         </Card>
       </div>
