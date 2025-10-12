@@ -26,6 +26,7 @@ const UserManagement = lazy(() => import("./pages/UserManagement"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Tests = lazy(() => import("./pages/Tests"));
 const YearTransition = lazy(() => import("./pages/YearTransition"));
+const Audit = lazy(() => import("./pages/Audit"));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -141,6 +142,16 @@ const App = () => (
                   <ProtectedRoute>
                     <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
                       <YearTransition />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/audit"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+                      <Audit />
                     </Suspense>
                   </ProtectedRoute>
                 }

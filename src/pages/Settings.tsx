@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, GraduationCap, Calendar, BookOpen, Award, Users, Shield } from "lucide-react";
+import { Settings as SettingsIcon, GraduationCap, Calendar, BookOpen, Award, Users } from "lucide-react";
 import { SchoolYearsManager } from "@/components/settings/SchoolYearsManager";
 import { ClassesManager } from "@/components/settings/ClassesManager";
 import { AcademicPeriodsManager } from "@/components/settings/AcademicPeriodsManager";
@@ -9,7 +9,6 @@ import { LevelsManager } from "@/components/settings/LevelsManager";
 import { UsersManager } from "@/components/settings/UsersManager";
 import { SubjectsManager } from "@/components/settings/SubjectsManager";
 import { SyncReferentialsButton } from "@/components/settings/SyncReferentialsButton";
-import { AuditLogsViewer } from "@/components/settings/AuditLogsViewer";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Navigate } from "react-router-dom";
 
@@ -37,7 +36,7 @@ export default function Settings() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7 lg:w-[1400px]">
+        <TabsList className="grid w-full grid-cols-6 lg:w-[1200px]">
           <TabsTrigger value="school-years" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             <span className="hidden sm:inline">Années scolaires</span>
@@ -61,10 +60,6 @@ export default function Settings() {
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Utilisateurs</span>
-          </TabsTrigger>
-          <TabsTrigger value="audit" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">Audit</span>
           </TabsTrigger>
         </TabsList>
 
@@ -141,10 +136,6 @@ export default function Settings() {
               <UsersManager />
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="audit">
-          <AuditLogsViewer />
         </TabsContent>
       </Tabs>
     </div>
