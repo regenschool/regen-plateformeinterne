@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { User, BookOpen, FileText, Receipt, Save, Download, Plus, Trash2 } from "lucide-react";
+import { User, BookOpen, FileText, Receipt, Save, Download, Plus, Trash2, Upload } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -397,6 +397,38 @@ const Profile = () => {
     }
   };
 
+  const exportSubjectsToCSV = () => {
+    if (subjects.length === 0) {
+      toast.error("Aucune matière à exporter");
+      return;
+    }
+
+    const headers = ["Année Scolaire", "Semestre", "Classe", "Matière", "Email Enseignant", "Nom Enseignant"];
+    const csvContent = [
+      headers.join(","),
+      ...subjects.map(s => [
+        s.school_year,
+        s.semester,
+        s.class_name,
+        s.subject_name,
+        (s as any).teacher_email || "",
+        (s as any).teacher_name || ""
+      ].map(field => `"${field}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `matieres_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success("Export CSV réussi");
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -532,12 +564,20 @@ const Profile = () => {
                       : "Liste des matières que vous enseignez"}
                   </CardDescription>
                 </div>
-                {(isAdmin || devMode) && (
-                  <Button onClick={() => setShowImportDialog(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Importer une matière
-                  </Button>
-                )}
+                <div className="flex gap-2">
+                  {subjects.length > 0 && (
+                    <Button variant="outline" onClick={exportSubjectsToCSV}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Export CSV
+                    </Button>
+                  )}
+                  {(isAdmin || devMode) && (
+                    <Button onClick={() => setShowImportDialog(true)}>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Import CSV
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -846,7 +886,7 @@ const Profile = () => {
       <ImportSubjectsDialog
         open={showImportDialog}
         onClose={() => setShowImportDialog(false)}
-        onImported={fetchSubjects}
+        onImportComplete={fetchSubjects}
       />
     </div>
   );

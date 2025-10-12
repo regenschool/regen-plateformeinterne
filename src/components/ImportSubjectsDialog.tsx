@@ -2,149 +2,272 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Upload, Plus, Trash2 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface ImportSubjectsDialogProps {
   open: boolean;
   onClose: () => void;
-  onImported: () => void;
+  onImportComplete: () => void;
 }
 
-export function ImportSubjectsDialog({ open, onClose, onImported }: ImportSubjectsDialogProps) {
-  const [teacherEmail, setTeacherEmail] = useState("");
-  const [schoolYear, setSchoolYear] = useState("");
-  const [semester, setSemester] = useState("");
-  const [className, setClassName] = useState("");
-  const [subjectName, setSubjectName] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+type SubjectRow = {
+  school_year: string;
+  semester: string;
+  class_name: string;
+  subject_name: string;
+  teacher_email: string;
+  teacher_name: string;
+};
 
-  const handleSubmit = async () => {
-    if (!teacherEmail || !schoolYear || !semester || !className || !subjectName) {
-      toast.error("Veuillez remplir tous les champs");
+export function ImportSubjectsDialog({ open, onClose, onImportComplete }: ImportSubjectsDialogProps) {
+  const [loading, setLoading] = useState(false);
+  const [rows, setRows] = useState<SubjectRow[]>([
+    { school_year: "", semester: "", class_name: "", subject_name: "", teacher_email: "", teacher_name: "" },
+    { school_year: "", semester: "", class_name: "", subject_name: "", teacher_email: "", teacher_name: "" },
+    { school_year: "", semester: "", class_name: "", subject_name: "", teacher_email: "", teacher_name: "" },
+  ]);
+
+  const handleCellChange = (index: number, field: keyof SubjectRow, value: string) => {
+    const newRows = [...rows];
+    newRows[index][field] = value;
+    setRows(newRows);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent, rowIndex: number, field: keyof SubjectRow) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData("text");
+    const lines = pastedData.split("\n").filter(line => line.trim());
+    
+    const newRows = [...rows];
+    const fields: (keyof SubjectRow)[] = ["school_year", "semester", "class_name", "subject_name", "teacher_email", "teacher_name"];
+    const startFieldIndex = fields.indexOf(field);
+    
+    lines.forEach((line, lineOffset) => {
+      const values = line.split("\t").length > 1 ? line.split("\t") : line.split(",");
+      const targetRowIndex = rowIndex + lineOffset;
+      
+      while (targetRowIndex >= newRows.length) {
+        newRows.push({ school_year: "", semester: "", class_name: "", subject_name: "", teacher_email: "", teacher_name: "" });
+      }
+      
+      values.forEach((value, valueIndex) => {
+        const targetFieldIndex = startFieldIndex + valueIndex;
+        if (targetFieldIndex < fields.length) {
+          newRows[targetRowIndex][fields[targetFieldIndex]] = value.trim().replace(/^["']|["']$/g, "");
+        }
+      });
+    });
+    
+    setRows(newRows);
+  };
+
+  const addRow = () => {
+    setRows([...rows, { school_year: "", semester: "", class_name: "", subject_name: "", teacher_email: "", teacher_name: "" }]);
+  };
+
+  const removeRow = (index: number) => {
+    if (rows.length > 1) {
+      setRows(rows.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleImport = async () => {
+    const validSubjects = rows.filter(
+      (row) => row.school_year && row.semester && row.class_name && row.subject_name
+    );
+
+    if (validSubjects.length === 0) {
+      toast.error("Veuillez remplir au moins une matière complète (année, semestre, classe, matière)");
       return;
     }
 
-    if (!teacherEmail.includes("@")) {
-      toast.error("Veuillez entrer une adresse email valide");
-      return;
-    }
-
-    setIsSubmitting(true);
+    setLoading(true);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error("Vous devez être connecté");
-        return;
+      if (!user) throw new Error("Non authentifié");
+
+      // Récupérer toutes les matières existantes
+      const { data: existingSubjects, error: fetchError } = await supabase
+        .from("subjects")
+        .select("id, school_year, semester, class_name, subject_name, teacher_email");
+
+      if (fetchError) throw fetchError;
+
+      let updatedCount = 0;
+      let createdCount = 0;
+
+      for (const subject of validSubjects) {
+        // Chercher une matière existante avec les mêmes critères
+        const existing = existingSubjects?.find(
+          (s) =>
+            s.school_year === subject.school_year &&
+            s.semester === subject.semester &&
+            s.class_name === subject.class_name &&
+            s.subject_name === subject.subject_name
+        );
+
+        const subjectData = {
+          school_year: subject.school_year,
+          semester: subject.semester,
+          class_name: subject.class_name,
+          subject_name: subject.subject_name,
+          teacher_email: subject.teacher_email || null,
+          teacher_name: subject.teacher_name || (subject.teacher_email ? subject.teacher_email.split("@")[0] : "Admin Import"),
+          teacher_id: user.id,
+        };
+
+        if (existing) {
+          // Mettre à jour la matière existante
+          const { error: updateError } = await supabase
+            .from("subjects")
+            .update(subjectData)
+            .eq("id", existing.id);
+
+          if (updateError) throw updateError;
+          updatedCount++;
+        } else {
+          // Créer une nouvelle matière
+          const { error: insertError } = await supabase
+            .from("subjects")
+            .insert([subjectData]);
+
+          if (insertError) throw insertError;
+          createdCount++;
+        }
       }
 
-      // Créer la matière avec l'email de l'enseignant
-      const { error } = await supabase
-        .from("subjects")
-        .insert({
-          teacher_id: user.id, // L'admin qui crée
-          teacher_email: teacherEmail, // L'enseignant assigné
-          teacher_name: teacherEmail.split("@")[0], // Utiliser le début de l'email comme nom temporaire
-          school_year: schoolYear,
-          semester,
-          class_name: className,
-          subject_name: subjectName,
-        });
-
-      if (error) throw error;
-
-      toast.success("Matière importée avec succès");
-      setTeacherEmail("");
-      setSchoolYear("");
-      setSemester("");
-      setClassName("");
-      setSubjectName("");
-      onImported();
+      const message = [];
+      if (createdCount > 0) message.push(`${createdCount} créée(s)`);
+      if (updatedCount > 0) message.push(`${updatedCount} mise(s) à jour`);
+      
+      toast.success(`Import réussi : ${message.join(", ")}`);
+      
+      setRows([
+        { school_year: "", semester: "", class_name: "", subject_name: "", teacher_email: "", teacher_name: "" },
+        { school_year: "", semester: "", class_name: "", subject_name: "", teacher_email: "", teacher_name: "" },
+        { school_year: "", semester: "", class_name: "", subject_name: "", teacher_email: "", teacher_name: "" },
+      ]);
+      onImportComplete();
       onClose();
-    } catch (error) {
-      console.error("Erreur lors de l'import de la matière:", error);
-      toast.error("Erreur lors de l'import de la matière");
+    } catch (error: any) {
+      console.error("Erreur lors de l'import:", error);
+      toast.error("Erreur lors de l'import : " + error.message);
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="max-w-[95vw] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Importer une matière</DialogTitle>
+          <DialogTitle>Importer des matières (CSV)</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="teacherEmail">Email de l'enseignant</Label>
-            <Input
-              id="teacherEmail"
-              type="email"
-              placeholder="enseignant@example.com"
-              value={teacherEmail}
-              onChange={(e) => setTeacherEmail(e.target.value)}
-            />
-          </div>
+        
+        <p className="text-sm text-muted-foreground">
+          Copiez les données depuis Excel/Sheets et collez-les directement dans le tableau. Vous pouvez coller plusieurs lignes à la fois.
+        </p>
 
-          <div className="space-y-2">
-            <Label htmlFor="schoolYear">Année scolaire</Label>
-            <Select value={schoolYear} onValueChange={setSchoolYear}>
-              <SelectTrigger id="schoolYear">
-                <SelectValue placeholder="Sélectionner une année" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="2024-2025">2024-2025</SelectItem>
-                <SelectItem value="2025-2026">2025-2026</SelectItem>
-                <SelectItem value="2026-2027">2026-2027</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="overflow-auto flex-1">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[120px]">Année Scolaire *</TableHead>
+                <TableHead className="min-w-[120px]">Semestre *</TableHead>
+                <TableHead className="min-w-[100px]">Classe *</TableHead>
+                <TableHead className="min-w-[150px]">Matière *</TableHead>
+                <TableHead className="min-w-[200px]">Email Enseignant</TableHead>
+                <TableHead className="min-w-[150px]">Nom Enseignant</TableHead>
+                <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row, index) => (
+                <TableRow key={index}>
+                  <TableCell>
+                    <Input
+                      value={row.school_year}
+                      onChange={(e) => handleCellChange(index, "school_year", e.target.value)}
+                      onPaste={(e) => handlePaste(e, index, "school_year")}
+                      placeholder="2025-2026"
+                      className="h-8"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={row.semester}
+                      onChange={(e) => handleCellChange(index, "semester", e.target.value)}
+                      onPaste={(e) => handlePaste(e, index, "semester")}
+                      placeholder="Semestre 1"
+                      className="h-8"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={row.class_name}
+                      onChange={(e) => handleCellChange(index, "class_name", e.target.value)}
+                      onPaste={(e) => handlePaste(e, index, "class_name")}
+                      placeholder="B3"
+                      className="h-8"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={row.subject_name}
+                      onChange={(e) => handleCellChange(index, "subject_name", e.target.value)}
+                      onPaste={(e) => handlePaste(e, index, "subject_name")}
+                      placeholder="Management"
+                      className="h-8"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={row.teacher_email}
+                      onChange={(e) => handleCellChange(index, "teacher_email", e.target.value)}
+                      onPaste={(e) => handlePaste(e, index, "teacher_email")}
+                      placeholder="prof@example.com"
+                      type="email"
+                      className="h-8"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={row.teacher_name}
+                      onChange={(e) => handleCellChange(index, "teacher_name", e.target.value)}
+                      onPaste={(e) => handlePaste(e, index, "teacher_name")}
+                      placeholder="Dupont"
+                      className="h-8"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeRow(index)}
+                      disabled={rows.length === 1}
+                      className="h-8 w-8"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="semester">Semestre</Label>
-            <Select value={semester} onValueChange={setSemester}>
-              <SelectTrigger id="semester">
-                <SelectValue placeholder="Sélectionner un semestre" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Semestre 1">Semestre 1</SelectItem>
-                <SelectItem value="Semestre 2">Semestre 2</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="className">Classe</Label>
-            <Input
-              id="className"
-              placeholder="Ex: B3"
-              value={className}
-              onChange={(e) => setClassName(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="subjectName">Nom de la matière</Label>
-            <Input
-              id="subjectName"
-              placeholder="Ex: Management"
-              value={subjectName}
-              onChange={(e) => setSubjectName(e.target.value)}
-            />
-          </div>
-
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={onClose}>
-              Annuler
-            </Button>
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? "Import..." : "Importer"}
-            </Button>
-          </div>
+        <div className="flex gap-2 pt-4 border-t">
+          <Button variant="outline" onClick={addRow} className="flex-1">
+            <Plus className="w-4 h-4 mr-2" />
+            Ajouter une ligne
+          </Button>
+          <Button onClick={handleImport} disabled={loading} className="flex-1">
+            {loading ? "Import en cours..." : "Importer les matières"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
