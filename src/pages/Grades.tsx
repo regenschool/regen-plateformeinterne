@@ -178,7 +178,7 @@ export default function Grades() {
     }
   };
 
-  const fetchSubjects = async () => {
+  const fetchSubjects = async (subjectName?: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -197,18 +197,21 @@ export default function Grades() {
         const uniqueSubjects = Array.from(new Set(data.map(s => s.subject_name)));
         setSubjects(uniqueSubjects);
         
+        const subjectToCheck = subjectName ?? selectedSubject;
         // Vérifier si la matière sélectionnée existe dans la BDD
-        const currentSubjectExists = data.find(s => s.subject_name === selectedSubject);
+        const currentSubjectExists = subjectToCheck
+          ? data.find(s => s.subject_name === subjectToCheck)
+          : undefined;
         
-        if (selectedSubject && currentSubjectExists) {
+        if (subjectToCheck && currentSubjectExists) {
           // Récupérer les métadonnées de la matière sélectionnée
           setNewSubjectMetadata({
             teacherName: currentSubjectExists.teacher_name,
             schoolYear: currentSubjectExists.school_year,
             semester: currentSubjectExists.semester,
           });
-        } else if (selectedSubject && !currentSubjectExists) {
-          // La matière sélectionnée n'existe plus, réinitialiser
+        } else if (subjectToCheck && !currentSubjectExists) {
+          // La matière sélectionnée n'existe pas, réinitialiser
           setSelectedSubject("");
           setNewSubjectMetadata(null);
           setGrades([]);
@@ -648,12 +651,11 @@ export default function Grades() {
               value={selectedSubject} 
               onValueChange={(value) => {
                 if (value === "__new__") {
-                  // Ne pas changer selectedSubject, garder la valeur actuelle
                   setShowNewSubjectDialog(true);
                 } else {
                   setSelectedSubject(value);
-                  // Charger les métadonnées de la matière si elle existe déjà
-                  fetchSubjects();
+                  // Charger les métadonnées de la matière sélectionnée immédiatement
+                  fetchSubjects(value);
                 }
               }}
               disabled={!selectedClass || !selectedSchoolYear || !selectedSemester}
@@ -673,7 +675,7 @@ export default function Grades() {
           </div>
         </div>
 
-        {selectedClass && selectedSubject && selectedSubject !== "__new__" && selectedSchoolYear && selectedSemester && newSubjectMetadata && (
+        {selectedClass && selectedSubject && selectedSubject !== "__new__" && selectedSchoolYear && selectedSemester && (
           <>
             {newSubjectMetadata && (
               <Card className="bg-primary/5 border-primary/20">
