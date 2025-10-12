@@ -1,0 +1,319 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { UserPlus, Trash2, Shield, GraduationCap } from "lucide-react";
+
+type User = {
+  id: string;
+  email: string;
+  created_at: string;
+  role?: "admin" | "user";
+};
+
+const UserManagement = () => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [newUserRole, setNewUserRole] = useState<"admin" | "user">("user");
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    checkAdminStatus();
+  }, []);
+
+  const checkAdminStatus = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (roleData) {
+      setIsAdmin(true);
+      fetchUsers();
+    } else {
+      setLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      // Get all users from auth
+      const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers();
+      
+      if (authError) throw authError;
+
+      // Get all user roles
+      const { data: rolesData, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("*");
+
+      if (rolesError) throw rolesError;
+
+      // Combine data
+      const usersWithRoles = authUsers.map(user => {
+        const userRole = rolesData?.find(r => r.user_id === user.id);
+        return {
+          id: user.id,
+          email: user.email || "",
+          created_at: user.created_at,
+          role: userRole?.role as "admin" | "user" | undefined
+        };
+      });
+
+      setUsers(usersWithRoles);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      toast.error("Erreur lors du chargement des utilisateurs");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createUser = async () => {
+    if (!newUserEmail || !newUserPassword) {
+      toast.error("Veuillez remplir tous les champs");
+      return;
+    }
+
+    try {
+      // Create user via admin API
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: newUserEmail,
+        password: newUserPassword,
+        email_confirm: true
+      });
+
+      if (error) throw error;
+
+      // Add role
+      if (data.user) {
+        const { error: roleError } = await supabase
+          .from("user_roles")
+          .insert([{
+            user_id: data.user.id,
+            role: newUserRole as any
+          }]);
+
+        if (roleError) throw roleError;
+      }
+
+      toast.success("Utilisateur créé avec succès");
+      setShowAddDialog(false);
+      setNewUserEmail("");
+      setNewUserPassword("");
+      setNewUserRole("user");
+      fetchUsers();
+    } catch (error: any) {
+      console.error("Error creating user:", error);
+      toast.error(error.message || "Erreur lors de la création de l'utilisateur");
+    }
+  };
+
+  const updateUserRole = async (userId: string, newRole: "admin" | "user") => {
+    try {
+      // Check if user has a role
+      const { data: existingRole } = await supabase
+        .from("user_roles")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existingRole) {
+        // Update existing role
+        const { error } = await supabase
+          .from("user_roles")
+          .update({ role: newRole as any })
+          .eq("user_id", userId);
+
+        if (error) throw error;
+      } else {
+        // Create new role
+        const { error } = await supabase
+          .from("user_roles")
+          .insert([{
+            user_id: userId,
+            role: newRole as any
+          }]);
+
+        if (error) throw error;
+      }
+
+      toast.success("Rôle mis à jour");
+      fetchUsers();
+    } catch (error) {
+      console.error("Error updating role:", error);
+      toast.error("Erreur lors de la mise à jour du rôle");
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) return;
+
+    try {
+      const { error } = await supabase.auth.admin.deleteUser(userId);
+      if (error) throw error;
+
+      toast.success("Utilisateur supprimé");
+      fetchUsers();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast.error("Erreur lors de la suppression");
+    }
+  };
+
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="max-w-md">
+          <CardContent className="p-8 text-center">
+            <Shield className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="text-2xl font-bold mb-2">Accès refusé</h2>
+            <p className="text-muted-foreground">
+              Cette page est réservée aux administrateurs.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto py-8 space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-3xl">Gestion des utilisateurs</CardTitle>
+              <CardDescription className="mt-2">
+                Gérez les accès et les rôles des utilisateurs
+              </CardDescription>
+            </div>
+            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+              <DialogTrigger asChild>
+                <Button>
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Ajouter un utilisateur
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Créer un nouvel utilisateur</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={newUserEmail}
+                      onChange={(e) => setNewUserEmail(e.target.value)}
+                      placeholder="utilisateur@regen-school.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="password">Mot de passe</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={newUserPassword}
+                      onChange={(e) => setNewUserPassword(e.target.value)}
+                      placeholder="••••••••"
+                      minLength={6}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="role">Rôle</Label>
+                    <Select value={newUserRole} onValueChange={(value: any) => setNewUserRole(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="user">Enseignant</SelectItem>
+                        <SelectItem value="admin">Direction</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={createUser} className="w-full">
+                    Créer l'utilisateur
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p className="text-center text-muted-foreground py-8">Chargement...</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Rôle</TableHead>
+                  <TableHead>Créé le</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.email}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {user.role === "admin" ? (
+                          <Shield className="w-4 h-4 text-primary" />
+                        ) : (
+                          <GraduationCap className="w-4 h-4 text-primary" />
+                        )}
+                        <Select
+                          value={user.role || "user"}
+                          onValueChange={(value: any) => updateUserRole(user.id, value)}
+                        >
+                          <SelectTrigger className="w-[150px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="user">Enseignant</SelectItem>
+                            <SelectItem value="admin">Direction</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(user.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteUser(user.id)}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default UserManagement;
