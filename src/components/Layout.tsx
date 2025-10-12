@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Leaf, Network, Lightbulb, LogOut, Languages, ClipboardList, User, Users } from "lucide-react";
+import { toast } from "sonner";
 import { Session } from "@supabase/supabase-js";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Switch } from "@/components/ui/switch";
@@ -23,15 +24,20 @@ export const Layout = ({ children }: LayoutProps) => {
   const location = useLocation();
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [devMode, setDevMode] = useState(() => {
-    return localStorage.getItem("dev-admin-mode") === "true";
-  });
   const { t, language, setLanguage } = useLanguage();
 
-  const toggleDevMode = (checked: boolean) => {
-    setDevMode(checked);
-    localStorage.setItem("dev-admin-mode", String(checked));
-    window.dispatchEvent(new Event("dev-mode-change"));
+  const toggleAdmin = async (checked: boolean) => {
+    if (!session?.user) return;
+    const { error } = await (supabase as any)
+      .from("dev_role_overrides")
+      .upsert({ user_id: session.user.id, is_admin: checked, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    if (error) {
+      console.error("Failed to toggle admin override", error);
+      toast.error("Impossible de changer de rôle");
+      return;
+    }
+    setIsAdmin(checked);
+    toast.success(checked ? "Mode administrateur activé" : "Mode enseignant activé");
   };
 
   useEffect(() => {
@@ -55,14 +61,20 @@ export const Layout = ({ children }: LayoutProps) => {
   }, []);
 
   const checkAdminStatus = async (userId: string) => {
-    const { data } = await supabase
+    const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userId)
       .eq("role", "admin")
       .maybeSingle();
+
+    const { data: override } = await (supabase as any)
+      .from("dev_role_overrides")
+      .select("is_admin")
+      .eq("user_id", userId)
+      .maybeSingle();
     
-    setIsAdmin(!!data);
+    setIsAdmin(!!roleData || !!override?.is_admin);
   };
 
   const handleLogout = async () => {
@@ -84,7 +96,7 @@ export const Layout = ({ children }: LayoutProps) => {
               <div>
                 <h1 className="text-xl font-bold text-foreground">Regen School</h1>
                 <p className="text-xs text-muted-foreground">
-                  {devMode ? "Espace Administrateur" : t("nav.teachersSpace")}
+                  {isAdmin ? "Espace Administrateur" : t("nav.teachersSpace")}
                 </p>
               </div>
             </div>
@@ -97,12 +109,12 @@ export const Layout = ({ children }: LayoutProps) => {
                     htmlFor="dev-mode" 
                     className="text-xs font-medium text-blue-700 dark:text-blue-400 cursor-pointer whitespace-nowrap select-none"
                   >
-                    {devMode ? "Admin" : "Enseignant"}
+                    {isAdmin ? "Admin" : "Enseignant"}
                   </Label>
                   <Switch
                     id="dev-mode"
-                    checked={devMode}
-                    onCheckedChange={toggleDevMode}
+                    checked={isAdmin}
+                    onCheckedChange={toggleAdmin}
                     className="data-[state=checked]:bg-blue-600"
                   />
                 </div>
@@ -141,7 +153,7 @@ export const Layout = ({ children }: LayoutProps) => {
                   <User className="w-4 h-4" />
                   <span className="hidden sm:inline">Profil</span>
                 </Button>
-                {(isAdmin || devMode) && (
+                {isAdmin && (
                   <Button
                     variant={isActive("/users") ? "default" : "ghost"}
                     onClick={() => navigate("/users", { replace: true })}

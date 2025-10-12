@@ -66,9 +66,6 @@ const Profile = () => {
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [devMode, setDevMode] = useState(() => {
-    return localStorage.getItem("dev-admin-mode") === "true";
-  });
   const [profile, setProfile] = useState<TeacherProfile | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [documents, setDocuments] = useState<SchoolDocument[]>([]);
@@ -98,17 +95,8 @@ const Profile = () => {
       fetchDocuments();
       fetchInvoices();
     }
-  }, [userId, devMode]); // Ajout de devMode comme dépendance
+  }, [userId, isAdmin]);
 
-  useEffect(() => {
-    const handleDevModeChange = () => {
-      const newDevMode = localStorage.getItem("dev-admin-mode") === "true";
-      setDevMode(newDevMode);
-      // fetchSubjects sera appelé automatiquement via le useEffect ci-dessus
-    };
-    window.addEventListener("dev-mode-change", handleDevModeChange);
-    return () => window.removeEventListener("dev-mode-change", handleDevModeChange);
-  }, []);
 
   // Real-time subscription for subjects
   useEffect(() => {
@@ -195,8 +183,7 @@ const Profile = () => {
     if (!userId) return;
 
     try {
-      // En mode dev, on force l'affichage admin. Sinon, on suit le vrai statut admin
-      const showAsAdmin = devMode || isAdmin;
+      const showAsAdmin = isAdmin;
       
       if (showAsAdmin) {
         // Mode admin : voir toutes les matières
@@ -456,7 +443,7 @@ const Profile = () => {
           </TabsTrigger>
           <TabsTrigger value="subjects">
             <BookOpen className="w-4 h-4 mr-2" />
-            {(devMode || isAdmin) ? "Toutes les Matières" : "Mes Matières"}
+            {isAdmin ? "Toutes les Matières" : "Mes Matières"}
           </TabsTrigger>
           <TabsTrigger value="documents">
             <FileText className="w-4 h-4 mr-2" />
