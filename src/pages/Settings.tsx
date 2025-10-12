@@ -5,6 +5,7 @@ import { Settings as SettingsIcon, GraduationCap, Calendar, BookOpen } from "luc
 import { SchoolYearsManager } from "@/components/settings/SchoolYearsManager";
 import { ClassesManager } from "@/components/settings/ClassesManager";
 import { AcademicPeriodsManager } from "@/components/settings/AcademicPeriodsManager";
+import { SyncReferentialsButton } from "@/components/settings/SyncReferentialsButton";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Navigate } from "react-router-dom";
 
@@ -18,14 +19,17 @@ export default function Settings() {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <SettingsIcon className="h-8 w-8 text-primary" />
-          <h1 className="text-4xl font-bold">Paramètres</h1>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <SettingsIcon className="h-8 w-8 text-primary" />
+            <h1 className="text-4xl font-bold">Paramètres</h1>
+          </div>
+          <p className="text-muted-foreground">
+            Gérez les référentiels de l'école : années scolaires, classes et périodes académiques
+          </p>
         </div>
-        <p className="text-muted-foreground">
-          Gérez les référentiels de l'école : années scolaires, classes et périodes académiques
-        </p>
+        <SyncReferentialsButton />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
