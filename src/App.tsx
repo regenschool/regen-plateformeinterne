@@ -22,6 +22,7 @@ import NotFound from "./pages/NotFound";
 import { Layout } from "./components/Layout";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AdminProvider } from "./contexts/AdminContext";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
@@ -57,13 +58,14 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => (
-  <LanguageProvider>
-    <AdminProvider>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+  <ErrorBoundary>
+    <LanguageProvider>
+      <AdminProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
@@ -132,6 +134,7 @@ const App = () => (
       </QueryClientProvider>
     </AdminProvider>
   </LanguageProvider>
+  </ErrorBoundary>
 );
 
 export default App;

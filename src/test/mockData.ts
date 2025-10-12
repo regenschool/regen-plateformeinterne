@@ -1,0 +1,57 @@
+import { faker } from '@faker-js/faker';
+
+export const createMockStudent = (overrides = {}) => ({
+  id: faker.string.uuid(),
+  first_name: faker.person.firstName(),
+  last_name: faker.person.lastName(),
+  birth_date: faker.date.past({ years: 30 }).toISOString().split('T')[0],
+  age: faker.number.int({ min: 18, max: 50 }),
+  class_name: faker.helpers.arrayElement(['M1A', 'M1B', 'M2', 'IMA', 'IMB', 'B3']),
+  photo_url: faker.image.avatar(),
+  academic_background: faker.helpers.arrayElement(['Sciences Po', 'Commerce', 'Ingénierie']),
+  company: faker.helpers.arrayElement(['Google', 'Microsoft', 'En recherche active', null]),
+  special_needs: faker.helpers.arrayElement([null, 'Dyslexie', 'Tiers temps']),
+  created_at: faker.date.past().toISOString(),
+  updated_at: faker.date.recent().toISOString(),
+  ...overrides,
+});
+
+export const createMockEnrollment = (overrides = {}) => ({
+  id: faker.string.uuid(),
+  student_id: faker.string.uuid(),
+  school_year_id: faker.string.uuid(),
+  class_id: faker.string.uuid(),
+  level_id: faker.string.uuid(),
+  assigned_teacher_id: faker.string.uuid(),
+  class_name: faker.helpers.arrayElement(['M1A', 'M1B', 'M2']),
+  company: null,
+  academic_background: null,
+  created_at: faker.date.past().toISOString(),
+  updated_at: faker.date.recent().toISOString(),
+  first_name: faker.person.firstName(),
+  last_name: faker.person.lastName(),
+  birth_date: faker.date.past({ years: 30 }).toISOString().split('T')[0],
+  age: faker.number.int({ min: 18, max: 50 }),
+  photo_url: faker.image.avatar(),
+  school_year_label: '2025-2026',
+  school_year_is_active: true,
+  ...overrides,
+});
+
+export const createMockGrade = (overrides = {}) => ({
+  id: faker.string.uuid(),
+  student_id: faker.string.uuid(),
+  teacher_id: faker.string.uuid(),
+  subject: faker.helpers.arrayElement(['Mathématiques', 'Français', 'Histoire']),
+  grade: faker.number.float({ min: 0, max: 20, fractionDigits: 2 }),
+  max_grade: 20,
+  weighting: 1,
+  assessment_type: faker.helpers.arrayElement(['exam', 'homework', 'quiz']),
+  assessment_name: faker.lorem.words(3),
+  is_absent: false,
+  class_name: faker.helpers.arrayElement(['M1A', 'M1B']),
+  school_year: '2025-2026',
+  created_at: faker.date.past().toISOString(),
+  updated_at: faker.date.recent().toISOString(),
+  ...overrides,
+});
