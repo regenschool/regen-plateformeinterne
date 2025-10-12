@@ -23,7 +23,7 @@ export const Layout = ({ children }: LayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [session, setSession] = useState<Session | null>(null);
-  const { isAdmin, toggleAdmin } = useAdmin();
+  const { isAdmin, hasAdminRole, toggleAdmin } = useAdmin();
   const { t, language, setLanguage } = useLanguage();
 
   useEffect(() => {
@@ -66,23 +66,25 @@ export const Layout = ({ children }: LayoutProps) => {
 
             {session && (
               <div className="flex items-center gap-3">
-                {/* DEV MODE TOGGLE - Design subtil */}
-                <div className="flex items-center gap-2 px-2.5 py-1 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-md transition-all">
-                  <Label 
-                    htmlFor="dev-mode" 
-                    className="text-xs font-medium text-blue-700 dark:text-blue-400 cursor-pointer whitespace-nowrap select-none"
-                  >
-                    {isAdmin ? "Admin" : "Enseignant"}
-                  </Label>
-                  <Switch
-                    id="dev-mode"
-                    checked={isAdmin}
-                    onCheckedChange={toggleAdmin}
-                    className="data-[state=checked]:bg-blue-600"
-                  />
-                </div>
+                {/* DEV MODE TOGGLE - Visible uniquement pour les vrais admins */}
+                {hasAdminRole && (
+                  <div className="flex items-center gap-2 px-2.5 py-1 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-md transition-all">
+                    <Label 
+                      htmlFor="dev-mode" 
+                      className="text-xs font-medium text-blue-700 dark:text-blue-400 cursor-pointer whitespace-nowrap select-none"
+                    >
+                      {isAdmin ? "Admin" : "Enseignant"}
+                    </Label>
+                    <Switch
+                      id="dev-mode"
+                      checked={isAdmin}
+                      onCheckedChange={toggleAdmin}
+                      className="data-[state=checked]:bg-blue-600"
+                    />
+                  </div>
+                )}
 
-                <div className="h-5 w-px bg-border/50" />
+                {hasAdminRole && <div className="h-5 w-px bg-border/50" />}
 
                 <Button
                   variant={isActive("/directory") ? "default" : "ghost"}

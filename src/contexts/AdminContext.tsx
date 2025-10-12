@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 type AdminContextType = {
   isAdmin: boolean;
+  hasAdminRole: boolean;
   toggleAdmin: (checked: boolean) => Promise<void>;
   refreshAdminStatus: () => Promise<void>;
 };
@@ -12,6 +13,7 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 export const AdminProvider = ({ children }: { children: ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [hasAdminRole, setHasAdminRole] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -48,7 +50,9 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
       .eq("user_id", userId)
       .maybeSingle();
 
-    setIsAdmin(!!roleData || !!override?.is_admin);
+    const hasRole = !!roleData;
+    setHasAdminRole(hasRole);
+    setIsAdmin(hasRole || !!override?.is_admin);
   };
 
   const toggleAdmin = async (checked: boolean) => {
@@ -78,7 +82,7 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AdminContext.Provider value={{ isAdmin, toggleAdmin, refreshAdminStatus }}>
+    <AdminContext.Provider value={{ isAdmin, hasAdminRole, toggleAdmin, refreshAdminStatus }}>
       {children}
     </AdminContext.Provider>
   );
