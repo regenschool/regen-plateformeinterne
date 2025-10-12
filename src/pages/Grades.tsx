@@ -183,10 +183,13 @@ export default function Grades() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const userEmail = user.email;
+
+      // Récupérer les matières créées par l'enseignant OU assignées via son email
       const { data, error } = await supabase
         .from("subjects")
         .select("*")
-        .eq("teacher_id", user.id)
+        .or(`teacher_id.eq.${user.id},teacher_email.eq.${userEmail}`)
         .eq("class_name", selectedClass)
         .eq("school_year", selectedSchoolYear)
         .eq("semester", selectedSemester);
