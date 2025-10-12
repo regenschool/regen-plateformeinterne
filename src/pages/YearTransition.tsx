@@ -5,6 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,10 +17,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { useSchoolYears } from "@/hooks/useReferentials";
+import { useClassMutations } from "@/hooks/useReferentialMutations";
 import { useEnrollments } from "@/hooks/useEnrollments";
 import { useYearTransition, type ClassMapping } from "@/hooks/useYearTransition";
-import { ArrowRight, Calendar, Users, CheckCircle2, AlertCircle, Sparkles, RefreshCw } from "lucide-react";
+import { ArrowRight, Calendar, Users, CheckCircle2, AlertCircle, Sparkles, RefreshCw, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -28,10 +38,15 @@ export default function YearTransition() {
   const [mappings, setMappings] = useState<ClassMapping[]>([]);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [previewData, setPreviewData] = useState<any[]>([]);
+  const [showCreateClassDialog, setShowCreateClassDialog] = useState(false);
+  const [newClassName, setNewClassName] = useState("");
+  const [newClassLevel, setNewClassLevel] = useState("");
+  const [newClassCapacity, setNewClassCapacity] = useState("");
 
   const { data: schoolYears } = useSchoolYears();
   const { data: sourceEnrollments = [] } = useEnrollments({ schoolYearId: sourceYearId });
   const transitionMutation = useYearTransition();
+  const { add: addClassMutation } = useClassMutations();
 
   // Classes disponibles (tous les niveaux)
   const [allClasses, setAllClasses] = useState<{ id: string; name: string }[]>([]);
@@ -102,34 +117,69 @@ export default function YearTransition() {
   };
 
   const handlePreview = () => {
-    const incomplete = mappings.filter(m => !m.targetClassId);
+    // Filtrer uniquement les mappings configurés
+    const completeMappings = mappings.filter(m => m.targetClassId);
     
-    if (incomplete.length > 0) {
-      toast.error(`${incomplete.length} classe(s) sans destination`, {
-        description: 'Veuillez mapper toutes les classes avant de continuer'
+    if (completeMappings.length === 0) {
+      toast.error('Aucune classe configurée', {
+        description: 'Veuillez configurer au moins une classe de destination'
       });
       return;
     }
 
-    setPreviewData(mappings);
+    setPreviewData(completeMappings);
     setShowConfirmDialog(true);
   };
 
   const handleConfirm = async () => {
+    const completeMappings = mappings.filter(m => m.targetClassId);
+    
     await transitionMutation.mutateAsync({
       sourceSchoolYearId: sourceYearId,
       targetSchoolYearId: targetYearId,
-      mappings,
+      mappings: completeMappings,
     });
     setShowConfirmDialog(false);
   };
 
+  const handleCreateClass = async () => {
+    if (!newClassName.trim()) {
+      toast.error('Le nom de la classe est requis');
+      return;
+    }
+
+    try {
+      await addClassMutation.mutateAsync({
+        name: newClassName.trim(),
+        level: newClassLevel.trim() || null,
+        capacity: newClassCapacity ? parseInt(newClassCapacity) : null,
+        is_active: true,
+      });
+
+      // Recharger les classes
+      await fetchClasses();
+      
+      toast.success(`✅ Classe "${newClassName}" créée`);
+      setShowCreateClassDialog(false);
+      setNewClassName("");
+      setNewClassLevel("");
+      setNewClassCapacity("");
+    } catch (error: any) {
+      toast.error('Erreur : ' + error.message);
+    }
+  };
+
+  const fetchClasses = async () => {
+    const { data, error } = await supabase.from('classes').select('id, name').eq('is_active', true).order('name');
+    if (!error && data) setAllClasses(data);
+  };
+
   const totalStudents = useMemo(() => 
-    mappings.reduce((sum, m) => sum + m.studentCount, 0), 
+    mappings.filter(m => m.targetClassId).reduce((sum, m) => sum + m.studentCount, 0), 
     [mappings]
   );
 
-  const isReady = sourceYearId && targetYearId && mappings.every(m => m.targetClassId);
+  const hasCompleteMappings = mappings.some(m => m.targetClassId);
   const sourceYear = schoolYears?.find(y => y.id === sourceYearId);
   const targetYear = schoolYears?.find(y => y.id === targetYearId);
 
@@ -264,25 +314,38 @@ export default function YearTransition() {
                     <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
 
                     {/* Classe cible */}
-                    <div className="flex-1">
-                      <div className="font-medium text-sm text-muted-foreground mb-1">
-                        Classe de destination
+                    <div className="flex-1 flex gap-2">
+                      <div className="flex-1">
+                        <div className="font-medium text-sm text-muted-foreground mb-1">
+                          Classe de destination
+                        </div>
+                        <Select 
+                          value={mapping.targetClassId} 
+                          onValueChange={(value) => handleMappingChange(mapping.sourceClassId, value)}
+                        >
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Choisir..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allClasses.map(cls => (
+                              <SelectItem key={cls.id} value={cls.id}>
+                                {cls.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
-                      <Select 
-                        value={mapping.targetClassId} 
-                        onValueChange={(value) => handleMappingChange(mapping.sourceClassId, value)}
-                      >
-                        <SelectTrigger className="h-10">
-                          <SelectValue placeholder="Choisir..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {allClasses.map(cls => (
-                            <SelectItem key={cls.id} value={cls.id}>
-                              {cls.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-end">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-10 w-10"
+                          onClick={() => setShowCreateClassDialog(true)}
+                          title="Créer une nouvelle classe"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -294,22 +357,27 @@ export default function YearTransition() {
 
       {/* Actions */}
       {mappings.length > 0 && (
-        <div className="flex justify-end gap-3 sticky bottom-4 bg-background/80 backdrop-blur-sm p-4 rounded-lg border shadow-lg">
-          <Button
-            variant="outline"
-            onClick={() => setMappings([])}
-            disabled={transitionMutation.isPending}
-          >
-            Réinitialiser
-          </Button>
-          <Button
-            onClick={handlePreview}
-            disabled={!isReady || transitionMutation.isPending}
-            className="min-w-[200px] gap-2"
-          >
-            <Sparkles className="w-4 h-4" />
-            Prévisualiser le passage
-          </Button>
+        <div className="flex justify-between items-center gap-3 sticky bottom-4 bg-background/80 backdrop-blur-sm p-4 rounded-lg border shadow-lg">
+          <div className="text-sm text-muted-foreground">
+            {mappings.filter(m => m.targetClassId).length} / {mappings.length} classe(s) configurée(s)
+          </div>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setMappings([])}
+              disabled={transitionMutation.isPending}
+            >
+              Réinitialiser
+            </Button>
+            <Button
+              onClick={handlePreview}
+              disabled={!hasCompleteMappings || transitionMutation.isPending}
+              className="min-w-[200px] gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              Prévisualiser ({mappings.filter(m => m.targetClassId).length})
+            </Button>
+          </div>
         </div>
       )}
 
@@ -376,6 +444,78 @@ export default function YearTransition() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog création de classe */}
+      <Dialog open={showCreateClassDialog} onOpenChange={setShowCreateClassDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="w-5 h-5 text-primary" />
+              Créer une Nouvelle Classe
+            </DialogTitle>
+            <DialogDescription>
+              Cette classe sera disponible immédiatement dans les référentiels
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="new-class-name">Nom de la classe *</Label>
+              <Input
+                id="new-class-name"
+                value={newClassName}
+                onChange={(e) => setNewClassName(e.target.value)}
+                placeholder="M2B, Alumni, etc."
+                autoFocus
+              />
+            </div>
+            <div>
+              <Label htmlFor="new-class-level">Niveau (optionnel)</Label>
+              <Input
+                id="new-class-level"
+                value={newClassLevel}
+                onChange={(e) => setNewClassLevel(e.target.value)}
+                placeholder="Master, Bachelor, etc."
+              />
+            </div>
+            <div>
+              <Label htmlFor="new-class-capacity">Capacité (optionnel)</Label>
+              <Input
+                id="new-class-capacity"
+                type="number"
+                value={newClassCapacity}
+                onChange={(e) => setNewClassCapacity(e.target.value)}
+                placeholder="30"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateClassDialog(false)}
+                className="flex-1"
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleCreateClass}
+                disabled={addClassMutation.isPending}
+                className="flex-1 gap-2"
+              >
+                {addClassMutation.isPending ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Création...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    Créer
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

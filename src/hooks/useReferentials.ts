@@ -172,3 +172,7 @@ export const useActivePeriods = () => {
     staleTime: 30 * 60 * 1000,
   });
 };
+
+// Export mutations from useReferentialMutations
+export { useClassMutations as useAddClass } from './useReferentialMutations';
+
