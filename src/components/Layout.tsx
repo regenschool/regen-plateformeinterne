@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Leaf, Network, Lightbulb, LogOut, Languages, ClipboardList, User, Users } from "lucide-react";
+import { Leaf, Network, Lightbulb, LogOut, Languages, ClipboardList, User, Users, Settings } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAdmin } from "@/contexts/AdminContext";
@@ -117,14 +117,24 @@ export const Layout = ({ children }: LayoutProps) => {
                   <span className="hidden sm:inline">Profil</span>
                 </Button>
                 {isAdmin && (
-                  <Button
-                    variant={isActive("/users") ? "default" : "ghost"}
-                    onClick={() => navigate("/users", { replace: true })}
-                    className="gap-2"
-                  >
-                    <Users className="w-4 h-4" />
-                    <span className="hidden sm:inline">Utilisateurs</span>
-                  </Button>
+                  <>
+                    <Button
+                      variant={isActive("/users") ? "default" : "ghost"}
+                      onClick={() => navigate("/users", { replace: true })}
+                      className="gap-2"
+                    >
+                      <Users className="w-4 h-4" />
+                      <span className="hidden sm:inline">Utilisateurs</span>
+                    </Button>
+                    <Button
+                      variant={isActive("/settings") ? "default" : "ghost"}
+                      onClick={() => navigate("/settings", { replace: true })}
+                      className="gap-2"
+                    >
+                      <Settings className="w-4 h-4" />
+                      <span className="hidden sm:inline">Paramètres</span>
+                    </Button>
+                  </>
                 )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

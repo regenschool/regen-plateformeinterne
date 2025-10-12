@@ -16,6 +16,7 @@ import PublicQuiz from "./pages/PublicQuiz";
 import Grades from "./pages/Grades";
 import Profile from "./pages/Profile";
 import UserManagement from "./pages/UserManagement";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import { Layout } from "./components/Layout";
 import { LanguageProvider } from "./contexts/LanguageContext";
@@ -103,6 +104,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <UserManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
                   </ProtectedRoute>
                 }
               />
