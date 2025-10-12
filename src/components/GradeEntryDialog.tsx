@@ -197,10 +197,33 @@ export const GradeEntryDialog = ({
       is_absent: isAbsent,
     };
 
-    // Use upsert to prevent duplicates - if a grade already exists for this assessment/student, update it
-    const { error } = await supabase.from("grades").upsert(gradeData, {
-      onConflict: 'student_id,subject,school_year,semester,assessment_name,assessment_type,assessment_custom_label'
-    });
+    // Check if grade already exists for this assessment/student combination
+    const { data: existingGrade } = await supabase
+      .from('grades')
+      .select('id')
+      .eq('student_id', student.id)
+      .eq('subject', subject)
+      .eq('school_year', subjectMetadata?.schoolYear || '')
+      .eq('semester', subjectMetadata?.semester || '')
+      .eq('assessment_name', assessmentName.trim())
+      .eq('assessment_type', assessmentType as any)
+      .maybeSingle();
+
+    let error;
+    if (existingGrade) {
+      // Update existing grade
+      const result = await supabase
+        .from('grades')
+        .update(gradeData)
+        .eq('id', existingGrade.id);
+      error = result.error;
+    } else {
+      // Insert new grade
+      const result = await supabase
+        .from('grades')
+        .insert([gradeData]);
+      error = result.error;
+    }
 
     if (error) throw error;
 
