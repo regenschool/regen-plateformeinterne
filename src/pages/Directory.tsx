@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,7 +60,7 @@ const Directory = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [students, selectedClass, debouncedSearchTerm, showActiveSearchOnly, sortBy]);
 
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("students")
@@ -80,7 +80,7 @@ const Directory = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   const filterStudents = () => {
     let filtered = students;
