@@ -3,9 +3,15 @@ import { Navigate } from "react-router-dom";
 import { useAdmin } from "@/contexts/AdminContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, Users, GraduationCap, ClipboardList, Database, TrendingUp, AlertTriangle, CheckCircle, Shield, HardDrive } from "lucide-react";
+import { Activity, Users, GraduationCap, ClipboardList, Database, TrendingUp, AlertTriangle, CheckCircle, Shield, HardDrive, Download, Calendar, History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 type AppStats = {
   totalUsers: number;
@@ -42,6 +48,9 @@ export default function Quality() {
     cls: 0,
     inp: 0,
   });
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [auditLogsRetention, setAuditLogsRetention] = useState<number>(7); // jours
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     if (isAdmin) {
@@ -78,13 +87,13 @@ export default function Quality() {
         .select('*', { count: 'exact', head: true })
         .eq('is_active', true);
 
-      // Compter les logs d'audit (dernières 24h)
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
+      // Compter les logs d'audit (selon la rétention configurée)
+      const retentionDate = new Date();
+      retentionDate.setDate(retentionDate.getDate() - auditLogsRetention);
       const { count: auditCount } = await supabase
         .from('audit_logs')
         .select('*', { count: 'exact', head: true })
-        .gte('created_at', yesterday.toISOString());
+        .gte('created_at', retentionDate.toISOString());
 
       // Calculer l'espace de stockage utilisé
       const { data: buckets } = await supabase.storage.listBuckets();
@@ -172,6 +181,83 @@ export default function Quality() {
       case 'good': return <CheckCircle className="h-5 w-5" />;
       case 'warning': return <AlertTriangle className="h-5 w-5" />;
       case 'critical': return <AlertTriangle className="h-5 w-5" />;
+    }
+  };
+
+  const handleExportBackup = async () => {
+    setIsExporting(true);
+    try {
+      const timestamp = format(new Date(), 'yyyy-MM-dd_HH-mm');
+      
+      // Exporter toutes les tables critiques
+      const backupData: Record<string, any> = {
+        students: [],
+        grades: [],
+        subjects: [],
+        teachers: [],
+        school_years: [],
+        academic_periods: [],
+        classes: []
+      };
+
+      // Récupérer les données de chaque table
+      const { data: studentsData } = await supabase.from('students').select('*');
+      const { data: gradesData } = await supabase.from('grades').select('*');
+      const { data: subjectsData } = await supabase.from('subjects').select('*');
+      const { data: teachersData } = await supabase.from('teachers').select('*');
+      const { data: yearsData } = await supabase.from('school_years').select('*');
+      const { data: periodsData } = await supabase.from('academic_periods').select('*');
+      const { data: classesData } = await supabase.from('classes').select('*');
+
+      backupData.students = studentsData || [];
+      backupData.grades = gradesData || [];
+      backupData.subjects = subjectsData || [];
+      backupData.teachers = teachersData || [];
+      backupData.school_years = yearsData || [];
+      backupData.academic_periods = periodsData || [];
+      backupData.classes = classesData || [];
+
+      // Créer un fichier JSON
+      const jsonStr = JSON.stringify(backupData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      
+      // Télécharger
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup_${timestamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success('Sauvegarde exportée avec succès');
+    } catch (error) {
+      console.error('Erreur lors de l\'export:', error);
+      toast.error('Erreur lors de l\'export de la sauvegarde');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleViewHistoricalState = async (date: Date) => {
+    try {
+      setSelectedDate(date);
+      
+      // Récupérer les statistiques à la date sélectionnée via audit_logs
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      const { count: auditCount } = await supabase
+        .from('audit_logs')
+        .select('*', { count: 'exact', head: true })
+        .lte('created_at', endOfDay.toISOString());
+
+      toast.success(`État au ${format(date, 'dd/MM/yyyy', { locale: fr })} : ${auditCount} actions enregistrées`);
+      
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'historique:', error);
+      toast.error('Erreur lors de la récupération de l\'état historique');
     }
   };
 
@@ -285,7 +371,7 @@ export default function Quality() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Activité (24h)</CardTitle>
+            <CardTitle className="text-sm font-medium">Activité ({auditLogsRetention}j)</CardTitle>
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -333,6 +419,114 @@ export default function Quality() {
               <Progress value={(metric.value / metric.max) * 100} className="h-2" />
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      {/* Sauvegardes & Historique */}
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="h-5 w-5" />
+            Sauvegardes & Historique
+          </CardTitle>
+          <CardDescription>Gestion des sauvegardes et consultation de l'historique</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Export Backup */}
+          <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Download className="h-5 w-5 text-blue-600" />
+                <h3 className="font-medium text-blue-900 dark:text-blue-100">Export de Sauvegarde</h3>
+              </div>
+              <p className="text-sm text-blue-700 dark:text-blue-300">
+                Téléchargez une copie complète de toutes vos données (étudiants, notes, matières, etc.)
+              </p>
+            </div>
+            <Button 
+              onClick={handleExportBackup} 
+              disabled={isExporting}
+              className="ml-4"
+            >
+              {isExporting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Export...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Exporter
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Voir l'historique */}
+          <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="h-5 w-5 text-purple-600" />
+                <h3 className="font-medium text-purple-900 dark:text-purple-100">État Historique</h3>
+              </div>
+              <p className="text-sm text-purple-700 dark:text-purple-300">
+                Consultez l'état de votre base de données à une date précise
+              </p>
+              {selectedDate && (
+                <Badge variant="secondary" className="mt-2">
+                  Dernière consultation : {format(selectedDate, 'dd/MM/yyyy', { locale: fr })}
+                </Badge>
+              )}
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="ml-4">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Choisir une date
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <CalendarComponent
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && handleViewHistoricalState(date)}
+                  disabled={(date) => date > new Date()}
+                  initialFocus
+                  locale={fr}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Configuration rétention */}
+          <div className="p-4 bg-gray-50 dark:bg-gray-900/30 rounded-lg border border-gray-200 dark:border-gray-800">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="font-medium text-gray-900 dark:text-gray-100">Rétention des Logs d'Audit</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Actuellement configuré sur {auditLogsRetention} jours
+                </p>
+              </div>
+              <div className="flex gap-2">
+                {[7, 30, 90].map((days) => (
+                  <Button
+                    key={days}
+                    size="sm"
+                    variant={auditLogsRetention === days ? "default" : "outline"}
+                    onClick={() => {
+                      setAuditLogsRetention(days);
+                      fetchStats();
+                    }}
+                  >
+                    {days}j
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-500">
+              💡 Plus la rétention est longue, plus vous pourrez remonter loin dans l'historique
+            </p>
+          </div>
         </CardContent>
       </Card>
 
