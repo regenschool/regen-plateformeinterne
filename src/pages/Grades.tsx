@@ -79,7 +79,11 @@ export default function Grades() {
     schoolYear: string;
     semester: string;
   } | null>(null);
-  const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
+  const [selectedAssessment, setSelectedAssessment] = useState<{
+    name: string;
+    type: string;
+    customLabel: string | null;
+  } | null>(null);
 
   // Handle prefilled data from navigation
   useEffect(() => {
@@ -816,7 +820,13 @@ export default function Grades() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => setSelectedAssessment(assessment)}
+                              onClick={() => {
+                                setSelectedAssessment({
+                                  name: assessment.name,
+                                  type: assessment.type,
+                                  customLabel: assessment.customLabel
+                                });
+                              }}
                               className="gap-2"
                             >
                               <PlusCircle className="w-4 h-4" />
