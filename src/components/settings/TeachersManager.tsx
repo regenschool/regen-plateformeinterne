@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useTeachers, useAddTeacher, useUpdateTeacher, useDeleteTeacher } from "@/hooks/useTeachers";
-import { Trash2, Plus, Save, X, Users } from "lucide-react";
+import { useTeachers, useAddTeacher, useUpdateTeacher, useDeleteTeacher, Teacher } from "@/hooks/useTeachers";
+import { Trash2, Plus, Save, X, Users, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +19,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+/**
+ * ARCHITECTURE NOTE:
+ * - Teacher.user_id est la PRIMARY KEY
+ * - L'email est en lecture seule (synchronisé depuis auth.users)
+ * - Pour ajouter un enseignant, il faut un user_id existant dans auth.users
+ */
+
 export const TeachersManager = () => {
   const { data: teachers = [], isLoading } = useTeachers();
   const addTeacher = useAddTeacher();
@@ -25,24 +33,22 @@ export const TeachersManager = () => {
   const deleteTeacher = useDeleteTeacher();
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<{ full_name: string; email: string; phone: string }>({
+  const [editValues, setEditValues] = useState<{ full_name: string; phone: string }>({
     full_name: "",
-    email: "",
     phone: "",
   });
   const [isAdding, setIsAdding] = useState(false);
-  const [newTeacher, setNewTeacher] = useState({ full_name: "", email: "", phone: "" });
+  const [newTeacher, setNewTeacher] = useState({ user_id: "", full_name: "", phone: "" });
 
-  const handleEdit = (teacher: any) => {
-    setEditingId(teacher.id);
+  const handleEdit = (teacher: Teacher) => {
+    setEditingId(teacher.user_id);
     setEditValues({
       full_name: teacher.full_name,
-      email: teacher.email || "",
       phone: teacher.phone || "",
     });
   };
 
-  const handleSave = async (id: string) => {
+  const handleSave = async (user_id: string) => {
     if (!editValues.full_name.trim()) {
       toast.error("Le nom est obligatoire");
       return;
@@ -50,7 +56,7 @@ export const TeachersManager = () => {
 
     try {
       await updateTeacher.mutateAsync({
-        id,
+        user_id,
         updates: editValues,
       });
       setEditingId(null);
@@ -61,27 +67,35 @@ export const TeachersManager = () => {
 
   const handleCancel = () => {
     setEditingId(null);
-    setEditValues({ full_name: "", email: "", phone: "" });
+    setEditValues({ full_name: "", phone: "" });
   };
 
   const handleAdd = async () => {
+    if (!newTeacher.user_id.trim()) {
+      toast.error("L'ID utilisateur est obligatoire");
+      return;
+    }
     if (!newTeacher.full_name.trim()) {
       toast.error("Le nom est obligatoire");
       return;
     }
 
     try {
-      await addTeacher.mutateAsync(newTeacher);
-      setNewTeacher({ full_name: "", email: "", phone: "" });
+      await addTeacher.mutateAsync({
+        user_id: newTeacher.user_id,
+        full_name: newTeacher.full_name,
+        phone: newTeacher.phone,
+      });
+      setNewTeacher({ user_id: "", full_name: "", phone: "" });
       setIsAdding(false);
     } catch (error) {
       console.error("Error adding teacher:", error);
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (user_id: string) => {
     try {
-      await deleteTeacher.mutateAsync(id);
+      await deleteTeacher.mutateAsync(user_id);
     } catch (error) {
       console.error("Error deleting teacher:", error);
     }
@@ -100,7 +114,7 @@ export const TeachersManager = () => {
             <div>
               <CardTitle>Enseignants</CardTitle>
               <CardDescription>
-                Gérer la liste des enseignants de l'établissement
+                Gérer les enseignants (utilisateurs avec rôle teacher)
               </CardDescription>
             </div>
           </div>
@@ -110,12 +124,19 @@ export const TeachersManager = () => {
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            L'email est automatiquement synchronisé depuis le compte utilisateur. Pour ajouter un enseignant, vous devez fournir l'ID d'un utilisateur existant.
+          </AlertDescription>
+        </Alert>
+
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Nom complet</TableHead>
-              <TableHead>Email</TableHead>
+              <TableHead>Email (auto)</TableHead>
               <TableHead>Téléphone</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
@@ -132,10 +153,9 @@ export const TeachersManager = () => {
                 </TableCell>
                 <TableCell>
                   <Input
-                    type="email"
-                    value={newTeacher.email}
-                    onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })}
-                    placeholder="email@example.com"
+                    value={newTeacher.user_id}
+                    onChange={(e) => setNewTeacher({ ...newTeacher, user_id: e.target.value })}
+                    placeholder="ID utilisateur (UUID)"
                   />
                 </TableCell>
                 <TableCell>
@@ -153,7 +173,7 @@ export const TeachersManager = () => {
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => {
                       setIsAdding(false);
-                      setNewTeacher({ full_name: "", email: "", phone: "" });
+                      setNewTeacher({ user_id: "", full_name: "", phone: "" });
                     }}>
                       <X className="h-4 w-4" />
                     </Button>
@@ -162,9 +182,9 @@ export const TeachersManager = () => {
               </TableRow>
             )}
             {teachers.map((teacher) => (
-              <TableRow key={teacher.id}>
+              <TableRow key={teacher.user_id}>
                 <TableCell>
-                  {editingId === teacher.id ? (
+                  {editingId === teacher.user_id ? (
                     <Input
                       value={editValues.full_name}
                       onChange={(e) => setEditValues({ ...editValues, full_name: e.target.value })}
@@ -174,18 +194,10 @@ export const TeachersManager = () => {
                   )}
                 </TableCell>
                 <TableCell>
-                  {editingId === teacher.id ? (
-                    <Input
-                      type="email"
-                      value={editValues.email}
-                      onChange={(e) => setEditValues({ ...editValues, email: e.target.value })}
-                    />
-                  ) : (
-                    <span className="text-muted-foreground">{teacher.email || "-"}</span>
-                  )}
+                  <span className="text-muted-foreground italic">{teacher.email || "(non connecté)"}</span>
                 </TableCell>
                 <TableCell>
-                  {editingId === teacher.id ? (
+                  {editingId === teacher.user_id ? (
                     <Input
                       type="tel"
                       value={editValues.phone}
@@ -197,9 +209,9 @@ export const TeachersManager = () => {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
-                    {editingId === teacher.id ? (
+                    {editingId === teacher.user_id ? (
                       <>
-                        <Button size="sm" onClick={() => handleSave(teacher.id)}>
+                        <Button size="sm" onClick={() => handleSave(teacher.user_id)}>
                           <Save className="h-4 w-4" />
                         </Button>
                         <Button size="sm" variant="ghost" onClick={handleCancel}>
@@ -221,12 +233,12 @@ export const TeachersManager = () => {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Êtes-vous sûr de vouloir supprimer {teacher.full_name} ? Cette action est irréversible.
+                                Êtes-vous sûr de vouloir supprimer {teacher.full_name} ? Cette action supprimera aussi le rôle teacher de cet utilisateur.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Annuler</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(teacher.id)}>
+                              <AlertDialogAction onClick={() => handleDelete(teacher.user_id)}>
                                 Supprimer
                               </AlertDialogAction>
                             </AlertDialogFooter>
