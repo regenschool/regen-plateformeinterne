@@ -161,6 +161,7 @@ export const ClassesManager = () => {
                 <SelectContent>
                   <SelectItem value="Bachelor">Bachelor</SelectItem>
                   <SelectItem value="Master">Master</SelectItem>
+                  <SelectItem value="MBA">MBA</SelectItem>
                   <SelectItem value="Autre">Autre</SelectItem>
                 </SelectContent>
               </Select>
@@ -227,6 +228,7 @@ export const ClassesManager = () => {
                         <SelectContent className="z-50 bg-popover">
                           <SelectItem value="Bachelor">Bachelor</SelectItem>
                           <SelectItem value="Master">Master</SelectItem>
+                          <SelectItem value="MBA">MBA</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
