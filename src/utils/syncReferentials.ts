@@ -1,4 +1,19 @@
 import { supabase } from '@/integrations/supabase/client';
+
+// Helper function to sync a level to the database
+const syncLevelToReferential = async (levelName: string) => {
+  if (!levelName) return;
+
+  const { data: existing } = await supabase
+    .from('levels')
+    .select('id')
+    .eq('name', levelName)
+    .maybeSingle();
+
+  if (!existing) {
+    await supabase.from('levels').insert([{ name: levelName, is_active: true }]);
+  }
+};
 import { toast } from 'sonner';
 
 /**
@@ -8,6 +23,8 @@ import { toast } from 'sonner';
 export const syncExistingDataToReferentials = async () => {
   try {
     console.log('🔄 Début de la synchronisation des référentiels...');
+    
+    let stats = { classesAdded: 0, yearsAdded: 0, periodsAdded: 0, levelsAdded: 0 };
     
     // 1. Synchroniser les classes depuis la table students
     const { data: students, error: studentsError } = await supabase
@@ -73,6 +90,23 @@ export const syncExistingDataToReferentials = async () => {
         .from('classes')
         .update({ is_active: true })
         .in('name', allUniqueClasses as any);
+    }
+    
+    // 4c. Synchroniser les niveaux depuis les classes
+    const { data: classesWithLevel } = await supabase.from('classes').select('level');
+    const uniqueLevels = Array.from(
+      new Set(
+        (classesWithLevel || [])
+          .map(c => c.level)
+          .filter(Boolean)
+      )
+    );
+
+    for (const levelName of uniqueLevels) {
+      if (levelName) {
+        await syncLevelToReferential(levelName);
+        stats.levelsAdded++;
+      }
     }
     
     // 5. Synchroniser les années scolaires depuis grades et subjects (et forcer 2025-2026)
@@ -210,7 +244,8 @@ export const syncExistingDataToReferentials = async () => {
       stats: {
         classesAdded: classesToInsert.length,
         yearsAdded: yearsToInsert.length,
-        periodsAdded: periodsToInsert.length
+        periodsAdded: periodsToInsert.length,
+        levelsAdded: stats.levelsAdded
       }
     };
     

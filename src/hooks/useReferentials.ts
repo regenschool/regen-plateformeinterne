@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-type SchoolYear = {
+// Type definitions for referential data
+export type SchoolYear = {
   id: string;
   label: string;
   start_date: string;
@@ -11,7 +12,7 @@ type SchoolYear = {
   updated_at: string;
 };
 
-type Class = {
+export type Class = {
   id: string;
   name: string;
   level: string | null;
@@ -21,12 +22,20 @@ type Class = {
   updated_at: string;
 };
 
-type AcademicPeriod = {
+export type AcademicPeriod = {
   id: string;
   school_year_id: string;
   label: string;
   start_date: string;
   end_date: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Level = {
+  id: string;
+  name: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -103,6 +112,28 @@ export const useAcademicPeriods = (schoolYearId?: string, activeOnly = false) =>
     },
     enabled: !schoolYearId || !!schoolYearId,
     staleTime: 30 * 60 * 1000,
+  });
+};
+
+// Hook to fetch levels
+export const useLevels = (activeOnly: boolean = false) => {
+  return useQuery({
+    queryKey: activeOnly ? ['levels', 'active'] : ['levels'],
+    queryFn: async () => {
+      let query = supabase
+        .from('levels')
+        .select('*')
+        .order('name', { ascending: true });
+      
+      if (activeOnly) {
+        query = query.eq('is_active', true);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      return data as Level[];
+    },
   });
 };
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useClassesReferential } from "@/hooks/useReferentials";
+import { useClassesReferential, useLevels } from "@/hooks/useReferentials";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 
 export const ClassesManager = () => {
   const { data: classes, isLoading } = useClassesReferential(false);
+  const { data: levels, isLoading: levelsLoading } = useLevels(true);
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -127,7 +128,7 @@ export const ClassesManager = () => {
     });
   };
 
-  if (isLoading) {
+  if (isLoading || levelsLoading) {
     return <div className="text-center py-4">Chargement...</div>;
   }
 
@@ -158,11 +159,12 @@ export const ClassesManager = () => {
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Bachelor">Bachelor</SelectItem>
-                  <SelectItem value="Master">Master</SelectItem>
-                  <SelectItem value="MBA">MBA</SelectItem>
-                  <SelectItem value="Autre">Autre</SelectItem>
+                <SelectContent className="z-50 bg-popover">
+                  {levels?.map((level) => (
+                    <SelectItem key={level.id} value={level.name}>
+                      {level.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -226,9 +228,11 @@ export const ClassesManager = () => {
                           <SelectValue placeholder="Niveau" />
                         </SelectTrigger>
                         <SelectContent className="z-50 bg-popover">
-                          <SelectItem value="Bachelor">Bachelor</SelectItem>
-                          <SelectItem value="Master">Master</SelectItem>
-                          <SelectItem value="MBA">MBA</SelectItem>
+                          {levels?.map((level) => (
+                            <SelectItem key={level.id} value={level.name}>
+                              {level.name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </TableCell>

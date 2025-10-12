@@ -146,6 +146,46 @@ export const useAcademicPeriodMutations = () => {
   return { add, update, remove };
 };
 
+// Hooks for managing levels mutations
+export const useLevelMutations = () => {
+  const queryClient = useQueryClient();
+
+  const add = useMutation({
+    mutationFn: async (data: { name: string; is_active: boolean }) => {
+      const { error } = await supabase.from('levels').insert([data]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['levels'] });
+      toast.success('Niveau ajouté avec succès');
+    },
+  });
+
+  const update = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const { error } = await supabase.from('levels').update(data).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['levels'] });
+      toast.success('Niveau mis à jour avec succès');
+    },
+  });
+
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('levels').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['levels'] });
+      toast.success('Niveau supprimé avec succès');
+    },
+  });
+
+  return { add, update, remove };
+};
+
 // Fonction helper pour synchroniser automatiquement les classes
 export const syncClassToReferential = async (className: string) => {
   if (!className || !className.trim()) return;

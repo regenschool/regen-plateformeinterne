@@ -31,14 +31,14 @@ export const SyncReferentialsButton = () => {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ['school_years'] }),
           queryClient.invalidateQueries({ queryKey: ['classes_referential'] }),
-          queryClient.invalidateQueries({ queryKey: ['academic_periods'] }),
+          queryClient.invalidateQueries({ queryKey: ['levels'] }),
           queryClient.invalidateQueries({ queryKey: ['classes'] }),
           queryClient.invalidateQueries({ queryKey: ['subjects'] }),
           queryClient.invalidateQueries({ queryKey: ['students'] }),
         ]);
 
         toast.success(
-          `Synchronisation réussie ! ${result.stats.classesAdded} classes, ${result.stats.yearsAdded} années, ${result.stats.periodsAdded} périodes ajoutées.`,
+          `Synchronisation réussie ! ${result.stats.classesAdded} classes, ${result.stats.yearsAdded} années, ${result.stats.levelsAdded} niveaux, ${result.stats.periodsAdded} périodes ajoutées.`,
           { duration: 5000 }
         );
       }
