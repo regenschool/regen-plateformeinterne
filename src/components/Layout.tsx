@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Leaf, Network, Lightbulb, LogOut, Languages, ClipboardList, User, Users, TestTube } from "lucide-react";
+import { Leaf, Network, Lightbulb, LogOut, Languages, ClipboardList, User, Users } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Switch } from "@/components/ui/switch";
@@ -83,26 +83,31 @@ export const Layout = ({ children }: LayoutProps) => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-foreground">Regen School</h1>
-                <p className="text-xs text-muted-foreground">{t("nav.teachersSpace")}</p>
+                <p className="text-xs text-muted-foreground">
+                  {devMode ? "Espace Administrateur" : t("nav.teachersSpace")}
+                </p>
               </div>
             </div>
 
             {session && (
               <div className="flex items-center gap-3">
-                {/* DEV MODE TOGGLE */}
-                <div className="flex items-center gap-2 px-3 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                  <TestTube className="w-4 h-4 text-yellow-600" />
-                  <Label htmlFor="dev-mode" className="text-xs text-yellow-700 cursor-pointer whitespace-nowrap">
-                    {devMode ? "Admin" : "Prof"}
+                {/* DEV MODE TOGGLE - Design subtil */}
+                <div className="flex items-center gap-2 px-2.5 py-1 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-md transition-all">
+                  <Label 
+                    htmlFor="dev-mode" 
+                    className="text-xs font-medium text-blue-700 dark:text-blue-400 cursor-pointer whitespace-nowrap select-none"
+                  >
+                    {devMode ? "Admin" : "Enseignant"}
                   </Label>
                   <Switch
                     id="dev-mode"
                     checked={devMode}
                     onCheckedChange={toggleDevMode}
+                    className="data-[state=checked]:bg-blue-600"
                   />
                 </div>
 
-                <div className="h-6 w-px bg-border" />
+                <div className="h-5 w-px bg-border/50" />
 
                 <Button
                   variant={isActive("/directory") ? "default" : "ghost"}
