@@ -178,105 +178,142 @@ export const ImportStudentsDialog = ({ onImportComplete, selectedSchoolYearId }:
     setLoading(true);
 
     try {
-      // Synchroniser toutes les classes uniques vers le référentiel
+      // 1. Synchroniser toutes les classes vers le référentiel (en parallèle)
       const uniqueClasses = [...new Set(validStudents.map(s => s.class_name))];
       await Promise.all(uniqueClasses.map(className => syncClassToReferential(className)));
 
-      // Récupérer les IDs des classes depuis le référentiel
-      const { data: classesData, error: classesError } = await supabase
+      // 2. Récupérer les IDs des classes depuis le référentiel (1 requête)
+      const { data: classesData } = await supabase
         .from('classes')
         .select('id, name')
         .in('name', uniqueClasses);
 
-      if (classesError) throw classesError;
-
       const classIdMap = new Map(classesData?.map(c => [c.name, c.id]) || []);
 
-      let createdStudents = 0;
-      let updatedStudents = 0;
-      let createdEnrollments = 0;
-      let updatedEnrollments = 0;
+      // 3. Récupérer tous les étudiants existants par nom (1 requête)
+      const studentNames = validStudents.map(s => `${s.first_name}|${s.last_name}`);
+      const { data: existingStudents } = await supabase
+        .from('students')
+        .select('id, first_name, last_name');
 
-      for (const studentData of validStudents) {
-        // 1. Vérifier si l'étudiant existe déjà (par nom complet)
-        const { data: existingStudent } = await supabase
-          .from('students')
-          .select('id')
-          .eq('first_name', studentData.first_name)
-          .eq('last_name', studentData.last_name)
-          .maybeSingle();
+      const existingStudentsMap = new Map(
+        existingStudents?.map(s => [`${s.first_name}|${s.last_name}`, s.id]) || []
+      );
 
-        let studentId: string;
+      // 4. Séparer les nouveaux étudiants des existants
+      const studentsToInsert = [];
+      const studentsToUpdate = [];
+      const studentIdMapping = new Map(); // Pour mapper les données vers les IDs
 
-        if (existingStudent) {
-          // Mettre à jour les infos de l'étudiant
-          const { error: updateError } = await supabase
-            .from('students')
-            .update(studentData)
-            .eq('id', existingStudent.id);
+      for (const student of validStudents) {
+        const key = `${student.first_name}|${student.last_name}`;
+        const existingId = existingStudentsMap.get(key);
 
-          if (updateError) throw updateError;
-          studentId = existingStudent.id;
-          updatedStudents++;
+        if (existingId) {
+          studentsToUpdate.push({ ...student, id: existingId });
+          studentIdMapping.set(key, existingId);
         } else {
-          // Créer un nouveau student
-          const { data: newStudent, error: insertError } = await supabase
-            .from('students')
-            .insert([studentData])
-            .select('id')
-            .single();
-
-          if (insertError) throw insertError;
-          studentId = newStudent.id;
-          createdStudents++;
+          studentsToInsert.push(student);
         }
+      }
 
-        // 2. Créer ou mettre à jour l'enrollment pour l'année sélectionnée
-        const classId = classIdMap.get(studentData.class_name) || null;
+      // 5. Batch insert nouveaux étudiants (1 requête)
+      let newStudentIds: string[] = [];
+      if (studentsToInsert.length > 0) {
+        const { data: insertedStudents, error: insertError } = await supabase
+          .from('students')
+          .insert(studentsToInsert)
+          .select('id, first_name, last_name');
 
-        const { data: existingEnrollment } = await supabase
-          .from('student_enrollments')
-          .select('id')
-          .eq('student_id', studentId)
-          .eq('school_year_id', selectedSchoolYearId)
-          .maybeSingle();
+        if (insertError) throw insertError;
 
+        // Mapper les nouveaux IDs
+        insertedStudents?.forEach((s, idx) => {
+          const key = `${s.first_name}|${s.last_name}`;
+          studentIdMapping.set(key, s.id);
+          newStudentIds.push(s.id);
+        });
+      }
+
+      // 6. Batch update étudiants existants (en parallèle)
+      if (studentsToUpdate.length > 0) {
+        await Promise.all(
+          studentsToUpdate.map(student =>
+            supabase
+              .from('students')
+              .update(student)
+              .eq('id', student.id)
+          )
+        );
+      }
+
+      // 7. Récupérer les enrollments existants pour cette année (1 requête)
+      const allStudentIds = Array.from(studentIdMapping.values());
+      const { data: existingEnrollments } = await supabase
+        .from('student_enrollments')
+        .select('student_id, id')
+        .eq('school_year_id', selectedSchoolYearId)
+        .in('student_id', allStudentIds);
+
+      const existingEnrollmentsMap = new Map(
+        existingEnrollments?.map(e => [e.student_id, e.id]) || []
+      );
+
+      // 8. Préparer les enrollments
+      const enrollmentsToInsert = [];
+      const enrollmentsToUpdate = [];
+
+      for (const student of validStudents) {
+        const key = `${student.first_name}|${student.last_name}`;
+        const studentId = studentIdMapping.get(key);
+        if (!studentId) continue;
+
+        const classId = classIdMap.get(student.class_name) || null;
         const enrollmentData = {
           student_id: studentId,
           school_year_id: selectedSchoolYearId,
           class_id: classId,
-          class_name: studentData.class_name,
-          company: studentData.company,
-          academic_background: studentData.academic_background,
+          class_name: student.class_name,
+          company: student.company,
+          academic_background: student.academic_background,
         };
 
-        if (existingEnrollment) {
-          // Mettre à jour l'enrollment existant
-          const { error: updateEnrollmentError } = await supabase
-            .from('student_enrollments')
-            .update(enrollmentData)
-            .eq('id', existingEnrollment.id);
-
-          if (updateEnrollmentError) throw updateEnrollmentError;
-          updatedEnrollments++;
+        const existingEnrollmentId = existingEnrollmentsMap.get(studentId);
+        if (existingEnrollmentId) {
+          enrollmentsToUpdate.push({ ...enrollmentData, id: existingEnrollmentId });
         } else {
-          // Créer un nouvel enrollment
-          const { error: insertEnrollmentError } = await supabase
-            .from('student_enrollments')
-            .insert([enrollmentData]);
-
-          if (insertEnrollmentError) throw insertEnrollmentError;
-          createdEnrollments++;
+          enrollmentsToInsert.push(enrollmentData);
         }
       }
 
+      // 9. Batch insert/update enrollments
+      if (enrollmentsToInsert.length > 0) {
+        const { error: enrollInsertError } = await supabase
+          .from('student_enrollments')
+          .insert(enrollmentsToInsert);
+
+        if (enrollInsertError) throw enrollInsertError;
+      }
+
+      if (enrollmentsToUpdate.length > 0) {
+        await Promise.all(
+          enrollmentsToUpdate.map(enrollment =>
+            supabase
+              .from('student_enrollments')
+              .update(enrollment)
+              .eq('id', enrollment.id)
+          )
+        );
+      }
+
+      // 10. Messages de succès détaillés
       const messages = [];
-      if (createdStudents > 0) messages.push(`${createdStudents} étudiant(s) créé(s)`);
-      if (updatedStudents > 0) messages.push(`${updatedStudents} étudiant(s) mis à jour`);
-      if (createdEnrollments > 0) messages.push(`${createdEnrollments} inscription(s) créée(s)`);
-      if (updatedEnrollments > 0) messages.push(`${updatedEnrollments} inscription(s) mise(s) à jour`);
+      if (studentsToInsert.length > 0) messages.push(`${studentsToInsert.length} étudiant(s) créé(s)`);
+      if (studentsToUpdate.length > 0) messages.push(`${studentsToUpdate.length} étudiant(s) mis à jour`);
+      if (enrollmentsToInsert.length > 0) messages.push(`${enrollmentsToInsert.length} inscription(s) créée(s)`);
+      if (enrollmentsToUpdate.length > 0) messages.push(`${enrollmentsToUpdate.length} inscription(s) mise(s) à jour`);
       
-      toast.success(`Import réussi : ${messages.join(", ")}`);
+      toast.success(`✅ Import ultra-rapide : ${messages.join(", ")}`);
       setOpen(false);
       setRows([
         { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", birth_date: "", academic_background: "", company: "" },
