@@ -448,8 +448,12 @@ const Profile = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold text-foreground">Mon Profil Enseignant</h2>
-        <p className="text-muted-foreground">Gérez vos informations, matières et factures</p>
+        <h2 className="text-3xl font-bold text-foreground">
+          {isAdmin ? "Profil Administrateur" : "Mon Profil Enseignant"}
+        </h2>
+        <p className="text-muted-foreground">
+          {isAdmin ? "Gérez les profils, matières et documents de l'école" : "Gérez vos informations, matières et factures"}
+        </p>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
@@ -475,9 +479,9 @@ const Profile = () => {
         <TabsContent value="profile" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Informations Personnelles</CardTitle>
+              <CardTitle>{isAdmin ? "Informations du Compte" : "Informations Personnelles"}</CardTitle>
               <CardDescription>
-                Mettez à jour vos informations de profil
+                {isAdmin ? "Informations du compte administrateur" : "Mettez à jour vos informations de profil"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

@@ -635,7 +635,9 @@ export default function Grades() {
               Retour à la sélection
             </Button>
           )}
-          <h1 className="text-3xl font-bold text-foreground">{t("grades.title")}</h1>
+          <h1 className="text-3xl font-bold text-foreground">
+            {isAdmin ? "Gestion des Notes" : t("grades.title")}
+          </h1>
         </div>
         {selectedSubject && subjects.length > 1 && (
           <div className="flex items-center gap-2">
