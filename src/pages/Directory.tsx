@@ -72,8 +72,11 @@ const Directory = () => {
         throw error;
       }
 
-      setStudents(data || []);
-      const uniqueClasses = Array.from(new Set(data?.map((s) => s.class_name) || []));
+      const uniqueById = Array.from(
+        new Map((data || []).map((s) => [s.id, s])).values()
+      );
+      setStudents(uniqueById);
+      const uniqueClasses = Array.from(new Set(uniqueById.map((s) => s.class_name)));
       setClasses(uniqueClasses);
     } catch (error: any) {
       toast.error(t("directory.loadError"));
