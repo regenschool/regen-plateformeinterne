@@ -14,6 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
+      academic_periods: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          is_active: boolean | null
+          label: string
+          school_year_id: string | null
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          is_active?: boolean | null
+          label: string
+          school_year_id?: string | null
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          school_year_id?: string | null
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "academic_periods_school_year_id_fkey"
+            columns: ["school_year_id"]
+            isOneToOne: false
+            referencedRelation: "school_years"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classes: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          level: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          level?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          level?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dev_role_overrides: {
         Row: {
           is_admin: boolean
@@ -190,6 +261,36 @@ export type Database = {
           teacher_id?: string
           title?: string
           uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      school_years: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          is_active: boolean | null
+          label: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          is_active?: boolean | null
+          label: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          start_date?: string
+          updated_at?: string
         }
         Relationships: []
       }
