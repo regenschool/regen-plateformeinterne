@@ -117,7 +117,10 @@ export const useUpdateEnrollment = () => {
   });
 };
 
-// Hook pour supprimer une inscription
+/**
+ * Hook pour supprimer une inscription (enrollment) d'une année scolaire spécifique
+ * Supprime uniquement l'inscription sans affecter l'étudiant dans les autres années
+ */
 export const useDeleteEnrollment = () => {
   const queryClient = useQueryClient();
   
@@ -132,10 +135,38 @@ export const useDeleteEnrollment = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enrollments'] });
-      toast.success('Inscription supprimée');
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      toast.success('Étudiant désinscrit de cette année scolaire');
     },
     onError: (error: any) => {
-      toast.error('Erreur : ' + error.message);
+      toast.error('Erreur lors de la désinscription : ' + error.message);
+    },
+  });
+};
+
+/**
+ * Hook pour supprimer définitivement un étudiant de toutes les années
+ * ATTENTION : Supprime l'étudiant et toutes ses inscriptions via CASCADE DELETE
+ */
+export const useDeleteStudentPermanently = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (studentId: string) => {
+      const { error } = await supabase
+        .from('students')
+        .delete()
+        .eq('id', studentId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['enrollments'] });
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      toast.success('Étudiant supprimé définitivement de toutes les années');
+    },
+    onError: (error: any) => {
+      toast.error('Erreur lors de la suppression : ' + error.message);
     },
   });
 };

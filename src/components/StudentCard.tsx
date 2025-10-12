@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Briefcase, GraduationCap, Edit3, Save, X, Trash2, AlertCircle, Check } from "lucide-react";
+import { Briefcase, GraduationCap, Edit3, Save, X, Trash2, AlertCircle, Check, UserMinus, UserX } from "lucide-react";
 import { EditStudentDialog } from "./EditStudentDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useDeleteEnrollment, useDeleteStudentPermanently } from "@/hooks/useEnrollments";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +20,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type Student = {
   id: string;
@@ -35,15 +43,21 @@ type Student = {
 
 type StudentCardProps = {
   student: Student;
+  enrollmentId?: string; // ID de l'inscription pour pouvoir la supprimer
+  schoolYear?: string; // Année scolaire pour le message de confirmation
   onUpdate: () => void;
 };
 
-export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
+export const StudentCard = ({ student, enrollmentId, schoolYear, onUpdate }: StudentCardProps) => {
   const { t } = useLanguage();
+  const deleteEnrollment = useDeleteEnrollment();
+  const deleteStudentPermanently = useDeleteStudentPermanently();
   const [note, setNote] = useState("");
   const [savedNote, setSavedNote] = useState("");
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showPermanentDeleteDialog, setShowPermanentDeleteDialog] = useState(false);
   
   // Inline editing states for academic_background and company
   const [isEditingAcademic, setIsEditingAcademic] = useState(false);
@@ -127,20 +141,20 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
     setIsEditingNote(false);
   };
 
-  const deleteStudent = async () => {
-    try {
-      const { error } = await supabase
-        .from("students")
-        .delete()
-        .eq("id", student.id);
-
-      if (error) throw error;
-
-      toast.success(t("studentCard.studentDeleted"));
-      onUpdate();
-    } catch (error: any) {
-      toast.error(t("studentCard.deleteFailed"));
+  const handleDeleteEnrollment = async () => {
+    if (!enrollmentId) {
+      toast.error("ID d'inscription manquant");
+      return;
     }
+    await deleteEnrollment.mutateAsync(enrollmentId);
+    onUpdate();
+    setShowDeleteDialog(false);
+  };
+
+  const handleDeleteStudentPermanently = async () => {
+    await deleteStudentPermanently.mutateAsync(student.id);
+    onUpdate();
+    setShowPermanentDeleteDialog(false);
   };
 
   const saveAcademicBackground = async () => {
@@ -222,22 +236,68 @@ export const StudentCard = ({ student, onUpdate }: StudentCardProps) => {
           </div>
           <div className="absolute top-1.5 left-1.5 flex gap-1">
             <EditStudentDialog student={student} onStudentUpdated={onUpdate} />
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button size="icon" variant="outline" className="h-7 w-7 bg-white/90 hover:bg-destructive/90 hover:text-destructive-foreground border-border/50">
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
-              </AlertDialogTrigger>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {enrollmentId && (
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-orange-600 focus:text-orange-600"
+                  >
+                    <UserMinus className="w-4 h-4 mr-2" />
+                    Désinscrire de {schoolYear || "cette année"}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setShowPermanentDeleteDialog(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <UserX className="w-4 h-4 mr-2" />
+                  Supprimer définitivement
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Dialog pour désinscrire de l'année */}
+            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>{t("studentCard.confirmDelete")}</AlertDialogTitle>
+                  <AlertDialogTitle>Désinscrire de {schoolYear || "cette année"} ?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    {t("studentCard.deleteConfirmMessage")} {student.first_name} {student.last_name}?
+                    L'étudiant <strong>{student.first_name} {student.last_name}</strong> sera désinscrit de {schoolYear || "cette année scolaire"}.
+                    Il restera visible dans les autres années.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>{t("studentCard.cancel")}</AlertDialogCancel>
-                  <AlertDialogAction onClick={deleteStudent}>{t("studentCard.delete")}</AlertDialogAction>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteEnrollment} className="bg-orange-600 hover:bg-orange-700">
+                    Désinscrire
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Dialog pour suppression définitive */}
+            <AlertDialog open={showPermanentDeleteDialog} onOpenChange={setShowPermanentDeleteDialog}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>⚠️ Suppression définitive</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    <strong>{student.first_name} {student.last_name}</strong> sera supprimé de <strong>toutes les années scolaires</strong>.
+                    Cette action est irréversible.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteStudentPermanently} className="bg-destructive hover:bg-destructive/90">
+                    Supprimer définitivement
+                  </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

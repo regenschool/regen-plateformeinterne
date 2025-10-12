@@ -248,7 +248,9 @@ const Directory = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {filteredEnrollments.map((enrollment) => (
             <StudentCard 
-              key={enrollment.id} 
+              key={enrollment.id}
+              enrollmentId={enrollment.id}
+              schoolYear={enrollment.school_year_label}
               student={{
                 id: enrollment.student_id,
                 first_name: enrollment.first_name || '',
