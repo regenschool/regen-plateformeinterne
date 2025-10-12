@@ -90,13 +90,17 @@ const Directory = () => {
             b.class_name_from_ref || b.class_name || ''
           );
         case "ageAsc":
+          // Jeune → Âgé : nulls à la fin
+          if (a.age === null && b.age === null) return 0;
           if (a.age === null) return 1;
           if (b.age === null) return -1;
-          return (a.age || 0) - (b.age || 0);
+          return a.age - b.age;
         case "ageDesc":
+          // Âgé → Jeune : nulls à la fin
+          if (a.age === null && b.age === null) return 0;
           if (a.age === null) return 1;
           if (b.age === null) return -1;
-          return (b.age || 0) - (a.age || 0);
+          return b.age - a.age;
         case "createdAt":
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         default:
