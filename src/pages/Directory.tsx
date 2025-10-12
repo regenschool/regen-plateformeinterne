@@ -1,5 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,78 +10,23 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useDebounce } from "@/hooks/useDebounce";
-
-type Student = {
-  id: string;
-  first_name: string;
-  last_name: string;
-  photo_url: string | null;
-  age: number | null;
-  birth_date: string | null;
-  academic_background: string | null;
-  company: string | null;
-  class_name: string;
-  special_needs: string | null;
-  created_at: string;
-};
+import { useStudents, useClasses } from "@/hooks/useStudents";
 
 const Directory = () => {
   const { t } = useLanguage();
-  const [students, setStudents] = useState<Student[]>([]);
-  const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
-  const [classes, setClasses] = useState<string[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showActiveSearchOnly, setShowActiveSearchOnly] = useState(false);
-  const [sortBy, setSortBy] = useState<"lastName" | "class" | "classReverse" | "age" | "createdAt">("lastName");
-  const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<"nameAsc" | "nameDesc" | "class" | "ageAsc" | "ageDesc" | "createdAt">("nameAsc");
   
-  // Debounce search term to avoid excessive filtering
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
-
-  useEffect(() => {
-    fetchStudents();
-  }, []);
   
-  // Real-time subscription for students table
-  useRealtimeSubscription({
-    table: "students",
-    onChange: () => {
-      // Refetch students when any change occurs
-      fetchStudents();
-    },
-  });
+  const { data: students = [], isLoading } = useStudents();
+  const { data: classes = [] } = useClasses();
 
-  useEffect(() => {
-    filterStudents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [students, selectedClass, debouncedSearchTerm, showActiveSearchOnly, sortBy]);
-
-  const fetchStudents = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from("students")
-        .select("*")
-        .order("last_name");
-
-      if (error) {
-        console.error("Error fetching students:", error);
-        throw error;
-      }
-
-      setStudents(data || []);
-      const uniqueClasses = Array.from(new Set(data?.map((s) => s.class_name) || []));
-      setClasses(uniqueClasses);
-    } catch (error: any) {
-      toast.error(t("directory.loadError"));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
-
-  const filterStudents = () => {
+  // Filtrage et tri avec useMemo pour optimiser les performances
+  const filteredStudents = useMemo(() => {
     let filtered = students;
 
     if (selectedClass !== "all") {
@@ -106,30 +50,30 @@ const Directory = () => {
       );
     }
 
-    // Apply sorting
-    filtered = [...filtered].sort((a, b) => {
+    // Tri optimisé
+    return [...filtered].sort((a, b) => {
       switch (sortBy) {
-        case "lastName":
+        case "nameAsc":
           return a.last_name.localeCompare(b.last_name);
+        case "nameDesc":
+          return b.last_name.localeCompare(a.last_name);
         case "class":
           return a.class_name.localeCompare(b.class_name);
-        case "classReverse":
-          return b.class_name.localeCompare(a.class_name);
-        case "age":
-          // Plus jeune en premier (âge croissant)
+        case "ageAsc":
           if (a.age === null) return 1;
           if (b.age === null) return -1;
           return a.age - b.age;
+        case "ageDesc":
+          if (a.age === null) return 1;
+          if (b.age === null) return -1;
+          return b.age - a.age;
         case "createdAt":
-          // Plus récent en premier (date décroissante)
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         default:
           return 0;
       }
     });
-
-    setFilteredStudents(filtered);
-  };
+  }, [students, selectedClass, debouncedSearchTerm, showActiveSearchOnly, sortBy]);
 
   const exportToCSV = () => {
     const headers = [
@@ -172,11 +116,7 @@ const Directory = () => {
     toast.success(t("directory.exportSuccess"));
   };
 
-  const handleStudentAdded = () => {
-    fetchStudents();
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
@@ -201,8 +141,8 @@ const Directory = () => {
             <Download className="w-4 h-4 mr-2" />
             {t("directory.exportCSV")}
           </Button>
-          <ImportStudentsDialog onImportComplete={handleStudentAdded} />
-          <AddStudentDialog onStudentAdded={handleStudentAdded} />
+          <ImportStudentsDialog onImportComplete={() => {}} />
+          <AddStudentDialog onStudentAdded={() => {}} />
         </div>
       </div>
 
@@ -233,11 +173,12 @@ const Directory = () => {
               <SelectValue placeholder={t("directory.sortBy")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="lastName">{t("directory.sortLastName")}</SelectItem>
-              <SelectItem value="class">{t("directory.sortClass")}</SelectItem>
-              <SelectItem value="classReverse">{t("directory.sortClassReverse")}</SelectItem>
-              <SelectItem value="age">{t("directory.sortAge")}</SelectItem>
-              <SelectItem value="createdAt">{t("directory.sortCreatedAt")}</SelectItem>
+              <SelectItem value="nameAsc">A → Z</SelectItem>
+              <SelectItem value="nameDesc">Z → A</SelectItem>
+              <SelectItem value="class">Classe</SelectItem>
+              <SelectItem value="ageAsc">Âge (jeune → âgé)</SelectItem>
+              <SelectItem value="ageDesc">Âge (âgé → jeune)</SelectItem>
+              <SelectItem value="createdAt">Récemment ajouté</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -272,7 +213,7 @@ const Directory = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {filteredStudents.map((student) => (
-            <StudentCard key={student.id} student={student} onUpdate={fetchStudents} />
+            <StudentCard key={student.id} student={student} onUpdate={() => {}} />
           ))}
         </div>
       )}

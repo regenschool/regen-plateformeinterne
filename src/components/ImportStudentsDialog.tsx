@@ -142,17 +142,16 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
   };
 
   const handleImport = async () => {
+    const { syncClassToReferential } = await import('@/hooks/useReferentialMutations');
+    
     const validStudents = rows
       .filter((row) => row.first_name && row.last_name && row.class_name)
       .map((row) => {
-        // Priority: birth_date > age
         let birth_date = null;
         
         if (row.birth_date) {
-          // Parse the date string from Excel format
           birth_date = parseDateString(row.birth_date);
         } else if (row.age) {
-          // Otherwise calculate from age
           const age = parseInt(row.age);
           if (!isNaN(age)) {
             const currentYear = new Date().getFullYear();
@@ -180,19 +179,20 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
     setLoading(true);
 
     try {
-      // Fetch all existing students (no longer filtered by teacher_id)
       const { data: existingStudents, error: fetchError } = await supabase
         .from("students")
         .select("id, first_name, last_name, class_name");
 
       if (fetchError) throw fetchError;
 
+      // Synchroniser toutes les classes uniques
+      const uniqueClasses = [...new Set(validStudents.map(s => s.class_name))];
+      await Promise.all(uniqueClasses.map(className => syncClassToReferential(className)));
+
       let updatedCount = 0;
       let createdCount = 0;
 
-      // Process each student
       for (const student of validStudents) {
-        // Find existing student by first_name, last_name, and class_name (case insensitive)
         const existing = existingStudents?.find(
           (s) =>
             s.first_name.toLowerCase() === student.first_name.toLowerCase() &&
@@ -201,7 +201,6 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
         );
 
         if (existing) {
-          // Update existing student
           const { error: updateError } = await supabase
             .from("students")
             .update(student)
@@ -210,7 +209,6 @@ export const ImportStudentsDialog = ({ onImportComplete }: ImportStudentsDialogP
           if (updateError) throw updateError;
           updatedCount++;
         } else {
-          // Create new student
           const { error: insertError } = await supabase
             .from("students")
             .insert([student]);

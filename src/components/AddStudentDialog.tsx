@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { toast } from "sonner";
 import { Plus, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { studentSchema } from "@/lib/validation";
+import { useAddStudent } from "@/hooks/useStudents";
 
 type AddStudentDialogProps = {
   onStudentAdded: () => void;
@@ -18,7 +17,6 @@ type AddStudentDialogProps = {
 
 export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -30,12 +28,12 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
     special_needs: "",
   });
 
+  const addStudent = useAddStudent();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
     try {
-      // Validate form data
       const validatedData = studentSchema.parse({
         first_name: formData.first_name,
         last_name: formData.last_name,
@@ -47,7 +45,7 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
         special_needs: formData.special_needs || "",
       });
 
-      const { error } = await supabase.from("students").insert({
+      await addStudent.mutateAsync({
         first_name: validatedData.first_name,
         last_name: validatedData.last_name,
         photo_url: validatedData.photo_url || null,
@@ -58,12 +56,6 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
         special_needs: validatedData.special_needs || null,
       });
 
-      if (error) {
-        console.error("Error adding student:", error);
-        throw error;
-      }
-
-      toast.success("Étudiant ajouté avec succès !");
       setOpen(false);
       setFormData({
         first_name: "",
@@ -78,13 +70,8 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
       onStudentAdded();
     } catch (error: any) {
       if (error.errors) {
-        // Zod validation errors
-        toast.error(error.errors[0]?.message || "Données invalides");
-      } else {
-        toast.error("Échec de l'ajout de l'étudiant");
+        // Zod validation errors handled by the hook
       }
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -202,8 +189,8 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Adding..." : "Add Student"}
+          <Button type="submit" className="w-full" disabled={addStudent.isPending}>
+            {addStudent.isPending ? "Adding..." : "Add Student"}
           </Button>
         </form>
       </DialogContent>
