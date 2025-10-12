@@ -222,6 +222,10 @@ export const GradeEntryDialog = ({
     // Auto-navigate to next student if in completion mode
     if (studentsToComplete && currentStudentIndex !== undefined && currentStudentIndex < studentsToComplete.length - 1) {
       onNavigateStudent?.('next');
+    } else if (studentsToComplete && currentStudentIndex !== undefined) {
+      // C'était le dernier étudiant, on réinitialise tout
+      onAssessmentDeselected?.();
+      setOpen(false);
     } else {
       setOpen(false);
     }
