@@ -454,85 +454,148 @@ const Profile = () => {
         <TabsContent value="profile" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>{isAdmin ? "Informations du Compte" : "Informations Personnelles"}</CardTitle>
-              <CardDescription>
-                {isAdmin ? "Informations du compte administrateur" : "Mettez à jour vos informations de profil"}
-              </CardDescription>
+              <CardTitle>
+                {isAdmin ? "Informations du Compte" : "Informations Personnelles"}
+              </CardTitle>
+              {!isAdmin && (
+                <CardDescription>
+                  Mettez à jour vos informations de profil
+                </CardDescription>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               {profile && (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="full_name">Nom complet *</Label>
-                      <Input
-                        id="full_name"
-                        value={profile.full_name}
-                        onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email *</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={profile.email}
-                        onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                      />
-                    </div>
-                  </div>
+                  {isAdmin ? (
+                    // Profil simplifié pour admin
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="first_name">Prénom *</Label>
+                          <Input
+                            id="first_name"
+                            value={profile.full_name.split(' ')[0] || ''}
+                            onChange={(e) => {
+                              const lastName = profile.full_name.split(' ').slice(1).join(' ');
+                              setProfile({ ...profile, full_name: `${e.target.value} ${lastName}`.trim() });
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="last_name">Nom *</Label>
+                          <Input
+                            id="last_name"
+                            value={profile.full_name.split(' ').slice(1).join(' ') || ''}
+                            onChange={(e) => {
+                              const firstName = profile.full_name.split(' ')[0];
+                              setProfile({ ...profile, full_name: `${firstName} ${e.target.value}`.trim() });
+                            }}
+                          />
+                        </div>
+                      </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Téléphone</Label>
-                      <Input
-                        id="phone"
-                        value={profile.phone || ""}
-                        onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="siret">SIRET</Label>
-                      <Input
-                        id="siret"
-                        value={profile.siret || ""}
-                        onChange={(e) => setProfile({ ...profile, siret: e.target.value })}
-                      />
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">Téléphone</Label>
+                          <Input
+                            id="phone"
+                            value={profile.phone || ""}
+                            onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                            placeholder="+33 6 12 34 56 78"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="role">Rôle dans l'organisation</Label>
+                          <Input
+                            id="role"
+                            value={(profile as any).organization_role || "Administrateur"}
+                            onChange={(e) => setProfile({ ...profile, organization_role: e.target.value } as any)}
+                            placeholder="Directeur, Coordinateur..."
+                          />
+                        </div>
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Adresse</Label>
-                    <Textarea
-                      id="address"
-                      value={profile.address || ""}
-                      onChange={(e) => setProfile({ ...profile, address: e.target.value })}
-                    />
-                  </div>
+                      <Button onClick={saveProfile} disabled={saving}>
+                        <Save className="w-4 h-4 mr-2" />
+                        {saving ? "Enregistrement..." : "Enregistrer"}
+                      </Button>
+                    </>
+                  ) : (
+                    // Profil complet pour enseignant
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="full_name">Nom complet *</Label>
+                          <Input
+                            id="full_name"
+                            value={profile.full_name}
+                            onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email">Email *</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={profile.email}
+                            onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                          />
+                        </div>
+                      </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="iban">IBAN</Label>
-                      <Input
-                        id="iban"
-                        value={profile.bank_iban || ""}
-                        onChange={(e) => setProfile({ ...profile, bank_iban: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="bic">BIC</Label>
-                      <Input
-                        id="bic"
-                        value={profile.bank_bic || ""}
-                        onChange={(e) => setProfile({ ...profile, bank_bic: e.target.value })}
-                      />
-                    </div>
-                  </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">Téléphone</Label>
+                          <Input
+                            id="phone"
+                            value={profile.phone || ""}
+                            onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="siret">SIRET</Label>
+                          <Input
+                            id="siret"
+                            value={profile.siret || ""}
+                            onChange={(e) => setProfile({ ...profile, siret: e.target.value })}
+                          />
+                        </div>
+                      </div>
 
-                  <Button onClick={saveProfile} disabled={saving}>
-                    <Save className="w-4 h-4 mr-2" />
-                    {saving ? "Enregistrement..." : "Enregistrer"}
-                  </Button>
+                      <div className="space-y-2">
+                        <Label htmlFor="address">Adresse</Label>
+                        <Textarea
+                          id="address"
+                          value={profile.address || ""}
+                          onChange={(e) => setProfile({ ...profile, address: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="iban">IBAN</Label>
+                          <Input
+                            id="iban"
+                            value={profile.bank_iban || ""}
+                            onChange={(e) => setProfile({ ...profile, bank_iban: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="bic">BIC</Label>
+                          <Input
+                            id="bic"
+                            value={profile.bank_bic || ""}
+                            onChange={(e) => setProfile({ ...profile, bank_bic: e.target.value })}
+                          />
+                        </div>
+                      </div>
+
+                      <Button onClick={saveProfile} disabled={saving}>
+                        <Save className="w-4 h-4 mr-2" />
+                        {saving ? "Enregistrement..." : "Enregistrer"}
+                      </Button>
+                    </>
+                  )}
                 </>
               )}
             </CardContent>
