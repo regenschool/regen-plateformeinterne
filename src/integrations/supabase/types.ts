@@ -409,7 +409,7 @@ export type Database = {
             columns: ["assigned_teacher_id"]
             isOneToOne: false
             referencedRelation: "teachers"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "students_class_id_fkey"
@@ -510,7 +510,7 @@ export type Database = {
             columns: ["teacher_fk_id"]
             isOneToOne: false
             referencedRelation: "teachers"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -612,7 +612,7 @@ export type Database = {
           id: string
           phone: string | null
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string
@@ -621,7 +621,7 @@ export type Database = {
           id?: string
           phone?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string
@@ -630,7 +630,7 @@ export type Database = {
           id?: string
           phone?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -791,7 +791,7 @@ export type Database = {
             columns: ["assigned_teacher_id"]
             isOneToOne: false
             referencedRelation: "teachers"
-            referencedColumns: ["id"]
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "students_class_id_fkey"
