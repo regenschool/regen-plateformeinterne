@@ -14,6 +14,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useEnrollments } from "@/hooks/useEnrollments";
 import { useSchoolYears } from "@/hooks/useReferentials";
 import { supabase } from "@/integrations/supabase/client";
+import { calculateAge } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -101,7 +102,7 @@ const Directory = () => {
       );
     }
 
-    // Tri optimisé
+    // Tri optimisé avec calcul dynamique de l'âge
     return [...filtered].sort((a, b) => {
       switch (sortBy) {
         case "nameAsc":
@@ -112,18 +113,26 @@ const Directory = () => {
           return (a.class_name_from_ref || a.class_name || '').localeCompare(
             b.class_name_from_ref || b.class_name || ''
           );
-        case "ageAsc":
+        case "ageAsc": {
+          // Calculer l'âge dynamiquement à partir de birth_date
+          const ageA = calculateAge(a.birth_date);
+          const ageB = calculateAge(b.birth_date);
           // Jeune → Âgé : nulls à la fin
-          if (a.age === null && b.age === null) return 0;
-          if (a.age === null) return 1;
-          if (b.age === null) return -1;
-          return a.age - b.age;
-        case "ageDesc":
+          if (ageA === null && ageB === null) return 0;
+          if (ageA === null) return 1;
+          if (ageB === null) return -1;
+          return ageA - ageB;
+        }
+        case "ageDesc": {
+          // Calculer l'âge dynamiquement à partir de birth_date
+          const ageA = calculateAge(a.birth_date);
+          const ageB = calculateAge(b.birth_date);
           // Âgé → Jeune : nulls à la fin
-          if (a.age === null && b.age === null) return 0;
-          if (a.age === null) return 1;
-          if (b.age === null) return -1;
-          return b.age - a.age;
+          if (ageA === null && ageB === null) return 0;
+          if (ageA === null) return 1;
+          if (ageB === null) return -1;
+          return ageB - ageA;
+        }
         case "createdAt":
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         default:

@@ -9,6 +9,7 @@ import { Briefcase, GraduationCap, Edit3, Save, X, Trash2, AlertCircle, Check, U
 import { EditStudentDialog } from "./EditStudentDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeleteEnrollment, useDeleteStudentPermanently } from "@/hooks/useEnrollments";
+import { calculateAge } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -64,19 +65,6 @@ export const StudentCard = ({ student, enrollmentId, schoolYear, onUpdate }: Stu
   const [academicValue, setAcademicValue] = useState(student.academic_background || "");
   const [isEditingCompany, setIsEditingCompany] = useState(false);
   const [companyValue, setCompanyValue] = useState(student.company || "");
-
-  // Calculate age from birth_date
-  const calculateAge = (birthDate: string | null): number | null => {
-    if (!birthDate) return null;
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const monthDiff = today.getMonth() - birth.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--;
-    }
-    return age;
-  };
 
   // Force recalculation when student data changes
   const displayAge = React.useMemo(
