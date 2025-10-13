@@ -20,10 +20,26 @@ test.describe('Authentication Flow', () => {
     await expect(page.locator('text=Invalid login credentials')).toBeVisible({ timeout: 5000 });
   });
 
-  // Note: Pour tester le login réussi, il faudrait soit :
-  // 1. Créer un compte de test dans beforeAll
-  // 2. Utiliser un compte de test existant
-  // 3. Mocker l'API Supabase
+  test('should validate email format', async ({ page }) => {
+    await page.goto('/auth');
+    
+    await page.fill('input[type="email"]', 'invalid-email');
+    await page.fill('input[type="password"]', 'password123');
+    await page.click('button[type="submit"]');
+    
+    // Le navigateur devrait bloquer la soumission
+    await expect(page.locator('input[type="email"]:invalid')).toBeVisible();
+  });
+
+  test('should require password field', async ({ page }) => {
+    await page.goto('/auth');
+    
+    await page.fill('input[type="email"]', 'test@example.com');
+    await page.click('button[type="submit"]');
+    
+    // Le champ password est requis
+    await expect(page.locator('input[type="password"]:invalid')).toBeVisible();
+  });
 });
 
 test.describe('Protected Routes', () => {
@@ -31,6 +47,16 @@ test.describe('Protected Routes', () => {
     await page.goto('/directory');
     
     // Devrait rediriger vers /auth
+    await expect(page).toHaveURL(/.*auth/);
+  });
+
+  test('should redirect to auth from grades page', async ({ page }) => {
+    await page.goto('/grades');
+    await expect(page).toHaveURL(/.*auth/);
+  });
+
+  test('should redirect to auth from settings page', async ({ page }) => {
+    await page.goto('/settings');
     await expect(page).toHaveURL(/.*auth/);
   });
 });
