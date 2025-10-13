@@ -20,10 +20,39 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const credentialsSchema = z.object({
     email: z.string().trim().email({ message: "Email invalide" }),
     password: z.string().min(6, { message: "6 caractères minimum" }).max(128),
   });
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const emailSchema = z.string().trim().email({ message: "Email invalide" });
+    const parsed = emailSchema.safeParse(email);
+    
+    if (!parsed.success) {
+      toast.error("Email invalide");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+      
+      if (error) throw error;
+      
+      toast.success("Email de réinitialisation envoyé. Vérifiez votre boîte mail.");
+      setIsForgotPassword(false);
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de l'envoi de l'email");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,7 +126,9 @@ const Auth = () => {
               </div>
             </div>
             <CardTitle className="text-3xl font-bold">Regen School</CardTitle>
-            <h1 className="text-xl font-semibold">{isSignup ? "Créer un compte" : "Connexion"}</h1>
+            <h1 className="text-xl font-semibold">
+              {isForgotPassword ? "Réinitialiser le mot de passe" : (isSignup ? "Créer un compte" : "Connexion")}
+            </h1>
             <CardDescription>{t("auth.subtitle")}</CardDescription>
           </CardHeader>
         <CardContent>
@@ -107,7 +138,33 @@ const Auth = () => {
             </p>
           </div>
 
-          {!selectedRole ? (
+          {isForgotPassword ? (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="prenom.nom@regen-school.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "..." : "Envoyer l'email"}
+              </Button>
+              <div className="text-center">
+                <button
+                  type="button"
+                  className="text-sm text-primary underline"
+                  onClick={() => setIsForgotPassword(false)}
+                >
+                  Retour à la connexion
+                </button>
+              </div>
+            </form>
+          ) : !selectedRole ? (
             <div className="space-y-4">
               <p className="text-sm font-medium text-center mb-4">
                 Sélectionnez votre profil
@@ -186,14 +243,23 @@ const Auth = () => {
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? "..." : (isSignup ? "Créer le compte" : "Se connecter")}
               </Button>
-              <div className="text-center">
+              <div className="text-center space-y-2">
                 <button
                   type="button"
-                  className="text-sm text-primary underline mt-2"
+                  className="text-sm text-primary underline block mx-auto"
                   onClick={() => setIsSignup(!isSignup)}
                 >
                   {isSignup ? "J'ai déjà un compte" : "Créer un compte"}
                 </button>
+                {!isSignup && (
+                  <button
+                    type="button"
+                    className="text-sm text-muted-foreground underline block mx-auto"
+                    onClick={() => setIsForgotPassword(true)}
+                  >
+                    Mot de passe oublié ?
+                  </button>
+                )}
               </div>
             </form>
           )}
