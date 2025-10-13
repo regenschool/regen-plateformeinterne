@@ -65,9 +65,6 @@ const Auth = () => {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth`,
-          queryParams: {
-            hd: 'regen-school.com', // Restreint aux emails @regen-school.com
-          },
         },
       });
 
