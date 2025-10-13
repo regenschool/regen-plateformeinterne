@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Leaf, Users, GraduationCap } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { z } from "zod";
 
 type UserRole = "teacher" | "admin";
 
@@ -18,38 +19,59 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isSignup, setIsSignup] = useState(false);
+  const credentialsSchema = z.object({
+    email: z.string().trim().email({ message: "Email invalide" }),
+    password: z.string().min(6, { message: "6 caractères minimum" }).max(128),
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedRole) {
       toast.error("Veuillez sélectionner votre profil");
+      return;
+    }
+
+    const parsed = credentialsSchema.safeParse({ email, password });
+    if (!parsed.success) {
+      toast.error(parsed.error.errors[0]?.message || "Champs invalides");
       return;
     }
 
     setLoading(true);
 
     try {
+      if (isSignup) {
+        const redirectUrl = `${window.location.origin}/`;
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: redirectUrl },
+        });
+        if (error) throw error;
+        toast.success("Compte créé. Vérifiez votre boîte mail puis connectez-vous.");
+        setIsSignup(false);
+        return;
+      }
+
       // Sign in
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      
       if (error) throw error;
 
-      // Verify user has the selected role
-      const roleValue = selectedRole === "admin" ? "admin" : "user";
-      const { data: roleData, error: roleError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", data.user.id)
-        .eq("role", roleValue as any)
-        .maybeSingle();
+      // Verify user has the selected role via secure function
+      const roleValue = selectedRole === "admin" ? "admin" : "teacher";
+      const { data: hasRole, error: roleError } = await supabase.rpc("has_role", {
+        _user_id: data.user.id,
+        _role: roleValue as any,
+      });
 
       if (roleError) throw roleError;
 
-      if (!roleData) {
+      if (!hasRole) {
         await supabase.auth.signOut();
         toast.error("Vous n'avez pas accès avec ce profil. Contactez l'administration.");
         setLoading(false);
@@ -68,15 +90,16 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted to-secondary p-4">
       <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="text-center space-y-2">
-          <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <Leaf className="w-8 h-8 text-primary" />
+          <CardHeader className="text-center space-y-2">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Leaf className="w-8 h-8 text-primary" />
+              </div>
             </div>
-          </div>
-          <CardTitle className="text-3xl font-bold">Regen School</CardTitle>
-          <CardDescription>{t("auth.subtitle")}</CardDescription>
-        </CardHeader>
+            <CardTitle className="text-3xl font-bold">Regen School</CardTitle>
+            <h1 className="text-xl font-semibold">{isSignup ? "Créer un compte" : "Connexion"}</h1>
+            <CardDescription>{t("auth.subtitle")}</CardDescription>
+          </CardHeader>
         <CardContent>
           <div className="mb-6 p-4 bg-muted rounded-lg border border-border">
             <p className="text-sm text-muted-foreground text-center">
@@ -161,8 +184,17 @@ const Auth = () => {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "..." : "Se connecter"}
+                {loading ? "..." : (isSignup ? "Créer le compte" : "Se connecter")}
               </Button>
+              <div className="text-center">
+                <button
+                  type="button"
+                  className="text-sm text-primary underline mt-2"
+                  onClick={() => setIsSignup(!isSignup)}
+                >
+                  {isSignup ? "J'ai déjà un compte" : "Créer un compte"}
+                </button>
+              </div>
             </form>
           )}
         </CardContent>
