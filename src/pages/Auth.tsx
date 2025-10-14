@@ -86,31 +86,38 @@ const Auth = () => {
 
   // Vérifier le rôle après redirection OAuth
   useEffect(() => {
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         const roleValue = selectedRole === "admin" ? "admin" : "teacher";
-        const { data: hasRole, error } = await supabase.rpc("has_role", {
-          _user_id: session.user.id,
-          _role: roleValue as any,
-        });
+        // IMPORTANT: éviter les appels Supabase dans le callback -> différer
+        setTimeout(async () => {
+          const { data: hasRole, error } = await supabase.rpc("has_role", {
+            _user_id: session.user.id,
+            _role: roleValue as any,
+          });
 
-        if (error) {
-          console.error("Erreur vérification rôle:", error);
-          await supabase.auth.signOut();
-          toast.error("Erreur lors de la vérification du rôle");
-          return;
-        }
+          if (error) {
+            console.error("Erreur vérification rôle:", error);
+            await supabase.auth.signOut();
+            toast.error("Erreur lors de la vérification du rôle");
+            return;
+          }
 
-        if (!hasRole) {
-          await supabase.auth.signOut();
-          toast.error("Vous n'avez pas accès avec ce profil. Contactez l'administration.");
-          return;
-        }
+          if (!hasRole) {
+            await supabase.auth.signOut();
+            toast.error("Vous n'avez pas accès avec ce profil. Contactez l'administration.");
+            return;
+          }
 
-        toast.success(t("auth.welcome"));
-        navigate("/");
+          toast.success(t("auth.welcome"));
+          navigate("/");
+        }, 0);
       }
     });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [selectedRole, navigate, t]);
 
 
