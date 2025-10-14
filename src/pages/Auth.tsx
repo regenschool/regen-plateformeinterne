@@ -73,10 +73,17 @@ const Auth = () => {
 
       // Force top-level navigation (Google interdit l'auth dans un iframe)
       if (data?.url) {
-        if (window.top) {
-          (window.top as Window).location.href = data.url;
-        } else {
-          window.location.href = data.url;
+        try {
+          if (window.top && window.top !== window) {
+            (window.top as Window).location.assign(data.url);
+          } else {
+            window.location.assign(data.url);
+          }
+        } catch (_) {
+          const popup = window.open(data.url, '_blank', 'noopener,noreferrer');
+          if (!popup) {
+            toast.error("Autorisez l'ouverture de pop-ups pour continuer la connexion Google.");
+          }
         }
       }
     } catch (error: any) {
