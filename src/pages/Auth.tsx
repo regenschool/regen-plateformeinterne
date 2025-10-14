@@ -61,14 +61,24 @@ const Auth = () => {
     }
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth`,
+          skipBrowserRedirect: true,
         },
       });
 
       if (error) throw error;
+
+      // Force top-level navigation (Google interdit l'auth dans un iframe)
+      if (data?.url) {
+        if (window.top) {
+          (window.top as Window).location.href = data.url;
+        } else {
+          window.location.href = data.url;
+        }
+      }
     } catch (error: any) {
       toast.error(error.message || "Erreur lors de la connexion Google");
     }
