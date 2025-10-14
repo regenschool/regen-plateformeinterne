@@ -95,29 +95,45 @@ const Auth = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        const roleValue = selectedRole === "admin" ? "admin" : "teacher";
-        // IMPORTANT: éviter les appels Supabase dans le callback -> différer
+        // Différer la vérification du rôle
         setTimeout(async () => {
-          const { data: hasRole, error } = await supabase.rpc("has_role", {
-            _user_id: session.user.id,
-            _role: roleValue as any,
-          });
+          try {
+            // Vérifier d'abord si l'utilisateur a un rôle admin
+            const { data: hasAdminRole, error: adminError } = await supabase.rpc("has_role", {
+              _user_id: session.user.id,
+              _role: "admin" as any,
+            });
 
-          if (error) {
+            if (adminError) throw adminError;
+
+            if (hasAdminRole) {
+              toast.success(t("auth.welcome"));
+              navigate("/");
+              return;
+            }
+
+            // Sinon vérifier le rôle teacher
+            const { data: hasTeacherRole, error: teacherError } = await supabase.rpc("has_role", {
+              _user_id: session.user.id,
+              _role: "teacher" as any,
+            });
+
+            if (teacherError) throw teacherError;
+
+            if (hasTeacherRole) {
+              toast.success(t("auth.welcome"));
+              navigate("/");
+              return;
+            }
+
+            // Aucun rôle trouvé
+            await supabase.auth.signOut();
+            toast.error("Vous n'avez pas accès avec ce profil. Contactez l'administration.");
+          } catch (error) {
             console.error("Erreur vérification rôle:", error);
             await supabase.auth.signOut();
             toast.error("Erreur lors de la vérification du rôle");
-            return;
           }
-
-          if (!hasRole) {
-            await supabase.auth.signOut();
-            toast.error("Vous n'avez pas accès avec ce profil. Contactez l'administration.");
-            return;
-          }
-
-          toast.success(t("auth.welcome"));
-          navigate("/");
         }, 0);
       }
     });
@@ -125,7 +141,7 @@ const Auth = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [selectedRole, navigate, t]);
+  }, [navigate, t]);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
