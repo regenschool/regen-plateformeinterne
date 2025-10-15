@@ -29,11 +29,66 @@ type StudentRow = {
 export const ImportStudentsDialog = ({ onImportComplete, selectedSchoolYearId }: ImportStudentsDialogProps) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingStudents, setLoadingStudents] = useState(false);
   const [rows, setRows] = useState<StudentRow[]>([
     { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", birth_date: "", academic_background: "", company: "" },
     { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", birth_date: "", academic_background: "", company: "" },
     { first_name: "", last_name: "", class_name: "", photo_url: "", age: "", birth_date: "", academic_background: "", company: "" },
   ]);
+
+  // Charger les étudiants existants quand le dialogue s'ouvre
+  const loadExistingStudents = async () => {
+    if (!selectedSchoolYearId) return;
+    
+    setLoadingStudents(true);
+    try {
+      const { data: enrollments } = await supabase
+        .from('student_enrollments')
+        .select(`
+          student_id,
+          class_name,
+          company,
+          academic_background,
+          students (
+            first_name,
+            last_name,
+            photo_url,
+            age,
+            birth_date
+          )
+        `)
+        .eq('school_year_id', selectedSchoolYearId)
+        .order('students(last_name)', { ascending: true });
+
+      if (enrollments && enrollments.length > 0) {
+        const studentRows: StudentRow[] = enrollments.map((enrollment: any) => ({
+          first_name: enrollment.students?.first_name || "",
+          last_name: enrollment.students?.last_name || "",
+          class_name: enrollment.class_name || "",
+          photo_url: enrollment.students?.photo_url || "",
+          age: enrollment.students?.age?.toString() || "",
+          birth_date: enrollment.students?.birth_date || "",
+          academic_background: enrollment.academic_background || "",
+          company: enrollment.company || "",
+        }));
+        
+        setRows(studentRows);
+        toast.success(`${studentRows.length} étudiant(s) chargé(s)`);
+      }
+    } catch (error: any) {
+      console.error("Error loading students:", error);
+      toast.error("Erreur lors du chargement des étudiants");
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (newOpen) {
+      loadExistingStudents();
+    }
+  };
 
   const handleCellChange = (index: number, field: keyof StudentRow, value: string) => {
     const newRows = [...rows];
@@ -349,7 +404,7 @@ export const ImportStudentsDialog = ({ onImportComplete, selectedSchoolYearId }:
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline">
           <Upload className="w-4 h-4 mr-2" />
@@ -361,9 +416,15 @@ export const ImportStudentsDialog = ({ onImportComplete, selectedSchoolYearId }:
           <DialogTitle>Import Students</DialogTitle>
         </DialogHeader>
         
-        <p className="text-sm text-muted-foreground">
-          Copy data from Excel/Sheets and paste directly into the table. You can paste multiple rows at once.
-        </p>
+        {loadingStudents ? (
+          <p className="text-sm text-muted-foreground">
+            Chargement des étudiants existants...
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Les étudiants existants sont pré-remplis. Copiez-collez une colonne pour mettre à jour un seul champ.
+          </p>
+        )}
 
         <div className="overflow-auto flex-1">
           <Table>
