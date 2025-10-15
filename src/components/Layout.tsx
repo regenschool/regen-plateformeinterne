@@ -59,24 +59,24 @@ export const Layout = ({ children }: LayoutProps) => {
               <div>
                 <h1 className="text-xl font-bold text-foreground">Regen School</h1>
                 <p className="text-xs text-muted-foreground">
-                  {isAdmin ? "Espace Administrateur" : t("nav.teachersSpace")}
+                  {isAdmin ? t("nav.adminSpace") : t("nav.teachersSpace")}
                 </p>
               </div>
             </div>
 
             {session && (
               <div className="flex items-center gap-3">
-                {/* DEV MODE TOGGLE - Visible uniquement pour les vrais admins */}
+                {/* MODE SWITCHER - Visible uniquement pour les utilisateurs avec rôle admin */}
                 {hasAdminRole && (
-                  <div className="flex items-center gap-2 px-2.5 py-1 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-md transition-all">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-md transition-all">
                     <Label 
-                      htmlFor="dev-mode" 
+                      htmlFor="admin-mode" 
                       className="text-xs font-medium text-blue-700 dark:text-blue-400 cursor-pointer whitespace-nowrap select-none"
                     >
-                      {isAdmin ? "Admin" : "Enseignant"}
+                      {isAdmin ? "Mode Admin" : "Mode Enseignant"}
                     </Label>
                     <Switch
-                      id="dev-mode"
+                      id="admin-mode"
                       checked={isAdmin}
                       onCheckedChange={toggleAdmin}
                       className="data-[state=checked]:bg-blue-600"
@@ -92,7 +92,7 @@ export const Layout = ({ children }: LayoutProps) => {
                   className="gap-2"
                 >
                   <Network className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t("nav.ecosystem")}</span>
+                  <span className="hidden sm:inline">{t("nav.directory")}</span>
                 </Button>
                 <Button
                   variant={isActive("/quiz") ? "default" : "ghost"}
@@ -117,7 +117,7 @@ export const Layout = ({ children }: LayoutProps) => {
                     className="gap-2"
                   >
                     <User className="w-4 h-4" />
-                    <span className="hidden sm:inline">Profil</span>
+                    <span className="hidden sm:inline">{t("nav.profile")}</span>
                   </Button>
                 )}
                 {isAdmin && (
@@ -128,34 +128,34 @@ export const Layout = ({ children }: LayoutProps) => {
                         className="gap-2"
                       >
                         <Settings className="w-4 h-4" />
-                        <span className="hidden sm:inline">Gestion</span>
+                        <span className="hidden sm:inline">{t("nav.management")}</span>
                         <ChevronDown className="w-3 h-3 ml-1" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="bg-card z-50">
                       <DropdownMenuItem onClick={() => navigate("/profile", { replace: true })}>
                         <User className="w-4 h-4 mr-2" />
-                        Profil
+                        {t("nav.profile")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate("/settings", { replace: true })}>
                         <Settings className="w-4 h-4 mr-2" />
-                        Paramètres
+                        {t("nav.settings")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate("/year-transition", { replace: true })}>
                         <Calendar className="w-4 h-4 mr-2" />
-                        Passage d'année
+                        {t("nav.yearTransition")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate("/quality", { replace: true })}>
                         <Activity className="w-4 h-4 mr-2" />
-                        Qualité & Performance
+                        {t("nav.quality")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate("/audit", { replace: true })}>
                         <Shield className="w-4 h-4 mr-2" />
-                        Journal d'Audit
+                        {t("nav.audit")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate("/tests", { replace: true })}>
                         <FlaskConical className="w-4 h-4 mr-2" />
-                        Tests
+                        {t("nav.tests")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

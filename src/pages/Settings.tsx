@@ -12,9 +12,11 @@ import { SyncReferentialsButton } from "@/components/settings/SyncReferentialsBu
 import ArchiveManager from "@/components/settings/ArchiveManager";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Navigate } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Settings() {
   const { isAdmin } = useAdmin();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("school-years");
 
   if (!isAdmin) {
@@ -27,10 +29,10 @@ export default function Settings() {
         <div>
           <div className="flex items-center gap-3 mb-2">
             <SettingsIcon className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-bold">Paramètres</h1>
+            <h1 className="text-4xl font-bold">{t("settings.title")}</h1>
           </div>
           <p className="text-muted-foreground">
-            Gérez les référentiels de l'école et les utilisateurs
+            {t("settings.subtitle")}
           </p>
         </div>
         <SyncReferentialsButton />
@@ -40,41 +42,40 @@ export default function Settings() {
         <TabsList className="grid w-full grid-cols-7 lg:w-[1400px]">
           <TabsTrigger value="school-years" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            <span className="hidden sm:inline">Années scolaires</span>
+            <span className="hidden sm:inline">{t("settings.schoolYears")}</span>
           </TabsTrigger>
           <TabsTrigger value="classes" className="flex items-center gap-2">
             <GraduationCap className="h-4 w-4" />
-            <span className="hidden sm:inline">Classes</span>
+            <span className="hidden sm:inline">{t("settings.classes")}</span>
           </TabsTrigger>
           <TabsTrigger value="levels" className="flex items-center gap-2">
             <Award className="h-4 w-4" />
-            <span className="hidden sm:inline">Niveaux</span>
+            <span className="hidden sm:inline">{t("settings.levels")}</span>
           </TabsTrigger>
           <TabsTrigger value="periods" className="flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
-            <span className="hidden sm:inline">Semestres</span>
+            <span className="hidden sm:inline">{t("settings.periods")}</span>
           </TabsTrigger>
           <TabsTrigger value="subjects" className="flex items-center gap-2">
             <BookOpen className="h-4 w-4" />
-            <span className="hidden sm:inline">Matières</span>
+            <span className="hidden sm:inline">{t("settings.subjects")}</span>
           </TabsTrigger>
           <TabsTrigger value="users" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Utilisateurs</span>
+            <span className="hidden sm:inline">{t("settings.users")}</span>
           </TabsTrigger>
           <TabsTrigger value="archive" className="flex items-center gap-2">
             <Archive className="h-4 w-4" />
-            <span className="hidden sm:inline">Archivage</span>
+            <span className="hidden sm:inline">{t("settings.archive")}</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="school-years">
           <Card>
             <CardHeader>
-              <CardTitle>Années Scolaires</CardTitle>
+              <CardTitle>{t("settings.schoolYears")}</CardTitle>
               <CardDescription>
-                Définissez les années scolaires avec leurs dates de début et de fin. 
-                Une seule année peut être active à la fois.
+                {t("settings.schoolYearsDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -86,9 +87,9 @@ export default function Settings() {
         <TabsContent value="classes">
           <Card>
             <CardHeader>
-              <CardTitle>Classes</CardTitle>
+              <CardTitle>{t("settings.classes")}</CardTitle>
               <CardDescription>
-                Gérez les classes de l'école : nom, niveau (Bachelor/Master), capacité.
+                {t("settings.classesDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -100,9 +101,9 @@ export default function Settings() {
         <TabsContent value="levels">
           <Card>
             <CardHeader>
-              <CardTitle>Niveaux</CardTitle>
+              <CardTitle>{t("settings.levels")}</CardTitle>
               <CardDescription>
-                Gérez les niveaux académiques de l'école : Bachelor, Master, MBA, etc.
+                {t("settings.levelsDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -114,9 +115,9 @@ export default function Settings() {
         <TabsContent value="periods">
           <Card>
             <CardHeader>
-              <CardTitle>Périodes Académiques (Semestres)</CardTitle>
+              <CardTitle>{t("settings.periods")}</CardTitle>
               <CardDescription>
-                Définissez les semestres pour chaque année scolaire avec leurs dates.
+                {t("settings.periodsDesc")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -130,17 +131,7 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="users">
-          <Card>
-            <CardHeader>
-              <CardTitle>Utilisateurs & Enseignants</CardTitle>
-              <CardDescription>
-                Gérez tous les utilisateurs de la plateforme : accès, rôles (Admin, Enseignant, Modérateur) et informations personnelles.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <UsersManager />
-            </CardContent>
-          </Card>
+          <UsersManager />
         </TabsContent>
 
         <TabsContent value="archive">

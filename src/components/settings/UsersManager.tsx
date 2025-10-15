@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { UserPlus, Trash2, Shield, GraduationCap, Phone, Mail, Edit2, CheckCircle2 } from "lucide-react";
+import { ImportUsersDialog } from "./ImportUsersDialog";
 
 type UserWithRole = {
   id: string;
@@ -45,7 +46,8 @@ export const UsersManager = () => {
 
   const fetchUsers = async () => {
     try {
-      // Récupérer tous les utilisateurs via teacher_profiles
+      // Récupérer TOUS les utilisateurs depuis auth via teacher_profiles
+      // Cette table contient automatiquement tous les utilisateurs créés
       const { data: profiles, error: profilesError } = await supabase
         .from("teacher_profiles")
         .select("user_id, email, full_name, created_at");
@@ -59,12 +61,12 @@ export const UsersManager = () => {
 
       if (rolesError) throw rolesError;
 
-      // Récupérer les infos enseignants
+      // Récupérer les infos enseignants (optionnel)
       const { data: teachersData, error: teachersError } = await supabase
         .from("teachers")
         .select("user_id, full_name, phone");
 
-      if (teachersError) throw teachersError;
+      if (teachersError && teachersError.code !== 'PGRST116') throw teachersError;
 
       // Combiner les données
       const usersWithRoles: UserWithRole[] = (profiles || []).map(profile => {
@@ -79,7 +81,10 @@ export const UsersManager = () => {
           teacher_info: teacherInfo ? {
             full_name: teacherInfo.full_name,
             phone: teacherInfo.phone,
-          } : undefined,
+          } : {
+            full_name: profile.full_name,
+            phone: null,
+          },
         };
       });
 
@@ -254,13 +259,9 @@ export const UsersManager = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-semibold">Gestion des Utilisateurs</h3>
-          <p className="text-sm text-muted-foreground">
-            Gérez les accès, rôles et informations des utilisateurs
-          </p>
-        </div>
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <div className="flex items-center gap-2">
+          <ImportUsersDialog onImportComplete={fetchUsers} />
+          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <UserPlus className="w-4 h-4" />
@@ -342,6 +343,7 @@ export const UsersManager = () => {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Table */}
