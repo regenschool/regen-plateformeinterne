@@ -13,21 +13,48 @@ serve(async (req) => {
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create Supabase client with user's auth token
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
     );
+
+    // Validate user session
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const { invoiceId } = await req.json();
 
-    if (!invoiceId) {
+    // Validate invoiceId format (must be UUID)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!invoiceId || !uuidRegex.test(invoiceId)) {
       return new Response(
-        JSON.stringify({ error: 'Invoice ID is required' }),
+        JSON.stringify({ error: 'Invalid invoice ID format' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Fetch invoice details
+    // Fetch invoice details - RLS will automatically enforce that user can only access their own invoices
     const { data: invoice, error: invoiceError } = await supabaseClient
       .from('teacher_invoices')
       .select('*, teacher:teacher_id(*)')
@@ -35,14 +62,24 @@ serve(async (req) => {
       .single();
 
     if (invoiceError || !invoice) {
-      console.error('Error fetching invoice:', invoiceError);
       return new Response(
-        JSON.stringify({ error: 'Invoice not found' }),
+        JSON.stringify({ error: 'Invoice not found or access denied' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Fetch teacher profile
+    // Additional authorization check: verify user owns this invoice or is admin
+    const { data: isAdmin } = await supabaseClient
+      .rpc('has_role', { _user_id: user.id, _role: 'admin' });
+
+    if (invoice.teacher_id !== user.id && !isAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized to access this invoice' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Fetch teacher profile - RLS policies apply
     const { data: profile, error: profileError } = await supabaseClient
       .from('teacher_profiles')
       .select('*')
@@ -50,7 +87,10 @@ serve(async (req) => {
       .single();
 
     if (profileError) {
-      console.error('Error fetching profile:', profileError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to retrieve teacher information' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Generate simple HTML invoice
@@ -77,7 +117,6 @@ serve(async (req) => {
       );
 
     if (uploadError) {
-      console.error('Error uploading invoice:', uploadError);
       return new Response(
         JSON.stringify({ error: 'Failed to generate invoice' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -109,10 +148,16 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in generate-invoice-pdf function:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    // Log error with ID but don't expose sensitive details to client
+    const errorId = crypto.randomUUID();
+    console.error(`Invoice generation error [${errorId}]:`, error instanceof Error ? error.message : 'Unknown error');
+    
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ 
+        error: 'Internal server error', 
+        errorId,
+        message: 'An error occurred while generating the invoice. Please contact support with this error ID.'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
