@@ -458,9 +458,45 @@ export default function Grades() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Get the teacher_id from the teacher's email or user_id
+      // For admins, we get the selected teacher from the dialog
+      // For teachers, we use the current user's ID
+      let teacherId = user.id;
+      let teacherEmail = user.email;
+      let teacherFkId = null;
+
+      if (isAdmin) {
+        // Find teacher by name to get their user_id
+        const { data: teacher } = await supabase
+          .from('teachers')
+          .select('*')
+          .eq('full_name', teacherName)
+          .maybeSingle();
+
+        if (teacher) {
+          teacherId = teacher.user_id;
+          teacherEmail = teacher.email;
+          teacherFkId = teacher.user_id;
+        }
+      } else {
+        // For non-admin users, get their teacher record
+        const { data: teacher } = await supabase
+          .from('teachers')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (teacher) {
+          teacherFkId = teacher.user_id;
+          teacherEmail = teacher.email;
+        }
+      }
+
       // Save the subject to the subjects table avec les FK normalisées
       const { error } = await supabase.from("subjects").insert({
-        teacher_id: user.id,
+        teacher_id: teacherId,
+        teacher_email: teacherEmail,
+        teacher_fk_id: teacherFkId,
         class_name: selectedClass,
         subject_name: subject,
         teacher_name: teacherName,
@@ -1117,6 +1153,7 @@ export default function Grades() {
           onSubjectCreated={handleSubjectCreated}
           defaultSchoolYear={selectedSchoolYear}
           defaultSemester={selectedSemester}
+          className={selectedClass}
         />
       </div>
   );

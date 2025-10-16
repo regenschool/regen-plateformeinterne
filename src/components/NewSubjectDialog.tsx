@@ -10,8 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAdmin } from "@/contexts/AdminContext";
 import { toast } from "sonner";
 import { useSchoolYears, useAcademicPeriods } from "@/hooks/useReferentials";
+import { useTeachers, useAddTeacher } from "@/hooks/useTeachers";
+import { supabase } from "@/integrations/supabase/client";
+import { PlusCircle } from "lucide-react";
 
 type NewSubjectDialogProps = {
   open: boolean;
@@ -19,37 +23,147 @@ type NewSubjectDialogProps = {
   onSubjectCreated: (subject: string, teacherName: string, schoolYear: string, semester: string, schoolYearId?: string, academicPeriodId?: string) => void;
   defaultSchoolYear?: string;
   defaultSemester?: string;
+  className?: string;
 };
 
-export const NewSubjectDialog = ({ open, onClose, onSubjectCreated, defaultSchoolYear, defaultSemester }: NewSubjectDialogProps) => {
+export const NewSubjectDialog = ({ 
+  open, 
+  onClose, 
+  onSubjectCreated, 
+  defaultSchoolYear, 
+  defaultSemester,
+  className 
+}: NewSubjectDialogProps) => {
   const { t } = useLanguage();
-  const [teacherName, setTeacherName] = useState("");
+  const { isAdmin } = useAdmin();
+  
+  // Teacher selection states
+  const [selectedTeacherId, setSelectedTeacherId] = useState("");
+  const [showNewTeacherForm, setShowNewTeacherForm] = useState(false);
+  const [newTeacherEmail, setNewTeacherEmail] = useState("");
+  const [newTeacherFullName, setNewTeacherFullName] = useState("");
+  const [newTeacherPhone, setNewTeacherPhone] = useState("");
+  
+  // Subject data states
   const [schoolYearId, setSchoolYearId] = useState("");
   const [academicPeriodId, setAcademicPeriodId] = useState("");
   const [subjectName, setSubjectName] = useState("");
+  const [currentUserTeacherId, setCurrentUserTeacherId] = useState("");
+  const [currentUserName, setCurrentUserName] = useState("");
 
   const { data: schoolYears } = useSchoolYears();
   const { data: academicPeriods } = useAcademicPeriods(schoolYearId);
+  const { data: teachers, isLoading: isLoadingTeachers } = useTeachers();
+  const addTeacherMutation = useAddTeacher();
 
+  // Get current user's teacher info
   useEffect(() => {
-    if (schoolYears?.length && !schoolYearId) {
-      const activeYear = schoolYears.find(sy => sy.is_active);
-      if (activeYear) setSchoolYearId(activeYear.id);
-    }
-  }, [schoolYears, schoolYearId]);
+    const fetchCurrentTeacher = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-  useEffect(() => {
-    if (academicPeriods?.length && !academicPeriodId) {
-      const activePeriod = academicPeriods.find(ap => ap.is_active);
-      if (activePeriod) setAcademicPeriodId(activePeriod.id);
+      const { data: teacher } = await supabase
+        .from('teachers')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (teacher) {
+        setCurrentUserTeacherId(teacher.user_id);
+        setCurrentUserName(teacher.full_name);
+        if (!isAdmin) {
+          setSelectedTeacherId(teacher.user_id);
+        }
+      }
+    };
+
+    if (open) {
+      fetchCurrentTeacher();
     }
-  }, [academicPeriods, academicPeriodId]);
+  }, [open, isAdmin]);
+
+  // Set default school year from props or active year
+  useEffect(() => {
+    if (schoolYears && open) {
+      if (defaultSchoolYear) {
+        const matchingYear = schoolYears.find(y => y.label === defaultSchoolYear);
+        if (matchingYear) {
+          setSchoolYearId(matchingYear.id);
+          return;
+        }
+      }
+      
+      if (!schoolYearId) {
+        const activeYear = schoolYears.find(y => y.is_active);
+        if (activeYear) {
+          setSchoolYearId(activeYear.id);
+        }
+      }
+    }
+  }, [schoolYears, defaultSchoolYear, open]);
+
+  // Set default academic period from props or active period
+  useEffect(() => {
+    if (academicPeriods && schoolYearId && open) {
+      if (defaultSemester) {
+        const matchingPeriod = academicPeriods.find(p => p.label === defaultSemester);
+        if (matchingPeriod) {
+          setAcademicPeriodId(matchingPeriod.id);
+          return;
+        }
+      }
+      
+      if (!academicPeriodId) {
+        const activePeriod = academicPeriods.find(p => p.is_active);
+        if (activePeriod) {
+          setAcademicPeriodId(activePeriod.id);
+        } else if (academicPeriods.length > 0) {
+          setAcademicPeriodId(academicPeriods[0].id);
+        }
+      }
+    }
+  }, [academicPeriods, schoolYearId, defaultSemester, open]);
+
+  const handleCreateNewTeacher = async () => {
+    if (!newTeacherEmail || !newTeacherFullName) {
+      toast.error("Email et nom complet requis");
+      return;
+    }
+
+    try {
+      // Get user ID from email
+      const { data: userId } = await supabase.rpc('get_user_id_from_email', {
+        _email: newTeacherEmail
+      });
+
+      if (!userId) {
+        toast.error("Aucun utilisateur trouvé avec cet email. Créez d'abord l'utilisateur dans Gestion des utilisateurs.");
+        return;
+      }
+
+      await addTeacherMutation.mutateAsync({
+        user_id: userId,
+        full_name: newTeacherFullName,
+        phone: newTeacherPhone || undefined,
+      });
+
+      setSelectedTeacherId(userId);
+      setShowNewTeacherForm(false);
+      setNewTeacherEmail("");
+      setNewTeacherFullName("");
+      setNewTeacherPhone("");
+      toast.success("Enseignant créé avec succès");
+    } catch (error: any) {
+      console.error("Error creating teacher:", error);
+      toast.error("Erreur lors de la création de l'enseignant");
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!teacherName.trim()) {
-      toast.error(t("grades.teacherFullName"));
+    if (!selectedTeacherId) {
+      toast.error("Veuillez sélectionner un enseignant");
       return;
     }
 
@@ -70,38 +184,142 @@ export const NewSubjectDialog = ({ open, onClose, onSubjectCreated, defaultSchoo
 
     const selectedSchoolYear = schoolYears?.find(sy => sy.id === schoolYearId);
     const selectedPeriod = academicPeriods?.find(ap => ap.id === academicPeriodId);
+    const selectedTeacher = teachers?.find(t => t.user_id === selectedTeacherId);
+
+    if (!selectedSchoolYear || !selectedPeriod || !selectedTeacher) {
+      toast.error("Données invalides");
+      return;
+    }
 
     onSubjectCreated(
       subjectName.trim(), 
-      teacherName.trim(), 
-      selectedSchoolYear?.label || '', 
-      selectedPeriod?.label || '',
+      selectedTeacher.full_name, 
+      selectedSchoolYear.label, 
+      selectedPeriod.label,
       schoolYearId,
       academicPeriodId
     );
     
     // Reset form
-    setTeacherName("");
     setSubjectName("");
+    if (isAdmin) {
+      setSelectedTeacherId("");
+    }
     onClose();
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("grades.createSubject")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label>{t("grades.teacherFullName")} *</Label>
-            <Input
-              value={teacherName}
-              onChange={(e) => setTeacherName(e.target.value)}
-              placeholder={t("grades.teacherPlaceholder")}
-              required
-            />
-          </div>
+          {/* Teacher Selection - Different for Admin vs Teacher */}
+          {isAdmin ? (
+            <div className="space-y-2">
+              <Label>{t("grades.teacher")} *</Label>
+              {!showNewTeacherForm ? (
+                <>
+                  <Select value={selectedTeacherId} onValueChange={setSelectedTeacherId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un enseignant" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {isLoadingTeachers ? (
+                        <SelectItem value="loading" disabled>Chargement...</SelectItem>
+                      ) : (
+                        teachers?.map((teacher) => (
+                          <SelectItem key={teacher.user_id} value={teacher.user_id}>
+                            {teacher.full_name} {teacher.email ? `(${teacher.email})` : ''}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2"
+                    onClick={() => setShowNewTeacherForm(true)}
+                  >
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    Créer un nouvel enseignant
+                  </Button>
+                </>
+              ) : (
+                <div className="space-y-3 border rounded-lg p-4 bg-muted/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-semibold">Nouvel enseignant</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowNewTeacherForm(false)}
+                    >
+                      Annuler
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="new-teacher-email" className="text-xs">Email (utilisateur existant) *</Label>
+                    <Input
+                      id="new-teacher-email"
+                      type="email"
+                      value={newTeacherEmail}
+                      onChange={(e) => setNewTeacherEmail(e.target.value)}
+                      placeholder="email@example.com"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      L'utilisateur doit déjà exister dans le système
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="new-teacher-name" className="text-xs">Nom complet *</Label>
+                    <Input
+                      id="new-teacher-name"
+                      value={newTeacherFullName}
+                      onChange={(e) => setNewTeacherFullName(e.target.value)}
+                      placeholder="Prénom Nom"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="new-teacher-phone" className="text-xs">Téléphone</Label>
+                    <Input
+                      id="new-teacher-phone"
+                      value={newTeacherPhone}
+                      onChange={(e) => setNewTeacherPhone(e.target.value)}
+                      placeholder="+33..."
+                    />
+                  </div>
+                  
+                  <Button
+                    type="button"
+                    className="w-full"
+                    onClick={handleCreateNewTeacher}
+                    disabled={addTeacherMutation.isPending}
+                  >
+                    {addTeacherMutation.isPending ? "Création..." : "Créer et sélectionner"}
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label>Enseignant</Label>
+              <Input
+                value={currentUserName}
+                disabled
+                className="bg-muted"
+              />
+              <p className="text-xs text-muted-foreground">
+                La matière sera automatiquement assignée à votre compte
+              </p>
+            </div>
+          )}
 
           <div>
             <Label>{t("grades.schoolYearLabel")} *</Label>
@@ -121,7 +339,11 @@ export const NewSubjectDialog = ({ open, onClose, onSubjectCreated, defaultSchoo
 
           <div>
             <Label>{t("grades.semesterLabel")} *</Label>
-            <Select value={academicPeriodId} onValueChange={setAcademicPeriodId} disabled={!schoolYearId}>
+            <Select 
+              value={academicPeriodId} 
+              onValueChange={setAcademicPeriodId} 
+              disabled={!schoolYearId}
+            >
               <SelectTrigger>
                 <SelectValue placeholder={t("grades.selectSemester")} />
               </SelectTrigger>
@@ -147,6 +369,17 @@ export const NewSubjectDialog = ({ open, onClose, onSubjectCreated, defaultSchoo
               {t("grades.subjectHelp")}
             </p>
           </div>
+
+          {className && (
+            <div className="space-y-2">
+              <Label>Classe</Label>
+              <Input
+                value={className}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+          )}
 
           <div className="flex gap-2 pt-4">
             <Button type="submit" className="flex-1">
