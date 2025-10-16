@@ -234,11 +234,6 @@ export const NewSubjectDialog = ({
       return;
     }
 
-    if (!academicPeriodId) {
-      toast.error(t("grades.selectSemester"));
-      return;
-    }
-
     if (!subjectName.trim()) {
       toast.error(t("grades.subjectName"));
       return;
@@ -248,18 +243,26 @@ export const NewSubjectDialog = ({
     const selectedPeriod = academicPeriods?.find(ap => ap.id === academicPeriodId);
     const selectedTeacher = teachers?.find(t => t.user_id === selectedTeacherId);
 
-    if (!selectedSchoolYear || !selectedPeriod || !selectedTeacher) {
+    // Determine a usable semester label even if referential periods are missing
+    const periodLabel = selectedPeriod?.label || defaultSemester || "";
+
+    if (!selectedSchoolYear || !selectedTeacher) {
       toast.error("Données invalides");
       return;
     }
 
+    if (!periodLabel) {
+      toast.error(t("grades.selectSemester"));
+      return;
+    }
+
     onSubjectCreated(
-      subjectName.trim(), 
-      selectedTeacher.full_name, 
-      selectedSchoolYear.label, 
-      selectedPeriod.label,
+      subjectName.trim(),
+      selectedTeacher.full_name,
+      selectedSchoolYear.label,
+      periodLabel,
       schoolYearId,
-      academicPeriodId
+      selectedPeriod ? academicPeriodId : undefined
     );
     
     // Reset form
@@ -418,6 +421,11 @@ export const NewSubjectDialog = ({
                 ))}
               </SelectContent>
             </Select>
+            {academicPeriods && academicPeriods.length === 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Aucune période n'est définie pour cette année. Nous utiliserons "{defaultSemester || t("grades.semester1")}" lors de la création.
+              </p>
+            )}
           </div>
 
           <div>
