@@ -128,17 +128,27 @@ export const NewSubjectDialog = ({
     }
   }, [open, isAdmin]);
 
-  // Set default school year from props or active year
+  // Set default school year from props or active year (with fuzzy matching)
   useEffect(() => {
     if (schoolYears && open) {
+      const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      const sanitize = (s: string) => norm(s).replace(/\s+/g, '').replace(/[\/]/g, '-');
+
       if (defaultSchoolYear) {
-        const matchingYear = schoolYears.find(y => y.label === defaultSchoolYear);
-        if (matchingYear) {
-          setSchoolYearId(matchingYear.id);
+        const exact = schoolYears.find(y => y.label === defaultSchoolYear);
+        if (exact) {
+          setSchoolYearId(exact.id);
+          return;
+        }
+        // Fuzzy: handle 2024-2025 vs 2024/2025 or extra text
+        const wanted = sanitize(defaultSchoolYear);
+        const fuzzy = schoolYears.find(y => sanitize(y.label).includes(wanted) || wanted.includes(sanitize(y.label)));
+        if (fuzzy) {
+          setSchoolYearId(fuzzy.id);
           return;
         }
       }
-      
+
       if (!schoolYearId) {
         const activeYear = schoolYears.find(y => y.is_active);
         if (activeYear) {
