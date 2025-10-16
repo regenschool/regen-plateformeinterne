@@ -17,6 +17,40 @@ import { useTeachers, useAddTeacher } from "@/hooks/useTeachers";
 import { supabase } from "@/integrations/supabase/client";
 import { PlusCircle } from "lucide-react";
 
+// Helper pour faire correspondre un libellé de semestre libre (ex: "Semestre 2")
+// avec les libellés des périodes académiques (ex: "S2 2025", "Semestre 2", "P2")
+const findMatchingPeriodId = (
+  desiredLabel: string | undefined,
+  periods?: { id: string; label: string; is_active?: boolean }[]
+): string | null => {
+  if (!desiredLabel || !periods || periods.length === 0) return null;
+  const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const want = norm(desiredLabel);
+
+  // 1) Exact match
+  const exact = periods.find(p => norm(p.label) === want);
+  if (exact) return exact.id;
+
+  // 2) Includes match
+  const incl = periods.find(p => norm(p.label).includes(want));
+  if (incl) return incl.id;
+
+  // 3) Heuristics: map "semestre 1" -> contains "1" or "s1"
+  if (want.includes('1')) {
+    const s1 = periods.find(p => /(^|\b)(s?1|semestre\s*1)($|\b)/i.test(norm(p.label)) || norm(p.label).includes('s1') || norm(p.label).includes(' 1'));
+    if (s1) return s1.id;
+  }
+  if (want.includes('2')) {
+    const s2 = periods.find(p => /(^|\b)(s?2|semestre\s*2)($|\b)/i.test(norm(p.label)) || norm(p.label).includes('s2') || norm(p.label).includes(' 2'));
+    if (s2) return s2.id;
+  }
+  if (want.includes('annee') || want.includes('an ') || want.includes('full')) {
+    const full = periods.find(p => norm(p.label).includes('annee') || norm(p.label).includes('full'));
+    if (full) return full.id;
+  }
+
+  return null;
+};
 type NewSubjectDialogProps = {
   open: boolean;
   onClose: () => void;
@@ -105,24 +139,29 @@ export const NewSubjectDialog = ({
   // Set default academic period from props or active period
   useEffect(() => {
     if (academicPeriods && schoolYearId && open) {
-      if (defaultSemester) {
-        const matchingPeriod = academicPeriods.find(p => p.label === defaultSemester);
-        if (matchingPeriod) {
-          setAcademicPeriodId(matchingPeriod.id);
+      // Reset selection when school year changes while dialog is open
+      if (!academicPeriodId) {
+        // Try to match the provided defaultSemester first
+        const matchedId = findMatchingPeriodId(defaultSemester, academicPeriods);
+        if (matchedId) {
+          setAcademicPeriodId(matchedId);
           return;
         }
-      }
-      
-      if (!academicPeriodId) {
+
+        // Then try active period
         const activePeriod = academicPeriods.find(p => p.is_active);
         if (activePeriod) {
           setAcademicPeriodId(activePeriod.id);
-        } else if (academicPeriods.length > 0) {
+          return;
+        }
+
+        // Fallback to first
+        if (academicPeriods.length > 0) {
           setAcademicPeriodId(academicPeriods[0].id);
         }
       }
     }
-  }, [academicPeriods, schoolYearId, defaultSemester, open]);
+  }, [academicPeriods, schoolYearId, defaultSemester, open, academicPeriodId]);
 
   const handleCreateNewTeacher = async () => {
     if (!newTeacherEmail || !newTeacherFullName) {
