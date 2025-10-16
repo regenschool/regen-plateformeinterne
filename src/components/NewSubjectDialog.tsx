@@ -161,8 +161,12 @@ export const NewSubjectDialog = ({
   // Set default academic period from props or active period
   useEffect(() => {
     if (academicPeriods && schoolYearId && open) {
+      console.log("🔍 Matching semester:", { defaultSemester, academicPeriods });
+      
       // Try to match the provided defaultSemester first
       const matchedId = findMatchingPeriodId(defaultSemester, academicPeriods);
+      console.log("📌 Matched period ID:", matchedId);
+      
       if (matchedId) {
         setAcademicPeriodId(matchedId);
         return;
@@ -268,7 +272,7 @@ export const NewSubjectDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent aria-describedby={undefined} className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent aria-describedby={undefined} className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>{t("grades.createSubject")}</DialogTitle>
           <DialogDescription className="sr-only">Formulaire de création de matière</DialogDescription>
