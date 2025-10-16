@@ -116,6 +116,17 @@ export const NewSubjectDialog = ({
     }
   }, [open, isAdmin]);
 
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      setAcademicPeriodId("");
+      setSubjectName("");
+      if (isAdmin) {
+        setSelectedTeacherId("");
+      }
+    }
+  }, [open, isAdmin]);
+
   // Set default school year from props or active year
   useEffect(() => {
     if (schoolYears && open) {
@@ -139,29 +150,26 @@ export const NewSubjectDialog = ({
   // Set default academic period from props or active period
   useEffect(() => {
     if (academicPeriods && schoolYearId && open) {
-      // Reset selection when school year changes while dialog is open
-      if (!academicPeriodId) {
-        // Try to match the provided defaultSemester first
-        const matchedId = findMatchingPeriodId(defaultSemester, academicPeriods);
-        if (matchedId) {
-          setAcademicPeriodId(matchedId);
-          return;
-        }
+      // Try to match the provided defaultSemester first
+      const matchedId = findMatchingPeriodId(defaultSemester, academicPeriods);
+      if (matchedId) {
+        setAcademicPeriodId(matchedId);
+        return;
+      }
 
-        // Then try active period
-        const activePeriod = academicPeriods.find(p => p.is_active);
-        if (activePeriod) {
-          setAcademicPeriodId(activePeriod.id);
-          return;
-        }
+      // Then try active period
+      const activePeriod = academicPeriods.find(p => p.is_active);
+      if (activePeriod) {
+        setAcademicPeriodId(activePeriod.id);
+        return;
+      }
 
-        // Fallback to first
-        if (academicPeriods.length > 0) {
-          setAcademicPeriodId(academicPeriods[0].id);
-        }
+      // Fallback to first
+      if (academicPeriods.length > 0) {
+        setAcademicPeriodId(academicPeriods[0].id);
       }
     }
-  }, [academicPeriods, schoolYearId, defaultSemester, open, academicPeriodId]);
+  }, [academicPeriods, schoolYearId, defaultSemester, open]);
 
   const handleCreateNewTeacher = async () => {
     if (!newTeacherEmail || !newTeacherFullName) {
