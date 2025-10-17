@@ -275,8 +275,8 @@ export const ReportCardGeneration = () => {
                   <SelectValue placeholder="Sélectionner le semestre" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="S1">Semestre 1</SelectItem>
-                  <SelectItem value="S2">Semestre 2</SelectItem>
+                  <SelectItem value="Semestre 1">Semestre 1</SelectItem>
+                  <SelectItem value="Semestre 2">Semestre 2</SelectItem>
                   <SelectItem value="Annuel">Annuel</SelectItem>
                 </SelectContent>
               </Select>
