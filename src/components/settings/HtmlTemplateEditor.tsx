@@ -191,6 +191,52 @@ export const HtmlTemplateEditor = ({
     onCssChange(localCss);
   };
 
+  const generatePreviewHtml = () => {
+    let html = localHtml;
+    
+    // Données d'exemple pour la prévisualisation
+    const sampleData = {
+      firstName: 'Jean',
+      lastName: 'Dupont',
+      className: 'M2 DDD',
+      birthDate: '15/03/2000',
+      schoolYear: '2025-2026',
+      semester: 'Semestre 1',
+      grades: [
+        { subject: 'Limites planétaires', assessmentType: 'Contrôle continu', grade: 15, maxGrade: 20, weighting: 2, appreciation: 'Très bon travail' },
+        { subject: 'DDD', assessmentType: 'Examen', grade: 17, maxGrade: 20, weighting: 3, appreciation: 'Excellent' },
+        { subject: 'Management', assessmentType: 'Contrôle continu', grade: 14, maxGrade: 20, weighting: 2, appreciation: 'Bien' },
+      ],
+      studentAverage: '15.33',
+      classAverage: '14.80'
+    };
+
+    // Remplacer les variables
+    html = html.replace(/FIRST_NAME/g, sampleData.firstName);
+    html = html.replace(/LAST_NAME/g, sampleData.lastName);
+    html = html.replace(/CLASS_NAME/g, sampleData.className);
+    html = html.replace(/BIRTH_DATE/g, sampleData.birthDate);
+    html = html.replace(/SCHOOL_YEAR/g, sampleData.schoolYear);
+    html = html.replace(/SEMESTER/g, sampleData.semester);
+    
+    // Générer les lignes de notes
+    const gradesRows = sampleData.grades.map(grade => `
+      <tr>
+        <td><strong>${grade.subject}</strong></td>
+        <td>${grade.assessmentType}</td>
+        <td class="grade-cell">${grade.grade}/${grade.maxGrade}</td>
+        <td>${grade.weighting}</td>
+        <td class="appreciation">${grade.appreciation}</td>
+      </tr>
+    `).join('');
+    
+    html = html.replace(/<!-- GRADES_ROWS -->/g, gradesRows);
+    html = html.replace(/STUDENT_AVERAGE/g, sampleData.studentAverage);
+    html = html.replace(/CLASS_AVERAGE/g, sampleData.classAverage);
+    
+    return html;
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -261,11 +307,11 @@ export const HtmlTemplateEditor = ({
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
               <DialogHeader>
-                <DialogTitle>Aperçu du template</DialogTitle>
+                <DialogTitle>Aperçu du template avec données d'exemple</DialogTitle>
               </DialogHeader>
-              <div className="border rounded-lg p-4">
+              <div className="border rounded-lg p-4 bg-white">
                 <style>{localCss}</style>
-                <div dangerouslySetInnerHTML={{ __html: localHtml }} />
+                <div dangerouslySetInnerHTML={{ __html: generatePreviewHtml() }} />
               </div>
             </DialogContent>
           </Dialog>
