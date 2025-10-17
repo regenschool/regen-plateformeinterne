@@ -178,13 +178,21 @@ const Profile = () => {
 
       if (error && error.code !== "PGRST116") throw error;
 
+      // Get user metadata for fallback values
+      const { data: userData } = await supabase.auth.getUser();
+      const userMeta = userData.user?.user_metadata || {};
+
       if (data) {
-        setProfile(data);
+        // If profile exists but first_name/last_name are empty, pre-fill from metadata
+        const updatedProfile = {
+          ...data,
+          first_name: data.first_name || userMeta.first_name || userMeta.given_name || null,
+          last_name: data.last_name || userMeta.last_name || userMeta.family_name || null,
+          full_name: data.full_name || userMeta.full_name || userMeta.name || "",
+        };
+        setProfile(updatedProfile);
       } else {
         // Create default profile with all available user metadata
-        const { data: userData } = await supabase.auth.getUser();
-        const userMeta = userData.user?.user_metadata || {};
-        
         const { data: newProfile, error: createError } = await supabase
           .from("teacher_profiles")
           .insert({
