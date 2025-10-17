@@ -25,7 +25,7 @@ export default function CompleteProfile() {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
-      navigate("/auth");
+      // Ne pas rediriger si pas d'utilisateur, laisser l'utilisateur compléter
       return;
     }
 
@@ -83,6 +83,11 @@ export default function CompleteProfile() {
         });
 
       if (profileError) throw profileError;
+
+      // Marquer le profil comme complet dans les métadonnées
+      await supabase.auth.updateUser({
+        data: { profile_completed: true }
+      });
 
       toast.success("Profil complété avec succès !");
       navigate("/");

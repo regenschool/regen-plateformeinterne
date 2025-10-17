@@ -48,12 +48,13 @@ serve(async (req) => {
       throw new Error("Email, nom complet et rôle requis");
     }
 
-    // Créer l'utilisateur
+    // Créer l'utilisateur SANS confirmer l'email (permet de cliquer plusieurs fois sur le lien)
     const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
       email,
-      email_confirm: true,
+      email_confirm: false, // Ne pas confirmer l'email tant que le profil n'est pas complet
       user_metadata: {
         full_name: fullName,
+        profile_completed: false, // Marqueur pour savoir si le profil est complet
       },
     });
 
@@ -93,9 +94,9 @@ serve(async (req) => {
       if (teacherError) throw teacherError;
     }
 
-    // Générer un lien de connexion magic link
+    // Générer un lien de confirmation d'email (réutilisable tant que le profil n'est pas complet)
     const { data: magicLink, error: linkError } = await supabaseClient.auth.admin.generateLink({
-      type: "magiclink",
+      type: "signup",
       email: email,
       options: {
         redirectTo: `${req.headers.get("origin")}/complete-profile`,
