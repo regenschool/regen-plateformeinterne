@@ -50,20 +50,13 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
     queryFn: async () => {
       if (!studentId) return [];
       
-      console.log("🔍 Fetching grades for student:", studentId);
-      
       const { data, error } = await supabase
         .from("grades")
         .select("*")
         .eq("student_id", studentId)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("❌ Error fetching grades:", error);
-        throw error;
-      }
-      
-      console.log("✅ Grades fetched:", data?.length || 0, "notes");
+      if (error) throw error;
       return data;
     },
     enabled: !!studentId,
