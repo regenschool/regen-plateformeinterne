@@ -1296,7 +1296,6 @@ export default function Grades() {
           </>
         )}
 
-
         {showBulkImport && selectedClass && selectedSubject && (
           <BulkGradeImport
             students={students}
@@ -1316,7 +1315,6 @@ export default function Grades() {
           defaultSemester={selectedSemester}
           className={selectedClass}
         />
-      </div>
     </div>
   );
 }
