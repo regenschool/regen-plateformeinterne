@@ -97,14 +97,6 @@ export const Layout = ({ children }: LayoutProps) => {
                     <span>{t("nav.directory")}</span>
                   </Button>
                   <Button
-                    variant={isActive("/quiz") ? "default" : "ghost"}
-                    onClick={() => navigate("/quiz", { replace: true })}
-                    className="gap-2"
-                  >
-                    <Lightbulb className="w-4 h-4" />
-                    <span>{t("nav.quiz")}</span>
-                  </Button>
-                  <Button
                     variant={isActive("/grades") ? "default" : "ghost"}
                     onClick={() => navigate("/grades", { replace: true })}
                     className="gap-2"
@@ -122,46 +114,52 @@ export const Layout = ({ children }: LayoutProps) => {
                       <span>{t("nav.profile")}</span>
                     </Button>
                   )}
-                  {isAdmin && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant={["/profile", "/settings", "/tests", "/year-transition", "/audit", "/quality"].some(path => isActive(path)) ? "default" : "ghost"}
-                          className="gap-2"
-                        >
-                          <Settings className="w-4 h-4" />
-                          <span>{t("nav.management")}</span>
-                          <ChevronDown className="w-3 h-3 ml-1" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-card z-50">
-                        <DropdownMenuItem onClick={() => navigate("/profile", { replace: true })}>
-                          <User className="w-4 h-4 mr-2" />
-                          {t("nav.profile")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/settings", { replace: true })}>
-                          <Settings className="w-4 h-4 mr-2" />
-                          {t("nav.settings")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/year-transition", { replace: true })}>
-                          <Calendar className="w-4 h-4 mr-2" />
-                          {t("nav.yearTransition")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/quality", { replace: true })}>
-                          <Activity className="w-4 h-4 mr-2" />
-                          {t("nav.quality")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/audit", { replace: true })}>
-                          <Shield className="w-4 h-4 mr-2" />
-                          {t("nav.audit")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate("/tests", { replace: true })}>
-                          <FlaskConical className="w-4 h-4 mr-2" />
-                          {t("nav.tests")}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant={["/profile", "/settings", "/tests", "/year-transition", "/audit", "/quality", "/quiz"].some(path => isActive(path)) ? "default" : "ghost"}
+                        className="gap-2"
+                      >
+                        <Settings className="w-4 h-4" />
+                        <span>{isAdmin ? t("nav.management") : "Plus"}</span>
+                        <ChevronDown className="w-3 h-3 ml-1" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-card z-50">
+                      {isAdmin && (
+                        <>
+                          <DropdownMenuItem onClick={() => navigate("/profile", { replace: true })}>
+                            <User className="w-4 h-4 mr-2" />
+                            {t("nav.profile")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate("/settings", { replace: true })}>
+                            <Settings className="w-4 h-4 mr-2" />
+                            {t("nav.settings")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate("/year-transition", { replace: true })}>
+                            <Calendar className="w-4 h-4 mr-2" />
+                            {t("nav.yearTransition")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate("/quality", { replace: true })}>
+                            <Activity className="w-4 h-4 mr-2" />
+                            {t("nav.quality")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate("/audit", { replace: true })}>
+                            <Shield className="w-4 h-4 mr-2" />
+                            {t("nav.audit")}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate("/tests", { replace: true })}>
+                            <FlaskConical className="w-4 h-4 mr-2" />
+                            {t("nav.tests")}
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      <DropdownMenuItem onClick={() => navigate("/quiz", { replace: true })}>
+                        <Lightbulb className="w-4 h-4 mr-2" />
+                        {t("nav.quiz")}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon">
@@ -226,16 +224,6 @@ export const Layout = ({ children }: LayoutProps) => {
                         </Button>
                       </SheetClose>
 
-                      <SheetClose asChild>
-                        <Button
-                          variant={isActive("/quiz") ? "default" : "ghost"}
-                          onClick={() => navigate("/quiz", { replace: true })}
-                          className="justify-start gap-3 w-full"
-                        >
-                          <Lightbulb className="w-5 h-5" />
-                          {t("nav.quiz")}
-                        </Button>
-                      </SheetClose>
 
                       <SheetClose asChild>
                         <Button
@@ -259,12 +247,13 @@ export const Layout = ({ children }: LayoutProps) => {
                         </Button>
                       </SheetClose>
 
-                      {isAdmin && (
-                        <>
-                          <div className="border-t pt-4 mt-2">
-                            <p className="text-xs text-muted-foreground mb-2 px-3">
-                              {t("nav.management")}
-                            </p>
+                      <div className="border-t pt-4 mt-2">
+                        <p className="text-xs text-muted-foreground mb-2 px-3">
+                          {isAdmin ? t("nav.management") : "Plus"}
+                        </p>
+                        
+                        {isAdmin && (
+                          <>
                             <SheetClose asChild>
                               <Button
                                 variant={isActive("/settings") ? "default" : "ghost"}
@@ -319,9 +308,20 @@ export const Layout = ({ children }: LayoutProps) => {
                                 {t("nav.tests")}
                               </Button>
                             </SheetClose>
-                          </div>
-                        </>
-                      )}
+                          </>
+                        )}
+
+                        <SheetClose asChild>
+                          <Button
+                            variant={isActive("/quiz") ? "default" : "ghost"}
+                            onClick={() => navigate("/quiz", { replace: true })}
+                            className="justify-start gap-3 w-full"
+                          >
+                            <Lightbulb className="w-5 h-5" />
+                            {t("nav.quiz")}
+                          </Button>
+                        </SheetClose>
+                      </div>
 
                       <div className="border-t pt-4 mt-2 space-y-2">
                         <div className="px-3">
