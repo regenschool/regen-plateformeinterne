@@ -93,9 +93,9 @@ export const useAddStudent = () => {
   
   return useMutation({
     mutationFn: async (studentInput: Record<string, any>) => {
-      const { class_name, school_year_id, ...studentData } = studentInput;
+      const { school_year_id, ...studentData } = studentInput;
       
-      // 1. Créer l'étudiant (données permanentes uniquement)
+      // 1. Créer l'étudiant (avec class_name pour compatibilité)
       const { data: newStudent, error: studentError } = await (supabase as any)
         .from('students')
         .insert([studentData])
@@ -105,12 +105,12 @@ export const useAddStudent = () => {
       if (studentError) throw studentError;
       
       // 2. Si school_year_id fourni, créer automatiquement un enrollment
-      if (school_year_id && class_name) {
+      if (school_year_id && studentData.class_name) {
         // Récupérer class_id depuis class_name
         const { data: classData } = await supabase
           .from('classes')
           .select('id')
-          .eq('name', class_name)
+          .eq('name', studentData.class_name)
           .maybeSingle();
         
         if (classData) {
@@ -120,12 +120,12 @@ export const useAddStudent = () => {
               student_id: newStudent.id,
               school_year_id: school_year_id,
               class_id: classData.id,
-              class_name: class_name,
+              class_name: studentData.class_name,
             }]);
           
           if (enrollmentError) {
             console.error('Erreur création enrollment:', enrollmentError);
-            // On ne bloque pas si l'enrollment échoue
+            // On ne bloque pas si l'enrollment échoue (possiblement déjà existant)
           }
         }
       }
