@@ -150,7 +150,7 @@ serve(async (req) => {
     // Mettre à jour la facture avec le chemin du PDF
     const { error: updateError } = await supabaseClient
       .from('teacher_invoices')
-      .update({ pdf_path: filePath, status: 'approved' })
+      .update({ pdf_path: filePath })
       .eq('id', invoiceId);
 
     if (updateError) {
