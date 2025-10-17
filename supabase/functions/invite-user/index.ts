@@ -48,19 +48,22 @@ serve(async (req) => {
       throw new Error("Email, nom complet et rôle requis");
     }
 
-    // Créer l'utilisateur
+    // Créer l'utilisateur SANS confirmer l'email (permet de cliquer plusieurs fois sur le lien)
     const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
       email,
-      email_confirm: true,
+      email_confirm: false, // Important : l'email n'est confirmé qu'après complétion du profil
       user_metadata: {
         full_name: fullName,
         profile_completed: false,
+        invited_at: new Date().toISOString(),
       },
     });
 
     if (createError) throw createError;
 
-    // Assigner le rôle
+    console.log("Utilisateur créé:", newUser.user.id);
+
+    // Assigner le rôle principal
     const { error: roleError } = await supabaseClient
       .from("user_roles")
       .insert({
@@ -69,6 +72,19 @@ serve(async (req) => {
       });
 
     if (roleError) throw roleError;
+
+    // Si admin, ajouter automatiquement le rôle teacher
+    if (role === "admin") {
+      const { error: teacherRoleError } = await supabaseClient
+        .from("user_roles")
+        .insert({
+          user_id: newUser.user.id,
+          role: "teacher",
+        });
+
+      if (teacherRoleError) throw teacherRoleError;
+      console.log("Double rôle admin+teacher assigné");
+    }
 
     // Créer TOUJOURS le profil dans teacher_profiles (pour tous les rôles)
     const { error: profileError } = await supabaseClient
@@ -81,8 +97,8 @@ serve(async (req) => {
 
     if (profileError) throw profileError;
 
-    // Si c'est un enseignant, créer aussi dans teachers
-    if (role === "teacher") {
+    // Si enseignant ou admin, créer aussi dans teachers
+    if (role === "teacher" || role === "admin") {
       const { error: teacherError } = await supabaseClient
         .from("teachers")
         .insert({
@@ -94,9 +110,9 @@ serve(async (req) => {
       if (teacherError) throw teacherError;
     }
 
-    // Générer un lien magic link
+    // Générer un lien d'invitation (reste valide tant que l'email n'est pas confirmé)
     const { data: magicLink, error: linkError } = await supabaseClient.auth.admin.generateLink({
-      type: "magiclink",
+      type: "invite",
       email: email,
       options: {
         redirectTo: `${req.headers.get("origin")}/complete-profile`,
@@ -105,25 +121,62 @@ serve(async (req) => {
 
     if (linkError) throw linkError;
 
-    // Envoyer l'email d'invitation
+    // Déterminer le rôle affiché
+    const roleDisplay = role === "admin" ? "Administrateur (avec accès enseignant)" : "Enseignant";
+
+    // Envoyer l'email d'invitation avec instructions claires
     const emailResponse = await resend.emails.send({
       from: "Regen School <onboarding@regen-school.com>",
       to: [email],
-      subject: "Bienvenue sur Regen School - Finalisez votre profil",
+      subject: "🎓 Créez votre compte Regen School",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #2563eb;">Bienvenue sur Regen School !</h1>
-          <p>Bonjour ${fullName},</p>
-          <p>Votre compte a été créé avec succès en tant que <strong>${role === 'teacher' ? 'Enseignant' : 'Administrateur'}</strong>.</p>
-          <p>Pour finaliser la création de votre compte et définir votre mot de passe, cliquez sur le lien ci-dessous :</p>
-          <div style="margin: 30px 0;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h1 style="color: #2563eb; margin-bottom: 24px;">Bienvenue sur Regen School !</h1>
+          
+          <p style="font-size: 16px; margin-bottom: 16px;">Bonjour ${fullName},</p>
+          
+          <p style="font-size: 16px; margin-bottom: 16px;">
+            Un administrateur vous a invité à rejoindre Regen School en tant que <strong>${roleDisplay}</strong>.
+          </p>
+
+          <div style="background-color: #f3f4f6; border-left: 4px solid #2563eb; padding: 16px; margin: 24px 0;">
+            <h3 style="margin: 0 0 8px 0; color: #1f2937;">📝 Prochaines étapes :</h3>
+            <ol style="margin: 0; padding-left: 20px; color: #4b5563;">
+              <li style="margin-bottom: 8px;">Cliquez sur le bouton ci-dessous</li>
+              <li style="margin-bottom: 8px;">Créez votre mot de passe</li>
+              <li style="margin-bottom: 8px;">Complétez vos informations (optionnel)</li>
+              <li>Accédez à votre espace !</li>
+            </ol>
+          </div>
+
+          <div style="text-align: center; margin: 32px 0;">
             <a href="${magicLink.properties.action_link}" 
-               style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-              Finaliser mon profil
+               style="background-color: #2563eb; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px;">
+              Créer mon compte
             </a>
           </div>
-          <p style="color: #666; font-size: 14px;">Ce lien est valable 24 heures.</p>
-          <p style="margin-top: 30px;">À bientôt,<br>L'équipe Regen School</p>
+
+          <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin: 24px 0;">
+            <p style="margin: 0; color: #92400e; font-size: 14px;">
+              <strong>⏱️ Pas de pression !</strong><br>
+              Vous pouvez cliquer sur ce lien maintenant ou plus tard. Il reste valide jusqu'à ce que vous ayez créé votre compte.
+            </p>
+          </div>
+
+          <p style="color: #6b7280; font-size: 14px; margin-top: 32px;">
+            Votre email de connexion : <strong>${email}</strong>
+          </p>
+
+          <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;">
+
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+            Si vous n'avez pas demandé cette invitation, vous pouvez ignorer cet email en toute sécurité.
+          </p>
+
+          <p style="margin-top: 24px; color: #4b5563;">
+            À bientôt,<br>
+            <strong>L'équipe Regen School</strong>
+          </p>
         </div>
       `,
     });

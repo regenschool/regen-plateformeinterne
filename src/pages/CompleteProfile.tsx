@@ -10,6 +10,8 @@ import { toast } from "sonner";
 export default function CompleteProfile() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [userName, setUserName] = useState("");
   const [formData, setFormData] = useState({
     password: "",
     confirmPassword: "",
@@ -25,9 +27,12 @@ export default function CompleteProfile() {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
-      navigate("/auth");
+      // Pas encore connecté, c'est normal pour un nouvel utilisateur
       return;
     }
+
+    setUserEmail(user.email || "");
+    setUserName(user.user_metadata?.full_name || "");
 
     // Vérifier si le profil est complet
     const { data: profile } = await supabase
@@ -36,8 +41,8 @@ export default function CompleteProfile() {
       .eq("user_id", user.id)
       .single();
 
-    // Si le profil est déjà complet, rediriger
-    if (profile?.phone && profile?.address) {
+    // Si le profil est déjà complet ET l'email confirmé, rediriger
+    if (profile?.phone && profile?.address && user.email_confirmed_at) {
       navigate("/");
     }
   };
@@ -84,13 +89,18 @@ export default function CompleteProfile() {
 
       if (profileError) throw profileError;
 
-      // Marquer le profil comme complet dans les métadonnées
+      // Marquer le profil comme complet et confirmer l'email
       await supabase.auth.updateUser({
-        data: { profile_completed: true }
+        data: { profile_completed: true },
+        email: user.email!, // Cela confirme l'email
       });
 
-      toast.success("Profil complété avec succès !");
-      navigate("/");
+      toast.success("Compte créé avec succès ! Bienvenue 🎉");
+      
+      // Petite pause pour que l'utilisateur voie le message
+      setTimeout(() => {
+        navigate("/");
+      }, 1500);
     } catch (error: any) {
       console.error("Erreur complétion profil:", error);
       toast.error(error.message || "Erreur lors de la complétion du profil");
@@ -102,16 +112,38 @@ export default function CompleteProfile() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-accent/5 p-4">
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Finalisez votre profil</CardTitle>
-          <CardDescription>
-            Veuillez définir votre mot de passe et compléter vos informations
+        <CardHeader className="space-y-3">
+          <div className="text-center">
+            <div className="inline-block p-3 bg-primary/10 rounded-full mb-4">
+              <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <CardTitle className="text-2xl">Créez votre compte</CardTitle>
+          </div>
+          <CardDescription className="text-center">
+            {userEmail ? (
+              <>Bienvenue <strong>{userName || userEmail}</strong> ! Définissez votre mot de passe pour activer votre compte.</>
+            ) : (
+              <>Complétez les informations ci-dessous pour créer votre compte Regen School.</>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {userEmail && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-blue-800">
+                  📧 Email de connexion : <strong>{userEmail}</strong>
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe *</Label>
+              <Label htmlFor="password" className="flex items-center gap-2">
+                <span>Mot de passe</span>
+                <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="password"
                 type="password"
@@ -119,11 +151,18 @@ export default function CompleteProfile() {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
                 minLength={6}
+                placeholder="Minimum 6 caractères"
               />
+              <p className="text-xs text-muted-foreground">
+                Choisissez un mot de passe sécurisé pour protéger votre compte
+              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmer le mot de passe *</Label>
+              <Label htmlFor="confirmPassword" className="flex items-center gap-2">
+                <span>Confirmer le mot de passe</span>
+                <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -131,34 +170,57 @@ export default function CompleteProfile() {
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                 required
                 minLength={6}
+                placeholder="Répétez votre mot de passe"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Téléphone</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+33 6 12 34 56 78"
-              />
+            <div className="border-t pt-4 mt-4">
+              <p className="text-sm font-medium mb-3 text-muted-foreground">
+                Informations complémentaires (optionnel)
+              </p>
+              
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Téléphone</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="+33 6 12 34 56 78"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="address">Adresse</Label>
+                  <Input
+                    id="address"
+                    type="text"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    placeholder="Votre adresse complète"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="address">Adresse</Label>
-              <Input
-                id="address"
-                type="text"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="Votre adresse complète"
-              />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Finalisation..." : "Finaliser mon profil"}
+            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+              {loading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Création en cours...
+                </>
+              ) : (
+                "Créer mon compte"
+              )}
             </Button>
+
+            <p className="text-xs text-center text-muted-foreground mt-4">
+              Vous pourrez compléter vos informations plus tard dans votre profil
+            </p>
           </form>
         </CardContent>
       </Card>
