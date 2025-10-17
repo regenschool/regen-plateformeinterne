@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -206,6 +206,13 @@ export const ReportCardGeneration = () => {
     setSubjectWeights(weights);
   };
 
+  // Charger automatiquement les pondérations quand les matières sont disponibles
+  useEffect(() => {
+    if (subjects && subjects.length > 0 && subjectWeights.length === 0) {
+      initializeWeights();
+    }
+  }, [subjects, existingWeights]);
+
   // Mettre à jour une pondération
   const updateWeight = (subjectId: string, weight: number) => {
     setSubjectWeights(prev =>
@@ -275,22 +282,16 @@ export const ReportCardGeneration = () => {
           </div>
 
           {/* Configuration des pondérations */}
-          {subjects && subjects.length > 0 && (
+          {subjects && subjects.length > 0 && subjectWeights.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Pondérations des matières</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={initializeWeights}
-                  disabled={subjectWeights.length > 0}
-                >
-                  {subjectWeights.length > 0 ? 'Pondérations chargées' : 'Charger les pondérations'}
-                </Button>
+                <p className="text-sm text-muted-foreground">
+                  Configurez les coefficients pour chaque matière
+                </p>
               </div>
 
-              {subjectWeights.length > 0 && (
-                <>
+              <>
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -324,8 +325,7 @@ export const ReportCardGeneration = () => {
                     {saveWeightsMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sauvegarder les pondérations
                   </Button>
-                </>
-              )}
+              </>
             </div>
           )}
 
