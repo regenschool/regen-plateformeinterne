@@ -183,24 +183,33 @@ const Profile = () => {
       const userMeta = userData.user?.user_metadata || {};
 
       if (data) {
-        // If profile exists but first_name/last_name are empty, pre-fill from metadata
+        // If profile exists but first_name/last_name are empty, pre-fill from metadata or derive from full_name
+        const { data: userData } = await supabase.auth.getUser();
+        const userMeta = userData.user?.user_metadata || {};
+        const [derivedFirst, ...derivedLastParts] = (data.full_name || "").trim().split(/\s+/);
+        const derivedLast = derivedLastParts.join(" ") || null;
+
         const updatedProfile = {
           ...data,
-          first_name: data.first_name || userMeta.first_name || userMeta.given_name || null,
-          last_name: data.last_name || userMeta.last_name || userMeta.family_name || null,
+          first_name: data.first_name || userMeta.first_name || userMeta.given_name || derivedFirst || null,
+          last_name: data.last_name || userMeta.last_name || userMeta.family_name || derivedLast || null,
           full_name: data.full_name || userMeta.full_name || userMeta.name || "",
         };
         setProfile(updatedProfile);
       } else {
         // Create default profile with all available user metadata
+        const nameSource = userMeta.full_name || userMeta.name || "";
+        const [metaFirst, ...metaLastParts] = nameSource.trim().split(/\s+/);
+        const metaLast = metaLastParts.join(" ") || null;
+
         const { data: newProfile, error: createError } = await supabase
           .from("teacher_profiles")
           .insert({
             user_id: userId,
             email: userData.user?.email || "",
-            full_name: userMeta.full_name || userMeta.name || "",
-            first_name: userMeta.first_name || userMeta.given_name || null,
-            last_name: userMeta.last_name || userMeta.family_name || null,
+            full_name: nameSource || "",
+            first_name: userMeta.first_name || userMeta.given_name || metaFirst || null,
+            last_name: userMeta.last_name || userMeta.family_name || metaLast || null,
           })
           .select()
           .single();
@@ -360,14 +369,20 @@ const Profile = () => {
 
     setSaving(true);
     try {
+      // Normalize names to ensure consistency between roles
+      const [fnFromFull, ...lnFromFullParts] = (profile.full_name || "").trim().split(/\s+/);
+      const normalizedFirst = (profile.first_name?.trim() || fnFromFull || "").trim() || null;
+      const normalizedLast = (profile.last_name?.trim() || lnFromFullParts.join(" ") || "").trim() || null;
+      const normalizedFull = (profile.full_name?.trim() || [normalizedFirst, normalizedLast].filter(Boolean).join(" ")).trim();
+
       const { error } = await supabase
         .from("teacher_profiles")
         .upsert({
           user_id: userId,
           email: profile.email,
-          first_name: profile.first_name,
-          last_name: profile.last_name,
-          full_name: profile.full_name,
+          first_name: normalizedFirst,
+          last_name: normalizedLast,
+          full_name: normalizedFull,
           secondary_email: profile.secondary_email,
           phone: profile.phone,
           address: profile.address,
