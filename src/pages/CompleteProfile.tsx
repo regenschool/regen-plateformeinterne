@@ -25,7 +25,7 @@ export default function CompleteProfile() {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
-      // Ne pas rediriger si pas d'utilisateur, laisser l'utilisateur compléter
+      navigate("/auth");
       return;
     }
 
