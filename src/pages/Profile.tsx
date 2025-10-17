@@ -476,7 +476,7 @@ const Profile = () => {
         // Download the PDF
         window.open(data.pdfUrl, "_blank");
         toast.success("PDF généré avec succès", { id: t });
-        fetchInvoices();
+        // Ne pas appeler fetchInvoices qui pourrait trigger un refresh du contexte admin
       } else {
         toast.error("Aucun PDF reçu", { id: t });
       }
