@@ -339,7 +339,6 @@ export function OnboardingManager() {
                     <SelectValue placeholder="Aucune catégorie" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Aucune catégorie</SelectItem>
                     {categories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
@@ -408,7 +407,6 @@ export function OnboardingManager() {
                   <SelectValue placeholder="Aucune" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucune</SelectItem>
                   {categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
