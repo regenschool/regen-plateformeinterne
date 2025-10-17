@@ -4,8 +4,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User, GraduationCap, FileText, X } from "lucide-react";
+import { User, GraduationCap, FileText, X, Download } from "lucide-react";
 import { Loader2 } from "lucide-react";
+import { useAdmin } from "@/contexts/AdminContext";
 
 interface StudentDetailDrawerProps {
   studentId: string | null;
@@ -13,6 +14,7 @@ interface StudentDetailDrawerProps {
 }
 
 export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerProps) => {
+  const { isAdmin } = useAdmin();
   const { data: student, isLoading } = useQuery({
     queryKey: ["student", studentId],
     queryFn: async () => {
@@ -61,6 +63,23 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
     },
     enabled: !!studentId,
   });
+
+  const handleDownloadPDF = async (pdfUrl: string, studentName: string, schoolYear: string, semester: string) => {
+    try {
+      const response = await fetch(pdfUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Bulletin_${studentName}_${schoolYear}_${semester}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+    }
+  };
 
   return (
     <Sheet open={!!studentId} onOpenChange={(open) => !open && onClose()}>
@@ -244,20 +263,38 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
                                 <p className="text-xs text-muted-foreground">
                                   Classe: {report.class_name}
                                 </p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Généré le {new Date(report.created_at).toLocaleDateString('fr-FR')}
+                                </p>
                               </div>
                               <div className="flex items-center gap-2">
                                 <span
                                   className={`px-2 py-1 text-xs rounded-full ${
                                     report.status === "finalized"
                                       ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                      : report.status === "generated"
+                                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
                                       : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
                                   }`}
                                 >
-                                  {report.status === "finalized" ? "Finalisé" : "Brouillon"}
+                                  {report.status === "finalized" ? "Finalisé" : report.status === "generated" ? "Généré" : "Brouillon"}
                                 </span>
-                                <Button size="sm" className="hover:scale-110 transition-transform">
-                                  Ouvrir
-                                </Button>
+                                {isAdmin && report.pdf_url && (
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    className="hover:scale-110 transition-transform"
+                                    onClick={() => handleDownloadPDF(
+                                      report.pdf_url!,
+                                      `${student?.first_name}_${student?.last_name}`,
+                                      report.school_year,
+                                      report.semester
+                                    )}
+                                  >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Télécharger
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           ))}

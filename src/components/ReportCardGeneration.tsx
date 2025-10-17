@@ -12,6 +12,7 @@ import { useGenerateReportCard, useReportCards } from '@/hooks/useReportCards';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 
 interface SubjectWeight {
   subject_id: string;
@@ -347,6 +348,7 @@ export const ReportCardGeneration = () => {
             </div>
           )}
 
+
           {/* Génération des bulletins */}
           {selectedClass && selectedSchoolYear && selectedSemester && students && subjects && subjects.length > 0 && (
             <div className="space-y-4 pt-6 border-t">
@@ -380,6 +382,71 @@ export const ReportCardGeneration = () => {
                 <p className="text-sm text-amber-600">
                   ⚠️ Veuillez d'abord configurer et sauvegarder les pondérations des matières
                 </p>
+              )}
+
+              {/* Liste des étudiants avec génération individuelle */}
+              {subjectWeights.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="text-md font-semibold mb-3">Génération individuelle</h4>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Étudiant</TableHead>
+                        <TableHead>Classe</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {students.map((student) => {
+                        const existingReport = existingReportCards?.find(
+                          r => r.student_id === student.id && 
+                               r.school_year === selectedSchoolYear && 
+                               r.semester === selectedSemester
+                        );
+                        return (
+                          <TableRow key={student.id}>
+                            <TableCell className="font-medium">
+                              {student.first_name} {student.last_name}
+                            </TableCell>
+                            <TableCell>{student.class_name}</TableCell>
+                            <TableCell>
+                              {existingReport ? (
+                                <Badge variant="secondary">
+                                  Généré le {new Date(existingReport.created_at).toLocaleDateString('fr-FR')}
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline">Non généré</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                size="sm"
+                                variant={existingReport ? "outline" : "default"}
+                                onClick={() => generateReportCard.mutate({
+                                  studentId: student.id,
+                                  schoolYear: selectedSchoolYear,
+                                  semester: selectedSemester,
+                                  className: selectedClass,
+                                })}
+                                disabled={generateReportCard.isPending}
+                              >
+                                {generateReportCard.isPending ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <FileText className="mr-2 h-4 w-4" />
+                                    {existingReport ? 'Regénérer' : 'Générer'}
+                                  </>
+                                )}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </div>
           )}

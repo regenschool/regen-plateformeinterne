@@ -102,10 +102,29 @@ export const useGenerateReportCard = () => {
       };
 
       // 6. Générer le PDF avec Puppeteer
-      const generator = createPDFGenerator(true); // true = utiliser Puppeteer
+      const generator = createPDFGenerator(true);
       const pdfBlob = await generator.generateReportCard(reportCardData);
 
-      // 7. Sauvegarder dans la base de données
+      // 7. Uploader le PDF dans le storage
+      const fileName = `${studentId}_${schoolYear}_${semester}_${Date.now()}.pdf`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('report-cards')
+        .upload(fileName, pdfBlob, {
+          contentType: 'application/pdf',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      // Obtenir l'URL publique
+      const { data: { publicUrl } } = supabase.storage
+        .from('report-cards')
+        .getPublicUrl(fileName);
+
+      // 8. Sauvegarder dans la base de données avec l'URL du PDF
       const { data: reportCard, error: insertError } = await supabase
         .from('student_report_cards')
         .insert([{
@@ -116,13 +135,14 @@ export const useGenerateReportCard = () => {
           template_id: template?.id,
           generated_data: reportCardData as any,
           status: 'generated',
+          pdf_url: publicUrl,
         }])
         .select()
         .single();
 
       if (insertError) throw insertError;
 
-      return { reportCard, pdfBlob };
+      return { reportCard, pdfBlob, pdfUrl: publicUrl };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['report-cards'] });

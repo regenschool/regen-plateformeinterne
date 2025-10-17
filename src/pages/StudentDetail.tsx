@@ -4,12 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, FileText, GraduationCap, User } from "lucide-react";
+import { ArrowLeft, FileText, GraduationCap, User, Download } from "lucide-react";
 import { Loader2 } from "lucide-react";
+import { useAdmin } from "@/contexts/AdminContext";
 
 export default function StudentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isAdmin } = useAdmin();
 
   const { data: student, isLoading } = useQuery({
     queryKey: ["student", id],
@@ -52,6 +54,23 @@ export default function StudentDetail() {
       return data;
     },
   });
+
+  const handleDownloadPDF = async (pdfUrl: string, studentName: string, schoolYear: string, semester: string) => {
+    try {
+      const response = await fetch(pdfUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Bulletin_${studentName}_${schoolYear}_${semester}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -237,18 +256,37 @@ export default function StudentDetail() {
                         <p className="text-sm text-muted-foreground">
                           Classe: {report.class_name}
                         </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Généré le {new Date(report.created_at).toLocaleDateString('fr-FR')}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <span
                           className={`px-2 py-1 text-xs rounded ${
                             report.status === "finalized"
                               ? "bg-green-100 text-green-800"
+                              : report.status === "generated"
+                              ? "bg-blue-100 text-blue-800"
                               : "bg-yellow-100 text-yellow-800"
                           }`}
                         >
-                          {report.status === "finalized" ? "Finalisé" : "Brouillon"}
+                          {report.status === "finalized" ? "Finalisé" : report.status === "generated" ? "Généré" : "Brouillon"}
                         </span>
-                        <Button size="sm" className="hover:scale-110 transition-transform">Ouvrir</Button>
+                        {isAdmin && report.pdf_url && (
+                          <Button 
+                            size="sm" 
+                            className="hover:scale-110 transition-transform"
+                            onClick={() => handleDownloadPDF(
+                              report.pdf_url,
+                              `${student.first_name}_${student.last_name}`,
+                              report.school_year,
+                              report.semester
+                            )}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Télécharger
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
