@@ -120,6 +120,7 @@ const Profile = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<TeacherProfile | null>(null);
   const [enrichedProfile, setEnrichedProfile] = useState<EnrichedProfile | null>(null);
+  const [activeTab, setActiveTab] = useState("profile");
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [teacherDocuments, setTeacherDocuments] = useState<TeacherDocument[]>([]);
   const [onboardingItems, setOnboardingItems] = useState<OnboardingItem[]>([]);
@@ -339,6 +340,13 @@ const Profile = () => {
       fetchInvoices();
     }
   }, [userId, isAdmin, fetchProfile, fetchSubjects, fetchTeacherDocuments, fetchOnboardingItems, fetchDocuments, fetchInvoices]);
+
+  // Reset to profile tab when switching to admin mode if on a teacher-only tab
+  useEffect(() => {
+    if (isAdmin && (activeTab === 'subjects' || activeTab === 'documents' || activeTab === 'onboarding' || activeTab === 'invoices')) {
+      setActiveTab('profile');
+    }
+  }, [isAdmin, activeTab]);
 
   // Real-time subscription for subjects
   useEffect(() => {
@@ -577,7 +585,7 @@ const Profile = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         {!isAdmin ? (
           <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="profile">
