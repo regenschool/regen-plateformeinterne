@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { ImportSubjectsDialog } from "@/components/ImportSubjectsDialog";
 import { AddSubjectDialog } from "@/components/AddSubjectDialog";
 import { useAdmin } from "@/contexts/AdminContext";
+import { TeacherDocumentsSection } from "@/components/TeacherDocumentsSection";
 
 type TeacherProfile = {
   id: string;
@@ -814,59 +815,7 @@ const Profile = () => {
         )}
 
         <TabsContent value="documents" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Mes Documents
-              </CardTitle>
-              <CardDescription>
-                Documents personnels et administratifs - Upload par vous ou l'école
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* Documents enseignant uploadés par eux ou par l'école */}
-                {teacherDocuments.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>Aucun document pour le moment</p>
-                  </div>
-                ) : (
-                  teacherDocuments.map((doc) => (
-                    <div key={doc.id} className="flex items-start gap-3 p-4 border rounded-lg">
-                      <div className="flex-shrink-0">
-                        {doc.status === "approved" && <CheckCircle2 className="w-5 h-5 text-green-600" />}
-                        {doc.status === "rejected" && <AlertCircle className="w-5 h-5 text-red-600" />}
-                        {doc.status === "pending" && <Clock className="w-5 h-5 text-yellow-600" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="font-medium">{doc.title || doc.file_name}</p>
-                            {doc.description && (
-                              <p className="text-sm text-muted-foreground">{doc.description}</p>
-                            )}
-                            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                              <span>Upload: {doc.upload_source === "teacher" ? "Par moi" : "Par l'école"}</span>
-                              {doc.expiry_date && <span>• Expire le {new Date(doc.expiry_date).toLocaleDateString()}</span>}
-                            </div>
-                          </div>
-                          <span className={`text-xs px-2 py-1 rounded ${
-                            doc.status === "approved" ? "bg-green-100 text-green-700" :
-                            doc.status === "rejected" ? "bg-red-100 text-red-700" :
-                            "bg-yellow-100 text-yellow-700"
-                          }`}>
-                            {doc.status === "approved" ? "Validé" : doc.status === "rejected" ? "Rejeté" : "En attente"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          {userId && <TeacherDocumentsSection userId={userId} />}
         </TabsContent>
 
         {!isAdmin && (
