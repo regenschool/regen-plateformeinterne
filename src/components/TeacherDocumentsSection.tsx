@@ -273,7 +273,7 @@ export function TeacherDocumentsSection({ userId }: TeacherDocumentsSectionProps
           </div>
         </CardHeader>
         <CardContent>
-          <Accordion type="multiple" className="space-y-3" defaultValue={categories.map(c => c.id)}>
+          <Accordion type="multiple" className="space-y-3">
             {categories.map((category) => {
               const categoryDocs = documents.filter(d => d.category_id === category.id);
               const approvedCount = categoryDocs.filter(d => d.status === 'approved').length;
