@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -75,6 +75,7 @@ export default function Grades() {
   const { t } = useLanguage();
   const { isAdmin } = useAdmin();
   const location = useLocation();
+  const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>("");
@@ -719,7 +720,7 @@ export default function Grades() {
         {isAdmin && (
           <Button
             variant="outline"
-            onClick={() => window.location.href = '/tests'}
+            onClick={() => navigate('/bulletins')}
             className="gap-2"
           >
             <FileText className="w-4 h-4" />

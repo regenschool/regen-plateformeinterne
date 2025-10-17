@@ -27,6 +27,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 const UserManagement = lazy(() => import("./pages/UserManagement"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Tests = lazy(() => import("./pages/Tests"));
+const Bulletins = lazy(() => import("./pages/Bulletins"));
 const YearTransition = lazy(() => import("./pages/YearTransition"));
 const Audit = lazy(() => import("./pages/Audit"));
 const Quality = lazy(() => import("./pages/Quality"));
@@ -136,6 +137,16 @@ const App = () => (
                   <ProtectedRoute>
                     <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
                       <Tests />
+                    </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/bulletins"
+                element={
+                  <ProtectedRoute>
+                    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+                      <Bulletins />
                     </Suspense>
                   </ProtectedRoute>
                 }
