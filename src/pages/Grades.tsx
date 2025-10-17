@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GradeEntryDialog } from "@/components/GradeEntryDialog";
@@ -61,6 +61,16 @@ type Assessment = {
   totalStudents: number;
 };
 
+type TeacherSubject = {
+  subject_name: string;
+  class_name: string;
+  school_year: string;
+  semester: string;
+  teacher_name: string;
+  school_year_fk_id: string | null;
+  academic_period_id: string | null;
+};
+
 export default function Grades() {
   const { t } = useLanguage();
   const { isAdmin } = useAdmin();
@@ -90,6 +100,7 @@ export default function Grades() {
   const [studentToCompleteId, setStudentToCompleteId] = useState<string | null>(null);
   const [studentsToComplete, setStudentsToComplete] = useState<Student[]>([]);
   const [currentCompletionIndex, setCurrentCompletionIndex] = useState<number>(0);
+  const [mySubjects, setMySubjects] = useState<TeacherSubject[]>([]);
 
   // Handle prefilled data from navigation
   useEffect(() => {
@@ -137,7 +148,45 @@ export default function Grades() {
 
   useEffect(() => {
     fetchClasses();
-  }, []);
+    if (!isAdmin) {
+      fetchMySubjects();
+    }
+  }, [isAdmin]);
+
+  const fetchMySubjects = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const currentYear = new Date().getFullYear();
+      const currentSchoolYear = `${currentYear}-${currentYear + 1}`;
+
+      const { data, error } = await supabase
+        .from("subjects")
+        .select("subject_name, class_name, school_year, semester, teacher_name, school_year_fk_id, academic_period_id")
+        .eq("teacher_id", user.id)
+        .eq("school_year", currentSchoolYear)
+        .order("subject_name");
+
+      if (error) throw error;
+
+      setMySubjects(data as TeacherSubject[]);
+    } catch (error) {
+      console.error("Error fetching my subjects:", error);
+    }
+  };
+
+  const handleQuickSelectSubject = (subject: TeacherSubject) => {
+    setSelectedClass(subject.class_name);
+    setSelectedSchoolYear(subject.school_year);
+    setSelectedSemester(subject.semester);
+    setSelectedSubject(subject.subject_name);
+    setNewSubjectMetadata({
+      teacherName: subject.teacher_name,
+      schoolYear: subject.school_year,
+      semester: subject.semester,
+    });
+  };
   
   // Real-time subscriptions for grades and subjects
   useRealtimeSubscription({
@@ -693,109 +742,158 @@ export default function Grades() {
         )}
       </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">{t("grades.schoolYear")}</label>
-            <Select value={selectedSchoolYear} onValueChange={setSelectedSchoolYear}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("grades.selectSchoolYear")} />
-              </SelectTrigger>
-              <SelectContent>
-                {schoolYears.map((year) => (
-                  <SelectItem key={year} value={year}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-2 block">{t("grades.semester")}</label>
-            <Select value={selectedSemester} onValueChange={setSelectedSemester}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("grades.selectSemester")} />
-              </SelectTrigger>
-              <SelectContent>
-                {semesters.map((sem) => (
-                  <SelectItem key={sem.value} value={sem.value}>
-                    {sem.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-2 block">{t("grades.class")}</label>
-            <Select value={selectedClass} onValueChange={setSelectedClass}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("grades.selectClass")} />
-              </SelectTrigger>
-              <SelectContent>
-                {classes.map((className) => (
-                  <SelectItem key={className} value={className}>
-                    {className}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-2 block">{t("grades.subject")}</label>
-            <div className="space-y-2">
-              <Select 
-                value={selectedSubject} 
-                onValueChange={(value) => {
-                  if (value === "__new__") {
-                    setShowNewSubjectDialog(true);
-                  } else {
-                    setSelectedSubject(value);
-                    // Charger les métadonnées de la matière sélectionnée immédiatement
-                    fetchSubjects(value);
-                  }
-                }}
-                disabled={!selectedClass || !selectedSchoolYear || !selectedSemester}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={t("grades.selectSubject")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject} value={subject}>
-                      {subject}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="__new__">{t("grades.newSubject")}</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              {/* Suggestions de matières */}
-              {selectedClass && selectedSchoolYear && selectedSemester && subjects.length > 0 && !selectedSubject && (
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="text-xs text-muted-foreground">Suggestions :</span>
-                  {subjects.slice(0, 5).map((subject) => (
-                    <Button
-                      key={subject}
-                      variant="outline"
-                      size="sm"
-                      className="h-6 text-xs px-2"
-                      onClick={() => {
-                        setSelectedSubject(subject);
-                        fetchSubjects(subject);
-                      }}
-                    >
-                      {subject}
-                    </Button>
-                  ))}
-                </div>
-              )}
+      {/* Section Mes Matières - uniquement pour les enseignants */}
+      {!isAdmin && mySubjects.length > 0 && !selectedSubject && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ClipboardList className="w-5 h-5" />
+              Mes Matières (année en cours)
+            </CardTitle>
+            <CardDescription>
+              Cliquez directement sur une matière pour accéder rapidement à vos notes
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {mySubjects.map((subject, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className="h-auto p-4 flex flex-col items-start gap-1 hover:border-primary hover:bg-primary/10"
+                  onClick={() => handleQuickSelectSubject(subject)}
+                >
+                  <span className="font-semibold text-base">{subject.subject_name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {subject.class_name} • {subject.semester}
+                  </span>
+                </Button>
+              ))}
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
+      )}
 
-        {selectedClass && selectedSubject && selectedSubject !== "__new__" && selectedSchoolYear && selectedSemester && (
+      {/* Section filtres */}
+      {!selectedSubject && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              {!isAdmin && mySubjects.length > 0 
+                ? "Ou rechercher par filtres" 
+                : "Rechercher une matière"}
+            </CardTitle>
+            <CardDescription>
+              {!isAdmin && mySubjects.length > 0 
+                ? "Sélectionnez année, semestre, classe et matière pour accéder aux notes d'autres années"
+                : "Sélectionnez année, semestre, classe et matière"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">{t("grades.schoolYear")}</label>
+                <Select value={selectedSchoolYear} onValueChange={setSelectedSchoolYear}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("grades.selectSchoolYear")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {schoolYears.map((year) => (
+                      <SelectItem key={year} value={year}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">{t("grades.semester")}</label>
+                <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("grades.selectSemester")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {semesters.map((sem) => (
+                      <SelectItem key={sem.value} value={sem.value}>
+                        {sem.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">{t("grades.class")}</label>
+                <Select value={selectedClass} onValueChange={setSelectedClass}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("grades.selectClass")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {classes.map((className) => (
+                      <SelectItem key={className} value={className}>
+                        {className}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">{t("grades.subject")}</label>
+                <div className="space-y-2">
+                  <Select 
+                    value={selectedSubject} 
+                    onValueChange={(value) => {
+                      if (value === "__new__") {
+                        setShowNewSubjectDialog(true);
+                      } else {
+                        setSelectedSubject(value);
+                        fetchSubjects(value);
+                      }
+                    }}
+                    disabled={!selectedClass || !selectedSchoolYear || !selectedSemester}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("grades.selectSubject")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subjects.map((subject) => (
+                        <SelectItem key={subject} value={subject}>
+                          {subject}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="__new__">{t("grades.newSubject")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  {selectedClass && selectedSchoolYear && selectedSemester && subjects.length > 0 && !selectedSubject && (
+                    <div className="flex flex-wrap gap-1.5">
+                      <span className="text-xs text-muted-foreground">Suggestions :</span>
+                      {subjects.slice(0, 5).map((subject) => (
+                        <Button
+                          key={subject}
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-xs px-2"
+                          onClick={() => {
+                            setSelectedSubject(subject);
+                            fetchSubjects(subject);
+                          }}
+                        >
+                          {subject}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedClass && selectedSubject && selectedSubject !== "__new__" && selectedSchoolYear && selectedSemester && (
           <>
             {newSubjectMetadata && (
               <Card className="bg-primary/5 border-primary/20">
