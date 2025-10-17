@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Loader2, Plus, Save } from "lucide-react";
+import { Loader2, Plus, Save, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ReportCardPreview } from "./ReportCardPreview";
 
 interface ReportCardTemplate {
   id: string;
@@ -37,6 +38,7 @@ interface ReportCardTemplate {
 export const ReportCardTemplatesManager = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<ReportCardTemplate | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: templates, isLoading } = useQuery({
@@ -151,18 +153,30 @@ export const ReportCardTemplatesManager = () => {
           </CardHeader>
           <CardContent className="space-y-2">
             {templates?.map((template) => (
-              <Button
-                key={template.id}
-                variant={selectedTemplate?.id === template.id ? "default" : "outline"}
-                className="w-full justify-start"
-                onClick={() => {
-                  setSelectedTemplate(template);
-                  setIsEditing(false);
-                }}
-              >
-                {template.name}
-                {template.is_default && " (Par défaut)"}
-              </Button>
+              <div key={template.id} className="flex gap-2">
+                <Button
+                  variant={selectedTemplate?.id === template.id ? "default" : "outline"}
+                  className="flex-1 justify-start"
+                  onClick={() => {
+                    setSelectedTemplate(template);
+                    setIsEditing(false);
+                  }}
+                >
+                  {template.name}
+                  {template.is_default && " (Par défaut)"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setSelectedTemplate(template);
+                    setShowPreview(true);
+                  }}
+                  title="Aperçu"
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </div>
             ))}
           </CardContent>
         </Card>
@@ -367,6 +381,16 @@ export const ReportCardTemplatesManager = () => {
           </Card>
         )}
       </div>
+
+      {/* Dialog de prévisualisation */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-5xl h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Aperçu: {selectedTemplate?.name}</DialogTitle>
+          </DialogHeader>
+          {selectedTemplate && <ReportCardPreview template={selectedTemplate} />}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
