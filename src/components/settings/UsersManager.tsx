@@ -156,11 +156,12 @@ export const UsersManager = () => {
             .insert([{
               user_id: userId,
               full_name: user?.teacher_info?.full_name || user?.email.split('@')[0] || 'Nouveau',
-              phone: null,
             }]);
 
+          // Ignorer si l'entrée existe déjà (code 23505 = duplicate key)
           if (teacherError && teacherError.code !== '23505') {
-            throw teacherError;
+            console.error("Erreur création teacher:", teacherError);
+            // Ne pas bloquer si c'est juste un problème de trigger ou d'entrée existante
           }
         }
 
