@@ -1,5 +1,4 @@
 import React, { useState, useEffect, memo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,6 +52,7 @@ type StudentCardProps = {
   initialNote?: string;
   onUpdate: () => void;
   onNoteUpdate?: (studentId: string, note: string) => void;
+  onOpenProfile?: (studentId: string) => void;
 };
 
 export const StudentCard = ({ 
@@ -62,10 +62,10 @@ export const StudentCard = ({
   userId: propUserId, 
   initialNote = "",
   onUpdate,
-  onNoteUpdate 
+  onNoteUpdate,
+  onOpenProfile
 }: StudentCardProps) => {
   const { t } = useLanguage();
-  const navigate = useNavigate();
   const { isAdmin } = useAdmin();
   const deleteEnrollment = useDeleteEnrollment();
   const deleteStudentPermanently = useDeleteStudentPermanently();
@@ -223,8 +223,8 @@ export const StudentCard = ({
       return;
     }
     
-    if (isAdmin) {
-      navigate(`/student/${student.id}`);
+    if (isAdmin && onOpenProfile) {
+      onOpenProfile(student.id);
     }
   };
 

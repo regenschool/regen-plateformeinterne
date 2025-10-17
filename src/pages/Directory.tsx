@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StudentCard } from "@/components/StudentCard";
+import { StudentDetailDrawer } from "@/components/StudentDetailDrawer";
 import { Sprout, Download, ArrowUpDown, Trash2, UserMinus, UserX, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -50,6 +51,7 @@ const Directory = () => {
   const [userNotes, setUserNotes] = useState<Record<string, string>>({});
   const [userId, setUserId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
@@ -517,6 +519,7 @@ const Directory = () => {
                       [studentId]: note
                     }));
                   }}
+                  onOpenProfile={(studentId) => setSelectedStudentId(studentId)}
                 />
               );
             })}
@@ -576,6 +579,12 @@ const Directory = () => {
           )}
         </>
       )}
+
+      {/* Drawer premium pour le profil étudiant */}
+      <StudentDetailDrawer 
+        studentId={selectedStudentId} 
+        onClose={() => setSelectedStudentId(null)} 
+      />
     </div>
   );
 };
