@@ -52,6 +52,8 @@ export function DocumentCategoriesManager() {
   const [editingCategory, setEditingCategory] = useState<DocumentCategory | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<DocumentTemplate | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -59,6 +61,15 @@ export function DocumentCategoriesManager() {
     is_required: false,
     is_active: true,
     required_for_role: "teacher",
+    display_order: 0,
+  });
+
+  const [templateForm, setTemplateForm] = useState({
+    field_name: "",
+    field_label: "",
+    field_type: "file",
+    is_required: false,
+    help_text: "",
     display_order: 0,
   });
 
@@ -139,6 +150,56 @@ export function DocumentCategoriesManager() {
     },
   });
 
+  const createTemplateMutation = useMutation({
+    mutationFn: async (data: typeof templateForm & { category_id: string }) => {
+      const { error } = await supabase.from("document_templates").insert([data]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["document-templates"] });
+      toast.success("Champ créé avec succès");
+      setIsTemplateDialogOpen(false);
+      resetTemplateForm();
+    },
+    onError: (error) => {
+      toast.error("Erreur : " + error.message);
+    },
+  });
+
+  const updateTemplateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<DocumentTemplate> }) => {
+      const { error } = await supabase
+        .from("document_templates")
+        .update(data)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["document-templates"] });
+      toast.success("Champ mis à jour");
+      setIsTemplateDialogOpen(false);
+      setEditingTemplate(null);
+      resetTemplateForm();
+    },
+    onError: (error) => {
+      toast.error("Erreur : " + error.message);
+    },
+  });
+
+  const deleteTemplateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("document_templates").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["document-templates"] });
+      toast.success("Champ supprimé");
+    },
+    onError: (error) => {
+      toast.error("Erreur : " + error.message);
+    },
+  });
+
   const resetForm = () => {
     setFormData({
       name: "",
@@ -146,6 +207,17 @@ export function DocumentCategoriesManager() {
       is_required: false,
       is_active: true,
       required_for_role: "teacher",
+      display_order: 0,
+    });
+  };
+
+  const resetTemplateForm = () => {
+    setTemplateForm({
+      field_name: "",
+      field_label: "",
+      field_type: "file",
+      is_required: false,
+      help_text: "",
       display_order: 0,
     });
   };
@@ -169,6 +241,29 @@ export function DocumentCategoriesManager() {
     } else {
       createMutation.mutate(formData);
     }
+  };
+
+  const handleTemplateSubmit = () => {
+    if (!selectedCategory) return;
+    
+    if (editingTemplate) {
+      updateTemplateMutation.mutate({ id: editingTemplate.id, data: templateForm });
+    } else {
+      createTemplateMutation.mutate({ ...templateForm, category_id: selectedCategory });
+    }
+  };
+
+  const handleEditTemplate = (template: DocumentTemplate) => {
+    setEditingTemplate(template);
+    setTemplateForm({
+      field_name: template.field_name,
+      field_label: template.field_label,
+      field_type: template.field_type,
+      is_required: template.is_required,
+      help_text: template.help_text || "",
+      display_order: template.display_order,
+    });
+    setIsTemplateDialogOpen(true);
   };
 
   return (
@@ -327,16 +422,68 @@ export function DocumentCategoriesManager() {
             </CardHeader>
             {selectedCategory === category.id && (
               <CardContent>
-                <div className="text-sm text-muted-foreground">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold">Documents demandés dans cette catégorie</h4>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setEditingTemplate(null);
+                        resetTemplateForm();
+                        setIsTemplateDialogOpen(true);
+                      }}
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Ajouter un document
+                    </Button>
+                  </div>
+                  
                   {templates.length === 0 ? (
-                    <p>Aucun champ défini pour cette catégorie</p>
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Aucun document spécifique défini pour cette catégorie
+                    </p>
                   ) : (
                     <div className="space-y-2">
                       {templates.map((tpl) => (
-                        <div key={tpl.id} className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                          <div>
-                            <p className="font-medium">{tpl.field_label}</p>
-                            <p className="text-xs">Type: {tpl.field_type} {tpl.is_required && "(requis)"}</p>
+                        <div
+                          key={tpl.id}
+                          className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border"
+                        >
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{tpl.field_label}</p>
+                            <div className="flex items-center gap-4 mt-1">
+                              <span className="text-xs text-muted-foreground">
+                                Type: {tpl.field_type}
+                              </span>
+                              {tpl.is_required && (
+                                <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">
+                                  Requis
+                                </span>
+                              )}
+                            </div>
+                            {tpl.help_text && (
+                              <p className="text-xs text-muted-foreground mt-1">{tpl.help_text}</p>
+                            )}
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditTemplate(tpl)}
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm("Supprimer ce champ ?")) {
+                                  deleteTemplateMutation.mutate(tpl.id);
+                                }
+                              }}
+                            >
+                              <Trash2 className="w-3 h-3 text-destructive" />
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -348,6 +495,100 @@ export function DocumentCategoriesManager() {
           </Card>
         ))}
       </div>
+
+      {/* Dialog pour gérer les templates de documents */}
+      <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingTemplate ? "Modifier le document" : "Ajouter un document"}
+            </DialogTitle>
+            <DialogDescription>
+              Définissez un document spécifique à demander dans cette catégorie
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="field_label">Nom du document *</Label>
+              <Input
+                id="field_label"
+                value={templateForm.field_label}
+                onChange={(e) => setTemplateForm({ ...templateForm, field_label: e.target.value })}
+                placeholder="Ex: Pièce d'identité, CV à jour..."
+              />
+            </div>
+            <div>
+              <Label htmlFor="field_name">Nom technique (sans espaces)</Label>
+              <Input
+                id="field_name"
+                value={templateForm.field_name}
+                onChange={(e) =>
+                  setTemplateForm({ ...templateForm, field_name: e.target.value.toLowerCase().replace(/\s+/g, "_") })
+                }
+                placeholder="Ex: piece_identite, cv"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Utilisé en interne, généré automatiquement à partir du nom
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="field_type">Type de champ</Label>
+              <Select
+                value={templateForm.field_type}
+                onValueChange={(value) => setTemplateForm({ ...templateForm, field_type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="file">Fichier à uploader</SelectItem>
+                  <SelectItem value="text">Texte</SelectItem>
+                  <SelectItem value="date">Date</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="help_text">Texte d'aide (optionnel)</Label>
+              <Textarea
+                id="help_text"
+                value={templateForm.help_text}
+                onChange={(e) => setTemplateForm({ ...templateForm, help_text: e.target.value })}
+                placeholder="Instructions pour l'enseignant"
+              />
+            </div>
+            <div>
+              <Label htmlFor="template_order">Ordre d'affichage</Label>
+              <Input
+                id="template_order"
+                type="number"
+                value={templateForm.display_order}
+                onChange={(e) =>
+                  setTemplateForm({ ...templateForm, display_order: parseInt(e.target.value) })
+                }
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="template_required"
+                checked={templateForm.is_required}
+                onCheckedChange={(checked) => setTemplateForm({ ...templateForm, is_required: checked })}
+              />
+              <Label htmlFor="template_required">Document obligatoire</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTemplateDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handleTemplateSubmit}
+              disabled={!templateForm.field_label || !templateForm.field_name}
+            >
+              {editingTemplate ? "Mettre à jour" : "Ajouter"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

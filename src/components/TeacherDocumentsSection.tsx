@@ -30,6 +30,17 @@ type DocumentCategory = {
   display_order: number;
 };
 
+type DocumentTemplate = {
+  id: string;
+  category_id: string;
+  field_name: string;
+  field_label: string;
+  field_type: string;
+  is_required: boolean;
+  help_text: string | null;
+  display_order: number;
+};
+
 type TeacherDocument = {
   id: string;
   teacher_id: string;
@@ -54,6 +65,7 @@ export function TeacherDocumentsSection({ userId }: TeacherDocumentsSectionProps
   const queryClient = useQueryClient();
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<DocumentCategory | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<DocumentTemplate | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadForm, setUploadForm] = useState({
     title: "",
@@ -73,6 +85,21 @@ export function TeacherDocumentsSection({ userId }: TeacherDocumentsSectionProps
       if (error) throw error;
       return data as DocumentCategory[];
     },
+  });
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ["category-templates", selectedCategory?.id],
+    queryFn: async () => {
+      if (!selectedCategory) return [];
+      const { data, error } = await supabase
+        .from("document_templates")
+        .select("*")
+        .eq("category_id", selectedCategory.id)
+        .order("display_order");
+      if (error) throw error;
+      return data as DocumentTemplate[];
+    },
+    enabled: !!selectedCategory,
   });
 
   const { data: documents = [] } = useQuery({
@@ -177,8 +204,14 @@ export function TeacherDocumentsSection({ userId }: TeacherDocumentsSectionProps
     }
   };
 
-  const handleUploadClick = (category: DocumentCategory) => {
+  const handleUploadClick = (category: DocumentCategory, template?: DocumentTemplate) => {
     setSelectedCategory(category);
+    setSelectedTemplate(template || null);
+    setUploadForm({
+      title: template?.field_label || "",
+      description: "",
+      file: null,
+    });
     setUploadDialogOpen(true);
   };
 
@@ -328,79 +361,136 @@ export function TeacherDocumentsSection({ userId }: TeacherDocumentsSectionProps
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
-                      <div className="px-4 pb-3">
-                        {categoryDocs.length === 0 ? (
-                          <div className="text-center py-6 text-muted-foreground">
-                            <FileText className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                            <p className="text-sm">Aucun document dans cette catégorie</p>
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            {categoryDocs.map((doc) => (
-                              <div key={doc.id} className="border rounded-lg p-3 hover:bg-accent/50 transition-colors animate-fade-in">
-                                <div className="flex items-start gap-3">
-                                  <div className="flex-shrink-0 mt-0.5">
-                                    {getStatusIcon(doc.status)}
+                      <div className="px-4 pb-3 space-y-4">
+                        {/* Champs spécifiques définis dans les templates */}
+                        {templates.length > 0 && (
+                          <div className="space-y-3">
+                            <h4 className="text-sm font-semibold text-muted-foreground">Documents demandés :</h4>
+                            {templates.map((template) => {
+                              const templateDoc = categoryDocs.find(
+                                (d) => d.title === template.field_label
+                              );
+                              
+                              return (
+                                <div
+                                  key={template.id}
+                                  className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border"
+                                >
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium text-sm">{template.field_label}</p>
+                                      {template.is_required && (
+                                        <Badge variant="destructive" className="text-xs">Requis</Badge>
+                                      )}
+                                    </div>
+                                    {template.help_text && (
+                                      <p className="text-xs text-muted-foreground mt-1">{template.help_text}</p>
+                                    )}
                                   </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-start justify-between gap-2">
-                                      <div className="flex-1 min-w-0">
-                                        <p className="font-medium text-sm truncate">{doc.title || doc.file_name}</p>
-                                        {doc.description && (
-                                          <p className="text-xs text-muted-foreground mt-0.5">{doc.description}</p>
-                                        )}
-                                        <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                                          <div className="flex items-center gap-1">
-                                            <Calendar className="w-3 h-3" />
-                                            <span>{format(new Date(doc.created_at), "dd MMM yyyy", { locale: fr })}</span>
-                                          </div>
-                                          {doc.upload_source === "admin" && (
-                                            <Badge variant="outline" className="text-xs">Uploadé par l'école</Badge>
+                                  <div className="flex items-center gap-2">
+                                    {templateDoc ? (
+                                      <Badge variant={getStatusBadgeVariant(templateDoc.status)} className="text-xs">
+                                        {getStatusIcon(templateDoc.status)}
+                                        <span className="ml-1">{getStatusLabel(templateDoc.status)}</span>
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="outline" className="text-xs">Non fourni</Badge>
+                                    )}
+                                    <Button
+                                      size="sm"
+                                      variant={templateDoc ? "outline" : "default"}
+                                      onClick={() => handleUploadClick(category, template)}
+                                    >
+                                      <Upload className="w-3 h-3 mr-1" />
+                                      {templateDoc ? "Remplacer" : "Ajouter"}
+                                    </Button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Autres documents de la catégorie */}
+                        {categoryDocs.length > 0 && (
+                          <div className="space-y-2">
+                            {templates.length > 0 && (
+                              <h4 className="text-sm font-semibold text-muted-foreground">Autres documents :</h4>
+                            )}
+                            {categoryDocs
+                              .filter((doc) => !templates.some((t) => t.field_label === doc.title))
+                              .map((doc) => (
+                                <div key={doc.id} className="border rounded-lg p-3 hover:bg-accent/50 transition-colors animate-fade-in">
+                                  <div className="flex items-start gap-3">
+                                    <div className="flex-shrink-0 mt-0.5">
+                                      {getStatusIcon(doc.status)}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-medium text-sm truncate">{doc.title || doc.file_name}</p>
+                                          {doc.description && (
+                                            <p className="text-xs text-muted-foreground mt-0.5">{doc.description}</p>
                                           )}
-                                          {doc.expiry_date && (
-                                            <span className="text-orange-600">
-                                              Expire le {format(new Date(doc.expiry_date), "dd MMM yyyy", { locale: fr })}
-                                            </span>
+                                          <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                                            <div className="flex items-center gap-1">
+                                              <Calendar className="w-3 h-3" />
+                                              <span>{format(new Date(doc.created_at), "dd MMM yyyy", { locale: fr })}</span>
+                                            </div>
+                                            {doc.upload_source === "admin" && (
+                                              <Badge variant="outline" className="text-xs">Uploadé par l'école</Badge>
+                                            )}
+                                            {doc.expiry_date && (
+                                              <span className="text-orange-600">
+                                                Expire le {format(new Date(doc.expiry_date), "dd MMM yyyy", { locale: fr })}
+                                              </span>
+                                            )}
+                                          </div>
+                                          {doc.notes && (
+                                            <p className="text-xs text-muted-foreground mt-1.5 p-2 bg-muted/50 rounded italic">
+                                              Note: {doc.notes}
+                                            </p>
                                           )}
                                         </div>
-                                        {doc.notes && (
-                                          <p className="text-xs text-muted-foreground mt-1.5 p-2 bg-muted/50 rounded italic">
-                                            Note: {doc.notes}
-                                          </p>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center gap-1 flex-shrink-0">
-                                        <Badge variant={getStatusBadgeVariant(doc.status)} className="text-xs whitespace-nowrap">
-                                          {getStatusLabel(doc.status)}
-                                        </Badge>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => downloadDocument(doc.file_path, doc.file_name)}
-                                          className="h-8 w-8 p-0"
-                                        >
-                                          <Download className="w-4 h-4" />
-                                        </Button>
-                                        {doc.upload_source === "teacher" && doc.status === "pending" && (
+                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                          <Badge variant={getStatusBadgeVariant(doc.status)} className="text-xs whitespace-nowrap">
+                                            {getStatusLabel(doc.status)}
+                                          </Badge>
                                           <Button
                                             variant="ghost"
                                             size="sm"
-                                            onClick={() => {
-                                              if (confirm("Supprimer ce document ?")) {
-                                                deleteMutation.mutate(doc);
-                                              }
-                                            }}
+                                            onClick={() => downloadDocument(doc.file_path, doc.file_name)}
                                             className="h-8 w-8 p-0"
                                           >
-                                            <Trash2 className="w-4 h-4 text-destructive" />
+                                            <Download className="w-4 h-4" />
                                           </Button>
-                                        )}
+                                          {doc.upload_source === "teacher" && doc.status === "pending" && (
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              onClick={() => {
+                                                if (confirm("Supprimer ce document ?")) {
+                                                  deleteMutation.mutate(doc);
+                                                }
+                                              }}
+                                              className="h-8 w-8 p-0"
+                                            >
+                                              <Trash2 className="w-4 h-4 text-destructive" />
+                                            </Button>
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
+                          </div>
+                        )}
+
+                        {categoryDocs.length === 0 && templates.length === 0 && (
+                          <div className="text-center py-6 text-muted-foreground">
+                            <FileText className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                            <p className="text-sm">Aucun document dans cette catégorie</p>
                           </div>
                         )}
                       </div>
@@ -419,35 +509,50 @@ export function TeacherDocumentsSection({ userId }: TeacherDocumentsSectionProps
             <DialogTitle>Uploader un document</DialogTitle>
             <DialogDescription>
               {selectedCategory?.name}
+              {selectedTemplate && ` - ${selectedTemplate.field_label}`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {selectedTemplate?.help_text && (
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-900 dark:text-blue-100">{selectedTemplate.help_text}</p>
+              </div>
+            )}
             <div>
-              <Label htmlFor="file">Fichier *</Label>
+              <Label htmlFor="file">
+                Fichier *
+                {selectedTemplate?.is_required && (
+                  <span className="text-destructive ml-1">(obligatoire)</span>
+                )}
+              </Label>
               <Input
                 id="file"
                 type="file"
                 onChange={(e) => setUploadForm({ ...uploadForm, file: e.target.files?.[0] || null })}
               />
             </div>
-            <div>
-              <Label htmlFor="title">Titre</Label>
-              <Input
-                id="title"
-                value={uploadForm.title}
-                onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
-                placeholder="Titre du document (optionnel)"
-              />
-            </div>
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={uploadForm.description}
-                onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
-                placeholder="Description du document (optionnel)"
-              />
-            </div>
+            {!selectedTemplate && (
+              <>
+                <div>
+                  <Label htmlFor="title">Titre</Label>
+                  <Input
+                    id="title"
+                    value={uploadForm.title}
+                    onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
+                    placeholder="Titre du document (optionnel)"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={uploadForm.description}
+                    onChange={(e) => setUploadForm({ ...uploadForm, description: e.target.value })}
+                    placeholder="Description du document (optionnel)"
+                  />
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
