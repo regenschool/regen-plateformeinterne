@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, GraduationCap, Calendar, BookOpen, Award, Users, Archive, FileText, CheckSquare } from "lucide-react";
+import { Settings as SettingsIcon, GraduationCap, Calendar, BookOpen, Award, Users, Archive, FileText, CheckSquare, ClipboardList, FolderTree } from "lucide-react";
 import { SchoolYearsManager } from "@/components/settings/SchoolYearsManager";
 import { ClassesManager } from "@/components/settings/ClassesManager";
 import { AcademicPeriodsManager } from "@/components/settings/AcademicPeriodsManager";
@@ -13,9 +13,11 @@ import ArchiveManager from "@/components/settings/ArchiveManager";
 import { DocumentCategoriesManager } from "@/components/settings/DocumentCategoriesManager";
 import { TeacherDocumentsManager } from "@/components/settings/TeacherDocumentsManager";
 import { DocumentationSection } from "@/components/settings/DocumentationSection";
+import { OnboardingManager } from "@/components/settings/OnboardingManager";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Navigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Separator } from "@/components/ui/separator";
 
 export default function Settings() {
   const { isAdmin } = useAdmin();
@@ -26,20 +28,38 @@ export default function Settings() {
     return <Navigate to="/" />;
   }
 
-  const tabs = [
-    { value: "school-years", label: t("settings.schoolYears"), icon: Calendar, component: SchoolYearsManager, desc: t("settings.schoolYearsDesc") },
-    { value: "classes", label: t("settings.classes"), icon: GraduationCap, component: ClassesManager, desc: t("settings.classesDesc") },
-    { value: "levels", label: t("settings.levels"), icon: Award, component: LevelsManager, desc: t("settings.levelsDesc") },
-    { value: "periods", label: "Semestre", icon: BookOpen, component: AcademicPeriodsManager, desc: t("settings.periodsDesc") },
-    { value: "subjects", label: t("settings.subjects"), icon: BookOpen, component: SubjectsManager, desc: null },
-    { value: "users", label: t("settings.users"), icon: Users, component: UsersManager, desc: null },
-    { value: "documentation", label: "Documentation", icon: FileText, component: DocumentationSection, desc: "Télécharger les guides et documentation" },
-    { value: "doc-categories", label: "Catégories docs", icon: FileText, component: DocumentCategoriesManager, desc: "Sections de documents enseignants" },
-    { value: "doc-management", label: "Docs enseignants", icon: CheckSquare, component: TeacherDocumentsManager, desc: "Tous les documents centralisés" },
-    { value: "archive", label: t("settings.archive"), icon: Archive, component: ArchiveManager, desc: null },
+  // Organisation des onglets par catégories
+  const tabGroups = [
+    {
+      title: "Référentiels académiques",
+      tabs: [
+        { value: "school-years", label: t("settings.schoolYears"), icon: Calendar, component: SchoolYearsManager, desc: t("settings.schoolYearsDesc") },
+        { value: "classes", label: t("settings.classes"), icon: GraduationCap, component: ClassesManager, desc: t("settings.classesDesc") },
+        { value: "levels", label: t("settings.levels"), icon: Award, component: LevelsManager, desc: t("settings.levelsDesc") },
+        { value: "periods", label: "Semestres", icon: BookOpen, component: AcademicPeriodsManager, desc: t("settings.periodsDesc") },
+        { value: "subjects", label: t("settings.subjects"), icon: BookOpen, component: SubjectsManager, desc: null },
+      ]
+    },
+    {
+      title: "Gestion des enseignants",
+      tabs: [
+        { value: "users", label: "Utilisateurs", icon: Users, component: UsersManager, desc: null },
+        { value: "onboarding", label: "Onboarding", icon: ClipboardList, component: OnboardingManager, desc: "Tâches d'intégration enseignants" },
+      ]
+    },
+    {
+      title: "Documents & Administration",
+      tabs: [
+        { value: "doc-categories", label: "Catégories documents", icon: FolderTree, component: DocumentCategoriesManager, desc: "Sections de documents enseignants" },
+        { value: "doc-management", label: "Documents enseignants", icon: CheckSquare, component: TeacherDocumentsManager, desc: "Tous les documents centralisés" },
+        { value: "documentation", label: "Documentation", icon: FileText, component: DocumentationSection, desc: "Télécharger les guides" },
+        { value: "archive", label: t("settings.archive"), icon: Archive, component: ArchiveManager, desc: null },
+      ]
+    }
   ];
 
-  const activeTabData = tabs.find(tab => tab.value === activeTab);
+  const allTabs = tabGroups.flatMap(g => g.tabs);
+  const activeTabData = allTabs.find(tab => tab.value === activeTab);
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -59,28 +79,38 @@ export default function Settings() {
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Navigation latérale - cachée sur mobile */}
-          <Card className="hidden lg:block w-64 h-fit sticky top-20">
+          <Card className="hidden lg:block w-72 h-fit sticky top-20">
             <CardContent className="p-4">
-              <nav className="space-y-1">
-                {tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  const isActive = activeTab === tab.value;
-                  
-                  return (
-                    <button
-                      key={tab.value}
-                      onClick={() => setActiveTab(tab.value)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
-                        isActive 
-                          ? 'bg-primary text-primary-foreground shadow-sm' 
-                          : 'hover:bg-muted'
-                      }`}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span className="text-sm font-medium">{tab.label}</span>
-                    </button>
-                  );
-                })}
+              <nav className="space-y-4">
+                {tabGroups.map((group, idx) => (
+                  <div key={group.title}>
+                    {idx > 0 && <Separator className="my-4" />}
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">
+                      {group.title}
+                    </p>
+                    <div className="space-y-1">
+                      {group.tabs.map((tab) => {
+                        const Icon = tab.icon;
+                        const isActive = activeTab === tab.value;
+                        
+                        return (
+                          <button
+                            key={tab.value}
+                            onClick={() => setActiveTab(tab.value)}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                              isActive 
+                                ? 'bg-primary text-primary-foreground shadow-sm' 
+                                : 'hover:bg-muted'
+                            }`}
+                          >
+                            <Icon className="h-4 w-4 shrink-0" />
+                            <span className="text-sm font-medium truncate">{tab.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </nav>
             </CardContent>
           </Card>
@@ -88,7 +118,7 @@ export default function Settings() {
           {/* Navigation mobile - tabs horizontales scrollables */}
           <div className="lg:hidden overflow-x-auto pb-2">
             <div className="flex gap-2 min-w-max">
-              {tabs.map((tab) => {
+              {allTabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.value;
                 
@@ -97,7 +127,7 @@ export default function Settings() {
                     key={tab.value}
                     onClick={() => setActiveTab(tab.value)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
-                      isActive 
+                      isActive
                         ? 'bg-primary text-primary-foreground shadow-sm' 
                         : 'bg-card hover:bg-muted border border-border'
                     }`}
