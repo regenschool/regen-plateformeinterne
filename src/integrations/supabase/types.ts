@@ -497,6 +497,7 @@ export type Database = {
           created_at: string
           css_template: string | null
           footer_text: string | null
+          grade_display_format: string | null
           header_color: string | null
           html_template: string | null
           id: string
@@ -511,13 +512,20 @@ export type Database = {
           show_assessment_type: boolean | null
           show_average: boolean | null
           show_class_average: boolean | null
+          show_footer: boolean | null
+          show_general_appreciation: boolean | null
           show_grade_detail: boolean | null
           show_grades_table: boolean | null
           show_header: boolean | null
+          show_logo: boolean | null
           show_max_grade: boolean | null
           show_signature: boolean | null
+          show_student_age: boolean | null
+          show_student_birth_date: boolean | null
           show_student_info: boolean | null
+          show_student_photo: boolean | null
           show_subject_average: boolean | null
+          show_subject_teacher: boolean | null
           show_weighting: boolean | null
           student_fields: Json | null
           updated_at: string
@@ -527,6 +535,7 @@ export type Database = {
           created_at?: string
           css_template?: string | null
           footer_text?: string | null
+          grade_display_format?: string | null
           header_color?: string | null
           html_template?: string | null
           id?: string
@@ -541,13 +550,20 @@ export type Database = {
           show_assessment_type?: boolean | null
           show_average?: boolean | null
           show_class_average?: boolean | null
+          show_footer?: boolean | null
+          show_general_appreciation?: boolean | null
           show_grade_detail?: boolean | null
           show_grades_table?: boolean | null
           show_header?: boolean | null
+          show_logo?: boolean | null
           show_max_grade?: boolean | null
           show_signature?: boolean | null
+          show_student_age?: boolean | null
+          show_student_birth_date?: boolean | null
           show_student_info?: boolean | null
+          show_student_photo?: boolean | null
           show_subject_average?: boolean | null
+          show_subject_teacher?: boolean | null
           show_weighting?: boolean | null
           student_fields?: Json | null
           updated_at?: string
@@ -557,6 +573,7 @@ export type Database = {
           created_at?: string
           css_template?: string | null
           footer_text?: string | null
+          grade_display_format?: string | null
           header_color?: string | null
           html_template?: string | null
           id?: string
@@ -571,13 +588,20 @@ export type Database = {
           show_assessment_type?: boolean | null
           show_average?: boolean | null
           show_class_average?: boolean | null
+          show_footer?: boolean | null
+          show_general_appreciation?: boolean | null
           show_grade_detail?: boolean | null
           show_grades_table?: boolean | null
           show_header?: boolean | null
+          show_logo?: boolean | null
           show_max_grade?: boolean | null
           show_signature?: boolean | null
+          show_student_age?: boolean | null
+          show_student_birth_date?: boolean | null
           show_student_info?: boolean | null
+          show_student_photo?: boolean | null
           show_subject_average?: boolean | null
+          show_subject_teacher?: boolean | null
           show_weighting?: boolean | null
           student_fields?: Json | null
           updated_at?: string

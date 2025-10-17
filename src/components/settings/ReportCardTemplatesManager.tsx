@@ -42,6 +42,14 @@ interface ReportCardTemplate {
   html_template?: string | null;
   css_template?: string | null;
   use_custom_html?: boolean;
+  show_student_photo?: boolean;
+  show_student_birth_date?: boolean;
+  show_student_age?: boolean;
+  show_logo?: boolean;
+  show_footer?: boolean;
+  show_subject_teacher?: boolean;
+  show_general_appreciation?: boolean;
+  grade_display_format?: string;
 }
 
 export const ReportCardTemplatesManager = () => {
@@ -266,18 +274,18 @@ export const ReportCardTemplatesManager = () => {
                 <TabsContent value="content" className="space-y-6">
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Sections à afficher</CardTitle>
+                      <CardTitle className="text-base">Sections principales</CardTitle>
                       <CardDescription>
-                        Choisissez les informations à inclure dans le bulletin
+                        Activez ou désactivez les grandes sections du bulletin
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid gap-4 md:grid-cols-2">
                         <div className="flex items-center justify-between p-3 rounded-lg border">
                           <div className="space-y-0.5">
-                            <Label htmlFor="show_header">En-tête</Label>
+                            <Label htmlFor="show_header">En-tête du bulletin</Label>
                             <p className="text-sm text-muted-foreground">
-                              Logo et titre du bulletin
+                              Titre et informations académiques
                             </p>
                           </div>
                           <Switch
@@ -291,9 +299,9 @@ export const ReportCardTemplatesManager = () => {
 
                         <div className="flex items-center justify-between p-3 rounded-lg border">
                           <div className="space-y-0.5">
-                            <Label htmlFor="show_student_info">Infos étudiant</Label>
+                            <Label htmlFor="show_student_info">Section étudiant</Label>
                             <p className="text-sm text-muted-foreground">
-                              Nom, classe, date de naissance
+                              Informations personnelles
                             </p>
                           </div>
                           <Switch
@@ -309,7 +317,7 @@ export const ReportCardTemplatesManager = () => {
                           <div className="space-y-0.5">
                             <Label htmlFor="show_grades_table">Tableau des notes</Label>
                             <p className="text-sm text-muted-foreground">
-                              Liste détaillée des notes
+                              Liste complète des évaluations
                             </p>
                           </div>
                           <Switch
@@ -323,9 +331,9 @@ export const ReportCardTemplatesManager = () => {
 
                         <div className="flex items-center justify-between p-3 rounded-lg border">
                           <div className="space-y-0.5">
-                            <Label htmlFor="show_average">Moyenne générale</Label>
+                            <Label htmlFor="show_average">Moyennes</Label>
                             <p className="text-sm text-muted-foreground">
-                              Note moyenne de l'étudiant
+                              Moyenne générale et de classe
                             </p>
                           </div>
                           <Switch
@@ -336,35 +344,48 @@ export const ReportCardTemplatesManager = () => {
                             }
                           />
                         </div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Détails de l'étudiant</CardTitle>
+                      <CardDescription>
+                        Choisissez les informations à afficher sur l'étudiant
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid gap-4 md:grid-cols-2">
                         <div className="flex items-center justify-between p-3 rounded-lg border">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="show_class_average">Moyenne de classe</Label>
-                            <p className="text-sm text-muted-foreground">
-                              Comparaison avec la classe
-                            </p>
-                          </div>
+                          <Label htmlFor="show_student_photo">Photo de l'étudiant</Label>
                           <Switch
-                            id="show_class_average"
-                            checked={selectedTemplate.show_class_average}
+                            id="show_student_photo"
+                            checked={selectedTemplate.show_student_photo ?? true}
                             onCheckedChange={(checked) =>
-                              setSelectedTemplate({ ...selectedTemplate, show_class_average: checked })
+                              setSelectedTemplate({ ...selectedTemplate, show_student_photo: checked })
                             }
                           />
                         </div>
 
                         <div className="flex items-center justify-between p-3 rounded-lg border">
-                          <div className="space-y-0.5">
-                            <Label htmlFor="show_appreciation">Appréciations</Label>
-                            <p className="text-sm text-muted-foreground">
-                              Commentaires par matière
-                            </p>
-                          </div>
+                          <Label htmlFor="show_student_birth_date">Date de naissance</Label>
                           <Switch
-                            id="show_appreciation"
-                            checked={selectedTemplate.show_appreciation}
+                            id="show_student_birth_date"
+                            checked={selectedTemplate.show_student_birth_date ?? true}
                             onCheckedChange={(checked) =>
-                              setSelectedTemplate({ ...selectedTemplate, show_appreciation: checked })
+                              setSelectedTemplate({ ...selectedTemplate, show_student_birth_date: checked })
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <Label htmlFor="show_student_age">Âge de l'étudiant</Label>
+                          <Switch
+                            id="show_student_age"
+                            checked={selectedTemplate.show_student_age ?? false}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_student_age: checked })
                             }
                           />
                         </div>
@@ -376,40 +397,139 @@ export const ReportCardTemplatesManager = () => {
                     <CardHeader>
                       <CardTitle className="text-base">Détails des notes</CardTitle>
                       <CardDescription>
-                        Informations complémentaires dans le tableau
+                        Configurez l'affichage du tableau de notes
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Format d'affichage des notes</Label>
+                          <div className="grid gap-2">
+                            {[
+                              { value: 'fraction', label: 'Fraction (15/20)', desc: 'Format classique' },
+                              { value: 'percentage', label: 'Pourcentage (75%)', desc: 'En pourcentage' },
+                              { value: 'points', label: 'Points (15 pts)', desc: 'Points sur total' },
+                            ].map((format) => (
+                              <div
+                                key={format.value}
+                                onClick={() =>
+                                  setSelectedTemplate({ ...selectedTemplate, grade_display_format: format.value })
+                                }
+                                className={`flex items-center justify-between p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                  (selectedTemplate.grade_display_format || 'fraction') === format.value
+                                    ? 'border-primary bg-primary/5'
+                                    : 'border-border hover:border-primary/50'
+                                }`}
+                              >
+                                <div>
+                                  <p className="font-medium">{format.label}</p>
+                                  <p className="text-sm text-muted-foreground">{format.desc}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <Separator />
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="flex items-center justify-between p-3 rounded-lg border">
+                            <Label htmlFor="show_weighting">Coefficient</Label>
+                            <Switch
+                              id="show_weighting"
+                              checked={selectedTemplate.show_weighting}
+                              onCheckedChange={(checked) =>
+                                setSelectedTemplate({ ...selectedTemplate, show_weighting: checked })
+                              }
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between p-3 rounded-lg border">
+                            <Label htmlFor="show_assessment_type">Type d'évaluation</Label>
+                            <Switch
+                              id="show_assessment_type"
+                              checked={selectedTemplate.show_assessment_type}
+                              onCheckedChange={(checked) =>
+                                setSelectedTemplate({ ...selectedTemplate, show_assessment_type: checked })
+                              }
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between p-3 rounded-lg border">
+                            <Label htmlFor="show_subject_teacher">Nom du professeur</Label>
+                            <Switch
+                              id="show_subject_teacher"
+                              checked={selectedTemplate.show_subject_teacher ?? false}
+                              onCheckedChange={(checked) =>
+                                setSelectedTemplate({ ...selectedTemplate, show_subject_teacher: checked })
+                              }
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-between p-3 rounded-lg border">
+                            <Label htmlFor="show_appreciation">Appréciations</Label>
+                            <Switch
+                              id="show_appreciation"
+                              checked={selectedTemplate.show_appreciation}
+                              onCheckedChange={(checked) =>
+                                setSelectedTemplate({ ...selectedTemplate, show_appreciation: checked })
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Éléments additionnels</CardTitle>
+                      <CardDescription>
+                        Logo, pied de page et appréciations générales
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid gap-4 md:grid-cols-2">
                         <div className="flex items-center justify-between p-3 rounded-lg border">
-                          <Label htmlFor="show_weighting">Coefficient</Label>
+                          <Label htmlFor="show_logo">Logo de l'établissement</Label>
                           <Switch
-                            id="show_weighting"
-                            checked={selectedTemplate.show_weighting}
+                            id="show_logo"
+                            checked={selectedTemplate.show_logo ?? true}
                             onCheckedChange={(checked) =>
-                              setSelectedTemplate({ ...selectedTemplate, show_weighting: checked })
+                              setSelectedTemplate({ ...selectedTemplate, show_logo: checked })
                             }
                           />
                         </div>
 
                         <div className="flex items-center justify-between p-3 rounded-lg border">
-                          <Label htmlFor="show_max_grade">Note maximale</Label>
+                          <Label htmlFor="show_footer">Pied de page</Label>
                           <Switch
-                            id="show_max_grade"
-                            checked={selectedTemplate.show_max_grade}
+                            id="show_footer"
+                            checked={selectedTemplate.show_footer ?? true}
                             onCheckedChange={(checked) =>
-                              setSelectedTemplate({ ...selectedTemplate, show_max_grade: checked })
+                              setSelectedTemplate({ ...selectedTemplate, show_footer: checked })
                             }
                           />
                         </div>
 
                         <div className="flex items-center justify-between p-3 rounded-lg border">
-                          <Label htmlFor="show_assessment_type">Type d'évaluation</Label>
+                          <Label htmlFor="show_general_appreciation">Appréciation générale</Label>
                           <Switch
-                            id="show_assessment_type"
-                            checked={selectedTemplate.show_assessment_type}
+                            id="show_general_appreciation"
+                            checked={selectedTemplate.show_general_appreciation ?? true}
                             onCheckedChange={(checked) =>
-                              setSelectedTemplate({ ...selectedTemplate, show_assessment_type: checked })
+                              setSelectedTemplate({ ...selectedTemplate, show_general_appreciation: checked })
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <Label htmlFor="show_class_average">Moyenne de classe</Label>
+                          <Switch
+                            id="show_class_average"
+                            checked={selectedTemplate.show_class_average}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_class_average: checked })
                             }
                           />
                         </div>
