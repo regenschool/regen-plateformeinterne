@@ -45,17 +45,25 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
     enabled: !!studentId,
   });
 
-  const { data: grades } = useQuery({
+  const { data: grades, isLoading: gradesLoading } = useQuery({
     queryKey: ["student-grades", studentId],
     queryFn: async () => {
       if (!studentId) return [];
+      
+      console.log("🔍 Fetching grades for student:", studentId);
+      
       const { data, error } = await supabase
         .from("grades")
         .select("*")
         .eq("student_id", studentId)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Error fetching grades:", error);
+        throw error;
+      }
+      
+      console.log("✅ Grades fetched:", data?.length || 0, "notes");
       return data;
     },
     enabled: !!studentId,
@@ -178,7 +186,11 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
                       <CardDescription>Dernières évaluations</CardDescription>
                     </CardHeader>
                     <CardContent className="pt-6">
-                      {grades && grades.length > 0 ? (
+                      {gradesLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        </div>
+                      ) : grades && grades.length > 0 ? (
                         <div className="space-y-2">
                           {grades.slice(0, 10).map((grade, index) => (
                             <div
