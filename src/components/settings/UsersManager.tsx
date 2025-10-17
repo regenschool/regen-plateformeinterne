@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { UserPlus, Trash2, Shield, GraduationCap, Phone, Mail, Edit2, CheckCircle2, RefreshCw, Clock, CheckCircle } from "lucide-react";
 import { ImportUsersDialog } from "./ImportUsersDialog";
 import InviteUserDialog from "./InviteUserDialog";
+import UserProfileDialog from "./UserProfileDialog";
 
 type UserWithRole = {
   id: string;
@@ -29,6 +30,8 @@ export const UsersManager = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserEmail, setSelectedUserEmail] = useState("");
 
   // Formulaire édition
   const [editFullName, setEditFullName] = useState("");
@@ -298,7 +301,14 @@ export const UsersManager = () => {
               </TableHeader>
               <TableBody>
                 {users.map((user) => (
-                  <TableRow key={user.id} className="group">
+                  <TableRow 
+                    key={user.id} 
+                    className="group cursor-pointer hover:bg-muted/50"
+                    onClick={() => {
+                      setSelectedUserId(user.id);
+                      setSelectedUserEmail(user.email);
+                    }}
+                  >
                     <TableCell>
                       <div className="space-y-1">
                         <div className="font-medium">{user.teacher_info?.full_name || user.email}</div>
@@ -359,7 +369,7 @@ export const UsersManager = () => {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
+                      <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                         {user.status === 'pending' && (
                           <Button
                             variant="ghost"
@@ -422,6 +432,17 @@ export const UsersManager = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog profil utilisateur */}
+      <UserProfileDialog
+        userId={selectedUserId}
+        userEmail={selectedUserEmail}
+        onClose={() => {
+          setSelectedUserId(null);
+          setSelectedUserEmail("");
+        }}
+        onUpdate={fetchUsers}
+      />
     </div>
   );
 };
