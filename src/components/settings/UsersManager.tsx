@@ -257,34 +257,19 @@ export const UsersManager = () => {
     if (!deletingUserId) return;
 
     try {
-      // Supprimer les données de l'utilisateur
-      const { error: rolesError } = await supabase
-        .from("user_roles")
-        .delete()
-        .eq("user_id", deletingUserId);
+      // Supprimer l'utilisateur via la fonction admin (qui gère toutes les dépendances)
+      const { error } = await supabase.functions.invoke("admin-delete-user", {
+        body: { userId: deletingUserId },
+      });
 
-      if (rolesError) throw rolesError;
-
-      const { error: profileError } = await supabase
-        .from("teacher_profiles")
-        .delete()
-        .eq("user_id", deletingUserId);
-
-      if (profileError) throw profileError;
-
-      const { error: teacherError } = await supabase
-        .from("teachers")
-        .delete()
-        .eq("user_id", deletingUserId);
-
-      if (teacherError && teacherError.code !== 'PGRST116') throw teacherError;
+      if (error) throw error;
 
       toast.success("Utilisateur supprimé avec succès");
       setDeletingUserId(null);
       fetchUsers();
     } catch (error: any) {
       console.error("Erreur suppression utilisateur:", error);
-      toast.error("Erreur lors de la suppression de l'utilisateur");
+      toast.error(error.message || "Erreur lors de la suppression de l'utilisateur");
     }
   };
 
