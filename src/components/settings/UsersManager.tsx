@@ -46,44 +46,49 @@ export const UsersManager = () => {
 
   const fetchUsers = async () => {
     try {
-      // Récupérer TOUS les utilisateurs depuis auth via teacher_profiles
-      // Cette table contient automatiquement tous les utilisateurs créés
+      // 1) Profils (peuvent être absents si l'utilisateur n'a jamais complété son profil)
       const { data: profiles, error: profilesError } = await supabase
         .from("teacher_profiles")
         .select("user_id, email, full_name, created_at");
-
       if (profilesError) throw profilesError;
 
-      // Récupérer tous les rôles
+      // 2) Rôles (source de vérité pour savoir qui existe côté app)
       const { data: rolesData, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role");
-
       if (rolesError) throw rolesError;
 
-      // Récupérer les infos enseignants (optionnel)
+      // 3) Informations enseignants (contient souvent email/nom + date de création)
       const { data: teachersData, error: teachersError } = await supabase
         .from("teachers")
-        .select("user_id, full_name, phone");
-
+        .select("user_id, full_name, phone, email, created_at");
       if (teachersError && teachersError.code !== 'PGRST116') throw teachersError;
 
-      // Combiner les données
-      const usersWithRoles: UserWithRole[] = (profiles || []).map(profile => {
-        const userRoles = rolesData?.filter(r => r.user_id === profile.user_id).map(r => r.role) || [];
-        const teacherInfo = teachersData?.find(t => t.user_id === profile.user_id);
+      // Construire la liste d'IDs unique depuis toutes les sources (évite de rater des utilisateurs)
+      const ids = new Set<string>();
+      (profiles || []).forEach(p => ids.add(p.user_id));
+      (rolesData || []).forEach(r => ids.add(r.user_id));
+      (teachersData || []).forEach(t => ids.add(t.user_id));
+
+      const usersWithRoles: UserWithRole[] = Array.from(ids).map((id) => {
+        const profile = profiles?.find(p => p.user_id === id);
+        const userRoles = (rolesData || [])
+          .filter(r => r.user_id === id)
+          .map(r => r.role);
+        const teacher = teachersData?.find(t => t.user_id === id);
+
+        const email = profile?.email || teacher?.email || "";
+        const createdAt = profile?.created_at || teacher?.created_at || new Date().toISOString();
+        const fullName = teacher?.full_name || profile?.full_name || email.split("@")[0] || "";
 
         return {
-          id: profile.user_id,
-          email: profile.email,
-          created_at: profile.created_at,
+          id,
+          email,
+          created_at: createdAt,
           roles: userRoles,
-          teacher_info: teacherInfo ? {
-            full_name: teacherInfo.full_name,
-            phone: teacherInfo.phone,
-          } : {
-            full_name: profile.full_name,
-            phone: null,
+          teacher_info: {
+            full_name: fullName,
+            phone: teacher?.phone || null,
           },
         };
       });
