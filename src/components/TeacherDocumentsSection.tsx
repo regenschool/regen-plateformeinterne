@@ -153,19 +153,23 @@ export function TeacherDocumentsSection({ userId }: TeacherDocumentsSectionProps
     try {
       const { data, error } = await supabase.storage
         .from("teacher-invoices")
-        .download(filePath);
+        .createSignedUrl(filePath, 60);
 
       if (error) throw error;
+      if (!data?.signedUrl) throw new Error("Pas d'URL de téléchargement");
 
-      const url = URL.createObjectURL(data);
+      const response = await fetch(data.signedUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = fileName;
       a.click();
       URL.revokeObjectURL(url);
+      toast.success("Téléchargement lancé");
     } catch (error: any) {
       console.error("Error downloading document:", error);
-      toast.error("Erreur lors du téléchargement");
+      toast.error("Erreur lors du téléchargement : " + error.message);
     }
   };
 
