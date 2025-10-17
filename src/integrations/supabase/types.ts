@@ -509,12 +509,13 @@ export type Database = {
           show_assessment_type: boolean | null
           show_average: boolean | null
           show_class_average: boolean | null
+          show_grade_detail: boolean | null
           show_grades_table: boolean | null
           show_header: boolean | null
           show_max_grade: boolean | null
           show_signature: boolean | null
           show_student_info: boolean | null
-          show_student_photo: boolean | null
+          show_subject_average: boolean | null
           show_weighting: boolean | null
           student_fields: Json | null
           updated_at: string
@@ -535,12 +536,13 @@ export type Database = {
           show_assessment_type?: boolean | null
           show_average?: boolean | null
           show_class_average?: boolean | null
+          show_grade_detail?: boolean | null
           show_grades_table?: boolean | null
           show_header?: boolean | null
           show_max_grade?: boolean | null
           show_signature?: boolean | null
           show_student_info?: boolean | null
-          show_student_photo?: boolean | null
+          show_subject_average?: boolean | null
           show_weighting?: boolean | null
           student_fields?: Json | null
           updated_at?: string
@@ -561,12 +563,13 @@ export type Database = {
           show_assessment_type?: boolean | null
           show_average?: boolean | null
           show_class_average?: boolean | null
+          show_grade_detail?: boolean | null
           show_grades_table?: boolean | null
           show_header?: boolean | null
           show_max_grade?: boolean | null
           show_signature?: boolean | null
           show_student_info?: boolean | null
-          show_student_photo?: boolean | null
+          show_subject_average?: boolean | null
           show_weighting?: boolean | null
           student_fields?: Json | null
           updated_at?: string
@@ -721,6 +724,76 @@ export type Database = {
           },
         ]
       }
+      student_report_cards: {
+        Row: {
+          class_name: string
+          created_at: string
+          created_by: string | null
+          edited_data: Json | null
+          generated_data: Json
+          id: string
+          pdf_url: string | null
+          school_year: string
+          semester: string
+          status: string | null
+          student_id: string
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          class_name: string
+          created_at?: string
+          created_by?: string | null
+          edited_data?: Json | null
+          generated_data: Json
+          id?: string
+          pdf_url?: string | null
+          school_year: string
+          semester: string
+          status?: string | null
+          student_id: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          class_name?: string
+          created_at?: string
+          created_by?: string | null
+          edited_data?: Json | null
+          generated_data?: Json
+          id?: string
+          pdf_url?: string | null
+          school_year?: string
+          semester?: string
+          status?: string | null
+          student_id?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_report_cards_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_report_cards_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_students_enriched"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_report_cards_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "report_card_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students: {
         Row: {
           academic_background: string | null
@@ -810,9 +883,84 @@ export type Database = {
           },
         ]
       }
+      subject_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      subject_weights: {
+        Row: {
+          class_name: string
+          created_at: string
+          id: string
+          school_year: string
+          semester: string
+          subject_id: string
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          class_name: string
+          created_at?: string
+          id?: string
+          school_year: string
+          semester: string
+          subject_id: string
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          class_name?: string
+          created_at?: string
+          id?: string
+          school_year?: string
+          semester?: string
+          subject_id?: string
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subject_weights_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subjects: {
         Row: {
           academic_period_id: string | null
+          category_id: string | null
           class_fk_id: string | null
           class_name: string
           created_at: string
@@ -829,6 +977,7 @@ export type Database = {
         }
         Insert: {
           academic_period_id?: string | null
+          category_id?: string | null
           class_fk_id?: string | null
           class_name: string
           created_at?: string
@@ -845,6 +994,7 @@ export type Database = {
         }
         Update: {
           academic_period_id?: string | null
+          category_id?: string | null
           class_fk_id?: string | null
           class_name?: string
           created_at?: string
@@ -865,6 +1015,13 @@ export type Database = {
             columns: ["academic_period_id"]
             isOneToOne: false
             referencedRelation: "academic_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subjects_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "subject_categories"
             referencedColumns: ["id"]
           },
           {

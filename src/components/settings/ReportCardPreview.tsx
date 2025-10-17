@@ -2,7 +2,6 @@ import { Card } from "@/components/ui/card";
 
 interface ReportCardTemplate {
   show_header: boolean;
-  show_student_photo: boolean;
   show_student_info: boolean;
   show_academic_info: boolean;
   show_grades_table: boolean;
@@ -16,6 +15,9 @@ interface ReportCardTemplate {
   show_weighting: boolean;
   show_max_grade: boolean;
   show_assessment_type: boolean;
+  show_grade_detail: boolean;
+  show_subject_average: boolean;
+  logo_url: string | null;
 }
 
 interface Props {
@@ -49,35 +51,31 @@ export const ReportCardPreview = ({ template }: Props) => {
           {/* En-tête */}
           {template.show_header && (
             <div 
-              className="text-center py-4 rounded-lg"
+              className="py-6 rounded-lg flex items-center justify-between px-6"
               style={{ backgroundColor: template.header_color, color: "white" }}
             >
-              <h1 className="text-2xl font-bold">BULLETIN SCOLAIRE</h1>
-              <p className="text-sm mt-1">{sampleStudent.schoolYear} - {sampleStudent.period}</p>
+              {template.logo_url && (
+                <img src={template.logo_url} alt="Logo école" className="h-16 object-contain" />
+              )}
+              <div className="text-center flex-1">
+                <h1 className="text-2xl font-bold">BULLETIN SCOLAIRE</h1>
+                <p className="text-sm mt-1">{sampleStudent.schoolYear} - {sampleStudent.period}</p>
+              </div>
+              {template.logo_url && <div className="w-16" />}
             </div>
           )}
 
           {/* Informations étudiant */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {template.show_student_photo && (
-              <div className="flex justify-center md:justify-start">
-                <div className="w-24 h-24 bg-muted rounded-lg flex items-center justify-center">
-                  <span className="text-muted-foreground text-sm">Photo</span>
-                </div>
+          {template.show_student_info && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div><span className="font-semibold">Nom :</span> {sampleStudent.lastName}</div>
+                <div><span className="font-semibold">Prénom :</span> {sampleStudent.firstName}</div>
+                <div><span className="font-semibold">Classe :</span> {sampleStudent.className}</div>
+                <div><span className="font-semibold">Date de naissance :</span> 15/03/2000</div>
               </div>
-            )}
-            
-            {template.show_student_info && (
-              <div className="md:col-span-2 space-y-2">
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div><span className="font-semibold">Nom :</span> {sampleStudent.lastName}</div>
-                  <div><span className="font-semibold">Prénom :</span> {sampleStudent.firstName}</div>
-                  <div><span className="font-semibold">Classe :</span> {sampleStudent.className}</div>
-                  <div><span className="font-semibold">Date de naissance :</span> 15/03/2000</div>
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Informations académiques */}
           {template.show_academic_info && (

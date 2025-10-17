@@ -17,6 +17,7 @@ import CompleteProfile from "./pages/CompleteProfile";
 import Grades from "./pages/Grades";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import StudentDetail from "./pages/StudentDetail";
 import { Layout } from "./components/Layout";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AdminProvider } from "./contexts/AdminContext";
@@ -166,6 +167,14 @@ const App = () => (
                     <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
                       <Quality />
                     </Suspense>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/student/:id"
+                element={
+                  <ProtectedRoute>
+                    <StudentDetail />
                   </ProtectedRoute>
                 }
               />

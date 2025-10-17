@@ -15,6 +15,7 @@ import { TeacherDocumentsManager } from "@/components/settings/TeacherDocumentsM
 import { DocumentationSection } from "@/components/settings/DocumentationSection";
 import { OnboardingManager } from "@/components/settings/OnboardingManager";
 import { ReportCardTemplatesManager } from "@/components/settings/ReportCardTemplatesManager";
+import { SubjectCategoriesManager } from "@/components/settings/SubjectCategoriesManager";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Navigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -39,6 +40,7 @@ export default function Settings() {
         { value: "levels", label: t("settings.levels"), icon: Award, component: LevelsManager, desc: t("settings.levelsDesc") },
         { value: "periods", label: "Semestres", icon: BookOpen, component: AcademicPeriodsManager, desc: t("settings.periodsDesc") },
         { value: "subjects", label: t("settings.subjects"), icon: BookOpen, component: SubjectsManager, desc: null },
+        { value: "subject-categories", label: "Catégories de matières", icon: FolderTree, component: SubjectCategoriesManager, desc: "Référentiels pour organiser les matières" },
       ]
     },
     {

@@ -18,7 +18,6 @@ interface ReportCardTemplate {
   is_default: boolean;
   is_active: boolean;
   show_header: boolean;
-  show_student_photo: boolean;
   show_student_info: boolean;
   show_academic_info: boolean;
   show_grades_table: boolean;
@@ -33,6 +32,8 @@ interface ReportCardTemplate {
   show_weighting: boolean;
   show_max_grade: boolean;
   show_assessment_type: boolean;
+  show_grade_detail: boolean;
+  show_subject_average: boolean;
 }
 
 export const ReportCardTemplatesManager = () => {
@@ -203,17 +204,6 @@ export const ReportCardTemplatesManager = () => {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="show_student_photo">Photo de l'étudiant</Label>
-                  <Switch
-                    id="show_student_photo"
-                    checked={selectedTemplate.show_student_photo}
-                    onCheckedChange={(checked) =>
-                      setSelectedTemplate({ ...selectedTemplate, show_student_photo: checked })
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
                   <Label htmlFor="show_student_info">Informations étudiant</Label>
                   <Switch
                     id="show_student_info"
@@ -286,6 +276,32 @@ export const ReportCardTemplatesManager = () => {
                     checked={selectedTemplate.show_signature}
                     onCheckedChange={(checked) =>
                       setSelectedTemplate({ ...selectedTemplate, show_signature: checked })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="font-semibold">Format d'affichage des notes</h3>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="show_grade_detail">Afficher le détail par note</Label>
+                  <Switch
+                    id="show_grade_detail"
+                    checked={selectedTemplate.show_grade_detail}
+                    onCheckedChange={(checked) =>
+                      setSelectedTemplate({ ...selectedTemplate, show_grade_detail: checked })
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="show_subject_average">Afficher moyenne par matière</Label>
+                  <Switch
+                    id="show_subject_average"
+                    checked={selectedTemplate.show_subject_average}
+                    onCheckedChange={(checked) =>
+                      setSelectedTemplate({ ...selectedTemplate, show_subject_average: checked })
                     }
                   />
                 </div>

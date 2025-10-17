@@ -1,4 +1,5 @@
 import React, { useState, useEffect, memo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useDeleteEnrollment, useDeleteStudentPermanently } from "@/hooks/useEnrollments";
 import { calculateAge } from "@/lib/utils";
 import { OptimizedImage } from "@/components/OptimizedImage";
+import { useAdmin } from "@/contexts/AdminContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -63,6 +65,8 @@ export const StudentCard = ({
   onNoteUpdate 
 }: StudentCardProps) => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const { isAdmin } = useAdmin();
   const deleteEnrollment = useDeleteEnrollment();
   const deleteStudentPermanently = useDeleteStudentPermanently();
   const [note, setNote] = useState(initialNote);
@@ -213,7 +217,10 @@ export const StudentCard = ({
   };
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+    <Card 
+      className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+      onClick={() => isAdmin && navigate(`/student/${student.id}`)}
+    >
       <CardHeader className="p-0">
         <div className="relative w-full h-40 bg-gradient-to-br from-primary/10 to-accent/10">
           {student.photo_url ? (
