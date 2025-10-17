@@ -60,16 +60,19 @@ serve(async (req) => {
     // Fetch invoice details - RLS will automatically enforce that user can only access their own invoices
     const { data: invoice, error: invoiceError } = await supabaseClient
       .from('teacher_invoices')
-      .select('*, teacher:teacher_id(*)')
+      .select('*')
       .eq('id', invoiceId)
       .single();
 
     if (invoiceError || !invoice) {
+      console.error('Erreur récupération facture:', invoiceError);
       return new Response(
-        JSON.stringify({ error: 'Invoice not found or access denied' }),
+        JSON.stringify({ error: 'Invoice not found or access denied', details: invoiceError?.message }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log(`Facture trouvée: ${invoice.invoice_number}`);
 
     // Additional authorization check: verify user owns this invoice or is admin
     const { data: isAdmin } = await supabaseClient
