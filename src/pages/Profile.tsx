@@ -464,9 +464,8 @@ const Profile = () => {
   };
 
   const generateInvoicePDF = async (invoiceId: string) => {
+    const t = toast.loading("Génération du PDF...");
     try {
-      toast.info("Génération du PDF en cours...");
-      
       const { data, error } = await supabase.functions.invoke("generate-invoice-pdf", {
         body: { invoiceId },
       });
@@ -476,12 +475,14 @@ const Profile = () => {
       if (data?.pdfUrl) {
         // Download the PDF
         window.open(data.pdfUrl, "_blank");
-        toast.success("PDF généré avec succès");
+        toast.success("PDF généré avec succès", { id: t });
         fetchInvoices();
+      } else {
+        toast.error("Aucun PDF reçu", { id: t });
       }
     } catch (error: any) {
       console.error("Error generating PDF:", error);
-      toast.error("Erreur lors de la génération du PDF");
+      toast.error("Erreur lors de la génération du PDF", { id: t });
     }
   };
 
