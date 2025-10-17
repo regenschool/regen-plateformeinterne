@@ -492,6 +492,87 @@ export type Database = {
         }
         Relationships: []
       }
+      report_card_templates: {
+        Row: {
+          created_at: string
+          footer_text: string | null
+          header_color: string | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          logo_url: string | null
+          name: string
+          sections_order: Json | null
+          show_absences: boolean | null
+          show_academic_info: boolean | null
+          show_appreciation: boolean | null
+          show_assessment_type: boolean | null
+          show_average: boolean | null
+          show_class_average: boolean | null
+          show_grades_table: boolean | null
+          show_header: boolean | null
+          show_max_grade: boolean | null
+          show_signature: boolean | null
+          show_student_info: boolean | null
+          show_student_photo: boolean | null
+          show_weighting: boolean | null
+          student_fields: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          footer_text?: string | null
+          header_color?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          logo_url?: string | null
+          name: string
+          sections_order?: Json | null
+          show_absences?: boolean | null
+          show_academic_info?: boolean | null
+          show_appreciation?: boolean | null
+          show_assessment_type?: boolean | null
+          show_average?: boolean | null
+          show_class_average?: boolean | null
+          show_grades_table?: boolean | null
+          show_header?: boolean | null
+          show_max_grade?: boolean | null
+          show_signature?: boolean | null
+          show_student_info?: boolean | null
+          show_student_photo?: boolean | null
+          show_weighting?: boolean | null
+          student_fields?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          footer_text?: string | null
+          header_color?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          logo_url?: string | null
+          name?: string
+          sections_order?: Json | null
+          show_absences?: boolean | null
+          show_academic_info?: boolean | null
+          show_appreciation?: boolean | null
+          show_assessment_type?: boolean | null
+          show_average?: boolean | null
+          show_class_average?: boolean | null
+          show_grades_table?: boolean | null
+          show_header?: boolean | null
+          show_max_grade?: boolean | null
+          show_signature?: boolean | null
+          show_student_info?: boolean | null
+          show_student_photo?: boolean | null
+          show_weighting?: boolean | null
+          student_fields?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       school_documents: {
         Row: {
           created_at: string

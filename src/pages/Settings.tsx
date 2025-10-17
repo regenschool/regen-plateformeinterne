@@ -14,6 +14,7 @@ import { DocumentCategoriesManager } from "@/components/settings/DocumentCategor
 import { TeacherDocumentsManager } from "@/components/settings/TeacherDocumentsManager";
 import { DocumentationSection } from "@/components/settings/DocumentationSection";
 import { OnboardingManager } from "@/components/settings/OnboardingManager";
+import { ReportCardTemplatesManager } from "@/components/settings/ReportCardTemplatesManager";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Navigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -52,6 +53,7 @@ export default function Settings() {
       tabs: [
         { value: "doc-categories", label: "Catégories documents", icon: FolderTree, component: DocumentCategoriesManager, desc: "Sections de documents enseignants" },
         { value: "doc-management", label: "Documents enseignants", icon: CheckSquare, component: TeacherDocumentsManager, desc: "Tous les documents centralisés" },
+        { value: "report-templates", label: "Modèles de bulletins", icon: FileText, component: ReportCardTemplatesManager, desc: "Configurer l'apparence des bulletins PDF" },
         { value: "documentation", label: "Documentation", icon: FileText, component: DocumentationSection, desc: "Télécharger les guides" },
         { value: "archive", label: t("settings.archive"), icon: Archive, component: ArchiveManager, desc: null },
       ]
