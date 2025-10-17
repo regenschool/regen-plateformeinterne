@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { User, BookOpen, FileText, Receipt, Save, Download, Plus, Trash2, Upload } from "lucide-react";
+import { User, BookOpen, FileText, Receipt, Save, Download, Plus, Trash2, Upload, Clipboard, CheckCircle2, Circle, AlertCircle, Clock } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,13 +23,64 @@ import { useAdmin } from "@/contexts/AdminContext";
 type TeacherProfile = {
   id: string;
   user_id: string;
+  first_name: string | null;
+  last_name: string | null;
   full_name: string;
   email: string;
+  secondary_email: string | null;
   phone: string | null;
   address: string | null;
   siret: string | null;
   bank_iban: string | null;
   bank_bic: string | null;
+};
+
+type EnrichedProfile = {
+  id: string;
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  full_name: string;
+  email: string;
+  secondary_email: string | null;
+  phone: string | null;
+  address: string | null;
+  bank_iban: string | null;
+  bank_bic: string | null;
+  siret: string | null;
+  subjects: string[];
+  documents_approved: number;
+  documents_pending: number;
+  documents_rejected: number;
+  onboarding_status: 'not_started' | 'in_progress' | 'completed';
+  checklist_completed: number;
+  checklist_total: number;
+};
+
+type TeacherDocument = {
+  id: string;
+  teacher_id: string;
+  category_id: string | null;
+  title: string | null;
+  file_name: string;
+  file_path: string;
+  file_type: string | null;
+  file_size: number | null;
+  status: 'pending' | 'approved' | 'rejected';
+  notes: string | null;
+  upload_source: 'admin' | 'teacher';
+  expiry_date: string | null;
+  created_at: string;
+};
+
+type OnboardingItem = {
+  id: string;
+  teacher_id: string;
+  category_id: string | null;
+  item_name: string;
+  is_completed: boolean;
+  completed_at: string | null;
+  notes: string | null;
 };
 
 type Subject = {
@@ -68,7 +119,10 @@ const Profile = () => {
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<TeacherProfile | null>(null);
+  const [enrichedProfile, setEnrichedProfile] = useState<EnrichedProfile | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [teacherDocuments, setTeacherDocuments] = useState<TeacherDocument[]>([]);
+  const [onboardingItems, setOnboardingItems] = useState<OnboardingItem[]>([]);
   const [documents, setDocuments] = useState<SchoolDocument[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [showImportDialog, setShowImportDialog] = useState(false);
@@ -100,6 +154,20 @@ const Profile = () => {
     if (!userId) return;
 
     try {
+      // Fetch enriched profile for full data
+      const { data: enriched, error: enrichedError } = await supabase
+        .from("v_teacher_profiles_enriched")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (enrichedError && enrichedError.code !== "PGRST116") throw enrichedError;
+
+      if (enriched) {
+        setEnrichedProfile(enriched as EnrichedProfile);
+      }
+
+      // Fetch base profile for editing
       const { data, error } = await supabase
         .from("teacher_profiles")
         .select("*")
@@ -129,6 +197,40 @@ const Profile = () => {
     } catch (error: any) {
       console.error("Error fetching profile:", error);
       toast.error("Erreur lors du chargement du profil");
+    }
+  }, [userId]);
+
+  const fetchTeacherDocuments = useCallback(async () => {
+    if (!userId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("teacher_documents")
+        .select("*")
+        .eq("teacher_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setTeacherDocuments((data || []) as TeacherDocument[]);
+    } catch (error: any) {
+      console.error("Error fetching teacher documents:", error);
+    }
+  }, [userId]);
+
+  const fetchOnboardingItems = useCallback(async () => {
+    if (!userId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("onboarding_checklist")
+        .select("*")
+        .eq("teacher_id", userId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+      setOnboardingItems(data || []);
+    } catch (error: any) {
+      console.error("Error fetching onboarding items:", error);
     }
   }, [userId]);
 
@@ -207,10 +309,12 @@ const Profile = () => {
     if (userId) {
       fetchProfile();
       fetchSubjects();
+      fetchTeacherDocuments();
+      fetchOnboardingItems();
       fetchDocuments();
       fetchInvoices();
     }
-  }, [userId, isAdmin, fetchProfile, fetchSubjects, fetchDocuments, fetchInvoices]);
+  }, [userId, isAdmin, fetchProfile, fetchSubjects, fetchTeacherDocuments, fetchOnboardingItems, fetchDocuments, fetchInvoices]);
 
   // Real-time subscription for subjects
   useEffect(() => {
@@ -245,8 +349,10 @@ const Profile = () => {
       const { error } = await supabase
         .from("teacher_profiles")
         .update({
+          first_name: profile.first_name,
+          last_name: profile.last_name,
           full_name: profile.full_name,
-          email: profile.email,
+          secondary_email: profile.secondary_email,
           phone: profile.phone,
           address: profile.address,
           siret: profile.siret,
@@ -258,6 +364,7 @@ const Profile = () => {
       if (error) throw error;
 
       toast.success("Profil mis à jour avec succès");
+      fetchProfile(); // Refresh enriched profile
     } catch (error: any) {
       console.error("Error saving profile:", error);
       toast.error("Erreur lors de la sauvegarde du profil");
@@ -428,7 +535,7 @@ const Profile = () => {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-1' : 'grid-cols-4'}`}>
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-1' : 'grid-cols-6'}`}>
           <TabsTrigger value="profile">
             <User className="w-4 h-4 mr-2" />
             Profil
@@ -437,11 +544,19 @@ const Profile = () => {
             <>
               <TabsTrigger value="subjects">
                 <BookOpen className="w-4 h-4 mr-2" />
-                Mes Matières
+                Matières
+              </TabsTrigger>
+              <TabsTrigger value="teacher-documents">
+                <FileText className="w-4 h-4 mr-2" />
+                Mes Docs
+              </TabsTrigger>
+              <TabsTrigger value="onboarding">
+                <Clipboard className="w-4 h-4 mr-2" />
+                Onboarding
               </TabsTrigger>
               <TabsTrigger value="documents">
-                <FileText className="w-4 h-4 mr-2" />
-                Documents
+                <Download className="w-4 h-4 mr-2" />
+                École
               </TabsTrigger>
               <TabsTrigger value="invoices">
                 <Receipt className="w-4 h-4 mr-2" />
@@ -525,20 +640,43 @@ const Profile = () => {
                     <>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="full_name">Nom complet *</Label>
+                          <Label htmlFor="first_name">Prénom *</Label>
                           <Input
-                            id="full_name"
-                            value={profile.full_name}
-                            onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                            id="first_name"
+                            value={profile.first_name || ''}
+                            onChange={(e) => setProfile({ ...profile, first_name: e.target.value })}
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="email">Email *</Label>
+                          <Label htmlFor="last_name">Nom *</Label>
+                          <Input
+                            id="last_name"
+                            value={profile.last_name || ''}
+                            onChange={(e) => setProfile({ ...profile, last_name: e.target.value })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="email">Email principal *</Label>
                           <Input
                             id="email"
                             type="email"
                             value={profile.email}
-                            onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                            disabled
+                            className="bg-muted"
+                          />
+                          <p className="text-xs text-muted-foreground">Email de connexion (non modifiable)</p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="secondary_email">Email secondaire</Label>
+                          <Input
+                            id="secondary_email"
+                            type="email"
+                            value={profile.secondary_email || ''}
+                            onChange={(e) => setProfile({ ...profile, secondary_email: e.target.value })}
+                            placeholder="email.secondaire@example.com"
                           />
                         </div>
                       </div>
@@ -663,6 +801,168 @@ const Profile = () => {
                               <path d="m12 5 7 7-7 7" />
                             </svg>
                           </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {!isAdmin && (
+          <TabsContent value="teacher-documents" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Mes Documents Administratifs</CardTitle>
+                    <CardDescription>
+                      Documents administratifs requis pour l'onboarding
+                    </CardDescription>
+                  </div>
+                  {enrichedProfile && (
+                    <div className="flex gap-2 text-sm">
+                      <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full">
+                        ✓ {enrichedProfile.documents_approved} approuvé{enrichedProfile.documents_approved > 1 ? 's' : ''}
+                      </span>
+                      <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full">
+                        ⏳ {enrichedProfile.documents_pending} en attente
+                      </span>
+                      {enrichedProfile.documents_rejected > 0 && (
+                        <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full">
+                          ✗ {enrichedProfile.documents_rejected} rejeté{enrichedProfile.documents_rejected > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {teacherDocuments.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">
+                    Aucun document déposé pour le moment. Contactez l'administration pour plus d'informations.
+                  </p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Document</TableHead>
+                        <TableHead>Catégorie</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Taille</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {teacherDocuments.map((doc) => (
+                        <TableRow key={doc.id}>
+                          <TableCell className="font-medium">
+                            {doc.title || doc.file_name}
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-xs px-2 py-1 bg-muted rounded">
+                              {doc.category_id ? '📁 Catégorie' : 'Général'}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {doc.status === 'approved' && (
+                              <span className="flex items-center gap-1 text-green-600">
+                                <CheckCircle2 className="w-4 h-4" />
+                                Approuvé
+                              </span>
+                            )}
+                            {doc.status === 'pending' && (
+                              <span className="flex items-center gap-1 text-yellow-600">
+                                <Clock className="w-4 h-4" />
+                                En attente
+                              </span>
+                            )}
+                            {doc.status === 'rejected' && (
+                              <span className="flex items-center gap-1 text-red-600">
+                                <AlertCircle className="w-4 h-4" />
+                                Rejeté
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell>{format(new Date(doc.created_at), "dd/MM/yyyy")}</TableCell>
+                          <TableCell>
+                            {doc.file_size ? `${(doc.file_size / 1024).toFixed(0)} KB` : '-'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {!isAdmin && (
+          <TabsContent value="onboarding" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Checklist d'Onboarding</CardTitle>
+                    <CardDescription>
+                      Suivez votre progression dans le processus d'intégration
+                    </CardDescription>
+                  </div>
+                  {enrichedProfile && (
+                    <div className="text-sm font-medium">
+                      Progression : {enrichedProfile.checklist_completed} / {enrichedProfile.checklist_total}
+                      <div className="w-48 h-2 bg-muted rounded-full mt-2">
+                        <div 
+                          className="h-full bg-primary rounded-full transition-all"
+                          style={{ 
+                            width: `${enrichedProfile.checklist_total > 0 ? (enrichedProfile.checklist_completed / enrichedProfile.checklist_total * 100) : 0}%` 
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {onboardingItems.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">
+                    Aucune tâche d'onboarding pour le moment
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {onboardingItems.map((item) => (
+                      <div 
+                        key={item.id}
+                        className={cn(
+                          "flex items-start gap-3 p-4 rounded-lg border",
+                          item.is_completed ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800" : "bg-card"
+                        )}
+                      >
+                        <div className="mt-0.5">
+                          {item.is_completed ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <Circle className="w-5 h-5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className={cn(
+                            "font-medium",
+                            item.is_completed && "line-through text-muted-foreground"
+                          )}>
+                            {item.item_name}
+                          </h4>
+                          {item.notes && (
+                            <p className="text-sm text-muted-foreground mt-1">{item.notes}</p>
+                          )}
+                          {item.completed_at && (
+                            <p className="text-xs text-green-600 mt-1">
+                              Complété le {format(new Date(item.completed_at), "dd/MM/yyyy 'à' HH:mm")}
+                            </p>
+                          )}
                         </div>
                       </div>
                     ))}
