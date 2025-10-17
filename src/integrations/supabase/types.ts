@@ -142,6 +142,86 @@ export type Database = {
         }
         Relationships: []
       }
+      document_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          is_required: boolean | null
+          name: string
+          required_for_role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          name: string
+          required_for_role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          name?: string
+          required_for_role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      document_templates: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          display_order: number | null
+          field_label: string
+          field_name: string
+          field_type: string | null
+          help_text: string | null
+          id: string
+          is_required: boolean | null
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          display_order?: number | null
+          field_label: string
+          field_name: string
+          field_type?: string | null
+          help_text?: string | null
+          id?: string
+          is_required?: boolean | null
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          display_order?: number | null
+          field_label?: string
+          field_name?: string
+          field_type?: string | null
+          help_text?: string | null
+          id?: string
+          is_required?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_templates_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "document_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       grades: {
         Row: {
           academic_period_fk_id: string | null
@@ -263,6 +343,67 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      onboarding_checklist: {
+        Row: {
+          category_id: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          id: string
+          is_completed: boolean | null
+          item_name: string
+          notes: string | null
+          teacher_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_completed?: boolean | null
+          item_name: string
+          notes?: string | null
+          teacher_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_completed?: boolean | null
+          item_name?: string
+          notes?: string | null
+          teacher_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_checklist_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "document_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_checklist_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "onboarding_checklist_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_profiles_enriched"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       public_quiz_links: {
         Row: {
@@ -668,6 +809,85 @@ export type Database = {
           },
         ]
       }
+      teacher_documents: {
+        Row: {
+          category_id: string | null
+          created_at: string | null
+          description: string | null
+          expiry_date: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          notes: string | null
+          status: string | null
+          teacher_id: string
+          title: string | null
+          updated_at: string | null
+          upload_source: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          expiry_date?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+          teacher_id: string
+          title?: string | null
+          updated_at?: string | null
+          upload_source?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          expiry_date?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+          teacher_id?: string
+          title?: string | null
+          updated_at?: string | null
+          upload_source?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_documents_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "document_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_documents_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "teacher_documents_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_profiles_enriched"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       teacher_invoices: {
         Row: {
           created_at: string
@@ -716,6 +936,63 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_meeting_notes: {
+        Row: {
+          action_items: Json | null
+          attendees: string[] | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          meeting_date: string
+          meeting_type: string | null
+          notes: string | null
+          teacher_id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          action_items?: Json | null
+          attendees?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          meeting_date: string
+          meeting_type?: string | null
+          notes?: string | null
+          teacher_id: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          action_items?: Json | null
+          attendees?: string[] | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          meeting_date?: string
+          meeting_type?: string | null
+          notes?: string | null
+          teacher_id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_meeting_notes_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "teacher_meeting_notes_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_profiles_enriched"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       teacher_profiles: {
         Row: {
           address: string | null
@@ -723,9 +1000,12 @@ export type Database = {
           bank_iban: string | null
           created_at: string
           email: string
+          first_name: string | null
           full_name: string
           id: string
+          last_name: string | null
           phone: string | null
+          secondary_email: string | null
           siret: string | null
           updated_at: string
           user_id: string
@@ -736,9 +1016,12 @@ export type Database = {
           bank_iban?: string | null
           created_at?: string
           email: string
+          first_name?: string | null
           full_name: string
           id?: string
+          last_name?: string | null
           phone?: string | null
+          secondary_email?: string | null
           siret?: string | null
           updated_at?: string
           user_id: string
@@ -749,14 +1032,56 @@ export type Database = {
           bank_iban?: string | null
           created_at?: string
           email?: string
+          first_name?: string | null
           full_name?: string
           id?: string
+          last_name?: string | null
           phone?: string | null
+          secondary_email?: string | null
           siret?: string | null
           updated_at?: string
           user_id?: string
         }
         Relationships: []
+      }
+      teacher_subjects: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          subject_name: string
+          teacher_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          subject_name: string
+          teacher_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          subject_name?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_subjects_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "teacher_subjects_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "v_teacher_profiles_enriched"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       teachers: {
         Row: {
@@ -1041,6 +1366,32 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_teacher_profiles_enriched: {
+        Row: {
+          address: string | null
+          bank_bic: string | null
+          bank_iban: string | null
+          checklist_completed: number | null
+          checklist_total: number | null
+          created_at: string | null
+          documents_approved: number | null
+          documents_pending: number | null
+          documents_rejected: number | null
+          email: string | null
+          first_name: string | null
+          full_name: string | null
+          id: string | null
+          last_name: string | null
+          onboarding_status: string | null
+          phone: string | null
+          secondary_email: string | null
+          siret: string | null
+          subjects: string[] | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {
