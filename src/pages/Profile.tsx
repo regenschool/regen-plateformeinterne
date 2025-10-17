@@ -181,14 +181,18 @@ const Profile = () => {
       if (data) {
         setProfile(data);
       } else {
-        // Create default profile
+        // Create default profile with all available user metadata
         const { data: userData } = await supabase.auth.getUser();
+        const userMeta = userData.user?.user_metadata || {};
+        
         const { data: newProfile, error: createError } = await supabase
           .from("teacher_profiles")
           .insert({
             user_id: userId,
-            full_name: userData.user?.user_metadata?.full_name || "",
             email: userData.user?.email || "",
+            full_name: userMeta.full_name || userMeta.name || "",
+            first_name: userMeta.first_name || userMeta.given_name || null,
+            last_name: userMeta.last_name || userMeta.family_name || null,
           })
           .select()
           .single();
