@@ -62,6 +62,7 @@ type TeacherDocument = {
   teacher_id: string;
   category_id: string | null;
   title: string | null;
+  description: string | null;
   file_name: string;
   file_path: string;
   file_type: string | null;
@@ -535,36 +536,20 @@ const Profile = () => {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-1' : 'grid-cols-6'}`}>
-          <TabsTrigger value="profile">
-            <User className="w-4 h-4 mr-2" />
-            Profil
-          </TabsTrigger>
-          {!isAdmin && (
-            <>
-              <TabsTrigger value="subjects">
-                <BookOpen className="w-4 h-4 mr-2" />
-                Matières
-              </TabsTrigger>
-              <TabsTrigger value="teacher-documents">
-                <FileText className="w-4 h-4 mr-2" />
-                Mes Docs
-              </TabsTrigger>
-              <TabsTrigger value="onboarding">
-                <Clipboard className="w-4 h-4 mr-2" />
-                Onboarding
-              </TabsTrigger>
-              <TabsTrigger value="documents">
-                <Download className="w-4 h-4 mr-2" />
-                École
-              </TabsTrigger>
-              <TabsTrigger value="invoices">
-                <Receipt className="w-4 h-4 mr-2" />
-                Factures
-              </TabsTrigger>
-            </>
-          )}
-        </TabsList>
+        {!isAdmin ? (
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="profile">Profil</TabsTrigger>
+            <TabsTrigger value="subjects">Matières</TabsTrigger>
+            <TabsTrigger value="documents">Mes Documents</TabsTrigger>
+            <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
+            <TabsTrigger value="invoices">Factures</TabsTrigger>
+          </TabsList>
+        ) : (
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="profile">Profil</TabsTrigger>
+            <TabsTrigger value="documents">Documents</TabsTrigger>
+          </TabsList>
+        )}
 
         <TabsContent value="profile" className="space-y-4">
           <Card>
@@ -811,94 +796,61 @@ const Profile = () => {
           </TabsContent>
         )}
 
-        {!isAdmin && (
-          <TabsContent value="teacher-documents" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Mes Documents Administratifs</CardTitle>
-                    <CardDescription>
-                      Documents administratifs requis pour l'onboarding
-                    </CardDescription>
-                  </div>
-                  {enrichedProfile && (
-                    <div className="flex gap-2 text-sm">
-                      <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full">
-                        ✓ {enrichedProfile.documents_approved} approuvé{enrichedProfile.documents_approved > 1 ? 's' : ''}
-                      </span>
-                      <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full">
-                        ⏳ {enrichedProfile.documents_pending} en attente
-                      </span>
-                      {enrichedProfile.documents_rejected > 0 && (
-                        <span className="px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full">
-                          ✗ {enrichedProfile.documents_rejected} rejeté{enrichedProfile.documents_rejected > 1 ? 's' : ''}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
+        <TabsContent value="documents" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Mes Documents
+              </CardTitle>
+              <CardDescription>
+                Documents personnels et administratifs - Upload par vous ou l'école
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Documents enseignant uploadés par eux ou par l'école */}
                 {teacherDocuments.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">
-                    Aucun document déposé pour le moment. Contactez l'administration pour plus d'informations.
-                  </p>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Aucun document pour le moment</p>
+                  </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Document</TableHead>
-                        <TableHead>Catégorie</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Taille</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {teacherDocuments.map((doc) => (
-                        <TableRow key={doc.id}>
-                          <TableCell className="font-medium">
-                            {doc.title || doc.file_name}
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-xs px-2 py-1 bg-muted rounded">
-                              {doc.category_id ? '📁 Catégorie' : 'Général'}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {doc.status === 'approved' && (
-                              <span className="flex items-center gap-1 text-green-600">
-                                <CheckCircle2 className="w-4 h-4" />
-                                Approuvé
-                              </span>
+                  teacherDocuments.map((doc) => (
+                    <div key={doc.id} className="flex items-start gap-3 p-4 border rounded-lg">
+                      <div className="flex-shrink-0">
+                        {doc.status === "approved" && <CheckCircle2 className="w-5 h-5 text-green-600" />}
+                        {doc.status === "rejected" && <AlertCircle className="w-5 h-5 text-red-600" />}
+                        {doc.status === "pending" && <Clock className="w-5 h-5 text-yellow-600" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-medium">{doc.title || doc.file_name}</p>
+                            {doc.description && (
+                              <p className="text-sm text-muted-foreground">{doc.description}</p>
                             )}
-                            {doc.status === 'pending' && (
-                              <span className="flex items-center gap-1 text-yellow-600">
-                                <Clock className="w-4 h-4" />
-                                En attente
-                              </span>
-                            )}
-                            {doc.status === 'rejected' && (
-                              <span className="flex items-center gap-1 text-red-600">
-                                <AlertCircle className="w-4 h-4" />
-                                Rejeté
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell>{format(new Date(doc.created_at), "dd/MM/yyyy")}</TableCell>
-                          <TableCell>
-                            {doc.file_size ? `${(doc.file_size / 1024).toFixed(0)} KB` : '-'}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                              <span>Upload: {doc.upload_source === "teacher" ? "Par moi" : "Par l'école"}</span>
+                              {doc.expiry_date && <span>• Expire le {new Date(doc.expiry_date).toLocaleDateString()}</span>}
+                            </div>
+                          </div>
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            doc.status === "approved" ? "bg-green-100 text-green-700" :
+                            doc.status === "rejected" ? "bg-red-100 text-red-700" :
+                            "bg-yellow-100 text-yellow-700"
+                          }`}>
+                            {doc.status === "approved" ? "Validé" : doc.status === "rejected" ? "Rejeté" : "En attente"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {!isAdmin && (
           <TabsContent value="onboarding" className="space-y-4">
@@ -973,55 +925,6 @@ const Profile = () => {
           </TabsContent>
         )}
 
-        {!isAdmin && (
-          <TabsContent value="documents" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Documents de l'École</CardTitle>
-              <CardDescription>
-                Documents déposés par Regen School (contrats, etc.)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {documents.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
-                  Aucun document disponible pour le moment
-                </p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Titre</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {documents.map((doc) => (
-                      <TableRow key={doc.id}>
-                        <TableCell className="font-medium">{doc.title}</TableCell>
-                        <TableCell>{doc.description}</TableCell>
-                        <TableCell>{format(new Date(doc.created_at), "dd/MM/yyyy")}</TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => downloadDocument(doc.file_path, doc.title)}
-                          >
-                            <Download className="w-4 h-4 mr-2" />
-                            Télécharger
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-          </TabsContent>
-        )}
 
         {!isAdmin && (
           <TabsContent value="invoices" className="space-y-4">

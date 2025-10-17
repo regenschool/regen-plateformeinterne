@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, GraduationCap, Calendar, BookOpen, Award, Users, Archive } from "lucide-react";
+import { Settings as SettingsIcon, GraduationCap, Calendar, BookOpen, Award, Users, Archive, FileText, CheckSquare } from "lucide-react";
 import { SchoolYearsManager } from "@/components/settings/SchoolYearsManager";
 import { ClassesManager } from "@/components/settings/ClassesManager";
 import { AcademicPeriodsManager } from "@/components/settings/AcademicPeriodsManager";
@@ -10,6 +10,7 @@ import { UsersManager } from "@/components/settings/UsersManager";
 import { SubjectsManager } from "@/components/settings/SubjectsManager";
 import { SyncReferentialsButton } from "@/components/settings/SyncReferentialsButton";
 import ArchiveManager from "@/components/settings/ArchiveManager";
+import { DocumentCategoriesManager } from "@/components/settings/DocumentCategoriesManager";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Navigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -30,6 +31,7 @@ export default function Settings() {
     { value: "periods", label: "Semestre", icon: BookOpen, component: AcademicPeriodsManager, desc: t("settings.periodsDesc") },
     { value: "subjects", label: t("settings.subjects"), icon: BookOpen, component: SubjectsManager, desc: null },
     { value: "users", label: t("settings.users"), icon: Users, component: UsersManager, desc: null },
+    { value: "documents", label: "Documents", icon: FileText, component: DocumentCategoriesManager, desc: "Gérer les catégories de documents enseignants" },
     { value: "archive", label: t("settings.archive"), icon: Archive, component: ArchiveManager, desc: null },
   ];
 
