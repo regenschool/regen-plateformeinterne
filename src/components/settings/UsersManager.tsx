@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { UserPlus, Trash2, Shield, GraduationCap, Phone, Mail, Edit2, CheckCircle2, RefreshCw, Clock, CheckCircle } from "lucide-react";
+import { UserPlus, Trash2, Shield, GraduationCap, Phone, Mail, Edit2, CheckCircle2, RefreshCw, Clock, CheckCircle, AlertTriangle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ImportUsersDialog } from "./ImportUsersDialog";
 import InviteUserDialog from "./InviteUserDialog";
 import UserProfileDialog from "./UserProfileDialog";
@@ -32,6 +33,7 @@ export const UsersManager = () => {
   const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUserEmail, setSelectedUserEmail] = useState("");
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   // Formulaire édition
   const [editFullName, setEditFullName] = useState("");
@@ -251,6 +253,41 @@ export const UsersManager = () => {
     }
   };
 
+  const handleDeleteUser = async () => {
+    if (!deletingUserId) return;
+
+    try {
+      // Supprimer les données de l'utilisateur
+      const { error: rolesError } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", deletingUserId);
+
+      if (rolesError) throw rolesError;
+
+      const { error: profileError } = await supabase
+        .from("teacher_profiles")
+        .delete()
+        .eq("user_id", deletingUserId);
+
+      if (profileError) throw profileError;
+
+      const { error: teacherError } = await supabase
+        .from("teachers")
+        .delete()
+        .eq("user_id", deletingUserId);
+
+      if (teacherError && teacherError.code !== 'PGRST116') throw teacherError;
+
+      toast.success("Utilisateur supprimé avec succès");
+      setDeletingUserId(null);
+      fetchUsers();
+    } catch (error: any) {
+      console.error("Erreur suppression utilisateur:", error);
+      toast.error("Erreur lors de la suppression de l'utilisateur");
+    }
+  };
+
   const getRoleBadge = (role: string) => {
     const variants: Record<string, { icon: any; label: string; variant: "default" | "secondary" | "outline" }> = {
       admin: { icon: Shield, label: "Admin", variant: "default" },
@@ -401,6 +438,15 @@ export const UsersManager = () => {
                             <Edit2 className="w-4 h-4" />
                           </Button>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeletingUserId(user.id)}
+                          title="Supprimer l'utilisateur"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -443,6 +489,27 @@ export const UsersManager = () => {
         }}
         onUpdate={fetchUsers}
       />
+
+      {/* Dialog confirmation suppression */}
+      <AlertDialog open={!!deletingUserId} onOpenChange={(open) => !open && setDeletingUserId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Supprimer cet utilisateur ?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Toutes les données de l'utilisateur seront supprimées définitivement.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

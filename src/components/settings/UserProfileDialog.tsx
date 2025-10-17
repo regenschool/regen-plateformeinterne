@@ -43,7 +43,7 @@ export default function UserProfileDialog({ userId, userEmail, onClose, onUpdate
         .from("teacher_profiles")
         .select("*")
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
 
       if (profileError) throw profileError;
 
@@ -56,12 +56,12 @@ export default function UserProfileDialog({ userId, userEmail, onClose, onUpdate
       if (rolesError) throw rolesError;
 
       setProfile({
-        full_name: profileData.full_name || "",
-        email: profileData.email || "",
-        phone: profileData.phone || "",
-        address: profileData.address || "",
-        created_at: profileData.created_at || "",
-        roles: rolesData.map(r => r.role),
+        full_name: profileData?.full_name || "",
+        email: profileData?.email || userEmail || "",
+        phone: profileData?.phone || "",
+        address: profileData?.address || "",
+        created_at: profileData?.created_at || new Date().toISOString(),
+        roles: rolesData?.map(r => r.role) || [],
       });
     } catch (error: any) {
       console.error("Erreur chargement profil:", error);
@@ -78,12 +78,15 @@ export default function UserProfileDialog({ userId, userEmail, onClose, onUpdate
     try {
       const { error } = await supabase
         .from("teacher_profiles")
-        .update({
+        .upsert({
+          user_id: userId,
+          email: profile.email,
           full_name: profile.full_name,
           phone: profile.phone,
           address: profile.address,
-        })
-        .eq("user_id", userId);
+        }, {
+          onConflict: 'user_id'
+        });
 
       if (error) throw error;
 
