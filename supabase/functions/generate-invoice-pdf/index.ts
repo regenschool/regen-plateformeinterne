@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
+import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -44,6 +45,8 @@ serve(async (req) => {
     }
 
     const { invoiceId } = await req.json();
+
+    console.log(`Génération de facture demandée pour l'invoice ID: ${invoiceId}`);
 
     // Validate invoiceId format (must be UUID)
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -93,54 +96,65 @@ serve(async (req) => {
       );
     }
 
-    // Generate simple HTML invoice
-    const html = generateInvoiceHTML(invoice, profile);
+    console.log(`Génération du PDF pour la facture ${invoice.invoice_number}`);
 
-    // For now, we'll return the HTML directly
-    // In production, you'd convert this to PDF using a library like Puppeteer
-    // For Deno, you could use: https://deno.land/x/pdfgen
+    // Générer le PDF avec jsPDF
+    const pdfBytes = generateInvoicePDF(invoice, profile);
     
-    // Create a simple text-based PDF-like response
-    const fileName = `facture_${invoice.invoice_number.replace(/\//g, '-')}.html`;
+    // Nom du fichier
+    const fileName = `facture_${invoice.invoice_number.replace(/\//g, '-')}.pdf`;
+    const filePath = `${invoice.teacher_id}/invoices/${fileName}`;
     
-    // Store HTML in storage bucket (as a temporary solution)
-    const { data: uploadData, error: uploadError } = await supabaseClient
+    console.log(`Upload du PDF vers: ${filePath}`);
+
+    // Upload vers le bucket storage
+    const { error: uploadError } = await supabaseClient
       .storage
       .from('teacher-invoices')
       .upload(
-        `${invoice.teacher_id}/${fileName}`,
-        new Blob([html], { type: 'text/html' }),
+        filePath,
+        pdfBytes,
         {
-          contentType: 'text/html',
+          contentType: 'application/pdf',
           upsert: true
         }
       );
 
     if (uploadError) {
+      console.error('Erreur upload:', uploadError);
       return new Response(
-        JSON.stringify({ error: 'Failed to generate invoice' }),
+        JSON.stringify({ error: 'Failed to upload PDF', details: uploadError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Generate a signed URL valid for 5 minutes
+    console.log('PDF uploadé avec succès');
+
+    // Générer URL signée valide 1 heure
     const { data: signed, error: signError } = await supabaseClient
       .storage
       .from('teacher-invoices')
-      .createSignedUrl(`${invoice.teacher_id}/${fileName}`, 60 * 5);
+      .createSignedUrl(filePath, 3600);
 
     if (signError || !signed?.signedUrl) {
+      console.error('Erreur génération URL:', signError);
       return new Response(
-        JSON.stringify({ error: 'Failed to sign invoice URL' }),
+        JSON.stringify({ error: 'Failed to sign PDF URL', details: signError?.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Update invoice with storage path
-    await supabaseClient
+    // Mettre à jour la facture avec le chemin du PDF
+    const { error: updateError } = await supabaseClient
       .from('teacher_invoices')
-      .update({ pdf_path: `${invoice.teacher_id}/${fileName}` })
+      .update({ pdf_path: filePath, status: 'approved' })
       .eq('id', invoiceId);
+
+    if (updateError) {
+      console.error('Erreur mise à jour facture:', updateError);
+    }
+
+    console.log('PDF généré et URL signée créée:', signed.signedUrl);
 
     return new Response(
       JSON.stringify({ 
@@ -170,208 +184,445 @@ serve(async (req) => {
   }
 });
 
-function generateInvoiceHTML(invoice: any, profile: any): string {
-  const invoiceDate = new Date(invoice.invoice_date).toLocaleDateString('fr-FR');
+async function generateInvoicePDF(invoice: any, profile: any): Promise<Uint8Array> {
+  // Créer un nouveau document PDF
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([595, 842]); // A4 en points
   
-  return `
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Facture ${invoice.invoice_number}</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+  // Charger les polices
+  const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  
+  const { width, height } = page.getSize();
+  const margin = 50;
+  let y = height - margin;
+  
+  const invoiceDate = new Date(invoice.invoice_date).toLocaleDateString('fr-FR');
+  const currentDate = new Date().toLocaleDateString('fr-FR');
+  
+  // Couleur bleue primaire
+  const primaryBlue = rgb(0.145, 0.388, 0.922); // #2563eb
+  const textGray = rgb(0.2, 0.2, 0.2);
+  const lightGray = rgb(0.42, 0.45, 0.5);
+  
+  // Ligne bleue en haut
+  page.drawLine({
+    start: { x: margin, y: y },
+    end: { x: width - margin, y: y },
+    thickness: 2,
+    color: primaryBlue,
+  });
+  y -= 20;
+  
+  // Nom de l'enseignant (en-tête gauche)
+  page.drawText(profile?.full_name || 'Enseignant', {
+    x: margin,
+    y: y,
+    size: 16,
+    font: helveticaBold,
+    color: primaryBlue,
+  });
+  y -= 20;
+  
+  // Adresse
+  if (profile?.address) {
+    const addressLines = profile.address.split('\n');
+    for (const line of addressLines) {
+      page.drawText(line, {
+        x: margin,
+        y: y,
+        size: 10,
+        font: helveticaFont,
+        color: textGray,
+      });
+      y -= 14;
     }
-    body {
-      font-family: Arial, sans-serif;
-      padding: 40px;
-      background: white;
-      color: #333;
-      max-width: 800px;
-      margin: 0 auto;
+  }
+  
+  // SIRET, email, téléphone
+  if (invoice?.siret) {
+    page.drawText(`SIRET: ${invoice.siret}`, {
+      x: margin,
+      y: y,
+      size: 10,
+      font: helveticaFont,
+      color: textGray,
+    });
+    y -= 14;
+  }
+  
+  if (profile?.email) {
+    page.drawText(`Email: ${profile.email}`, {
+      x: margin,
+      y: y,
+      size: 10,
+      font: helveticaFont,
+      color: textGray,
+    });
+    y -= 14;
+  }
+  
+  if (profile?.phone) {
+    page.drawText(`Tél: ${profile.phone}`, {
+      x: margin,
+      y: y,
+      size: 10,
+      font: helveticaFont,
+      color: textGray,
+    });
+  }
+  
+  // Informations facture (en-tête droite)
+  y = height - margin - 20;
+  page.drawText('FACTURE', {
+    x: width - margin - 80,
+    y: y,
+    size: 14,
+    font: helveticaBold,
+    color: primaryBlue,
+  });
+  y -= 18;
+  
+  page.drawText(invoice.invoice_number, {
+    x: width - margin - helveticaBold.widthOfTextAtSize(invoice.invoice_number, 12) / 2 - 40,
+    y: y,
+    size: 12,
+    font: helveticaBold,
+    color: primaryBlue,
+  });
+  y -= 18;
+  
+  page.drawText(`Date: ${invoiceDate}`, {
+    x: width - margin - 80,
+    y: y,
+    size: 10,
+    font: helveticaFont,
+    color: textGray,
+  });
+  
+  // Section CLIENT
+  y = height - 220;
+  page.drawText('CLIENT', {
+    x: margin,
+    y: y,
+    size: 10,
+    font: helveticaBold,
+    color: primaryBlue,
+  });
+  y -= 16;
+  
+  page.drawText('Regen School', {
+    x: margin,
+    y: y,
+    size: 10,
+    font: helveticaBold,
+    color: textGray,
+  });
+  
+  // Section DESCRIPTION
+  y -= 30;
+  page.drawText('DESCRIPTION', {
+    x: margin,
+    y: y,
+    size: 10,
+    font: helveticaBold,
+    color: primaryBlue,
+  });
+  y -= 16;
+  
+  // Découper la description en plusieurs lignes si nécessaire
+  const maxDescWidth = width - 2 * margin;
+  const descWords = invoice.description.split(' ');
+  let currentLine = '';
+  
+  for (const word of descWords) {
+    const testLine = currentLine + word + ' ';
+    const testWidth = helveticaFont.widthOfTextAtSize(testLine, 10);
+    
+    if (testWidth > maxDescWidth && currentLine !== '') {
+      page.drawText(currentLine, {
+        x: margin,
+        y: y,
+        size: 10,
+        font: helveticaFont,
+        color: textGray,
+      });
+      y -= 14;
+      currentLine = word + ' ';
+    } else {
+      currentLine = testLine;
     }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 40px;
-      padding-bottom: 20px;
-      border-bottom: 3px solid #2563eb;
+  }
+  
+  if (currentLine !== '') {
+    page.drawText(currentLine, {
+      x: margin,
+      y: y,
+      size: 10,
+      font: helveticaFont,
+      color: textGray,
+    });
+    y -= 24;
+  }
+  
+  // Tableau - En-tête
+  const tableTop = y;
+  page.drawRectangle({
+    x: margin,
+    y: tableTop - 20,
+    width: width - 2 * margin,
+    height: 20,
+    color: primaryBlue,
+  });
+  
+  // Texte en-tête tableau (en blanc)
+  const whiteColor = rgb(1, 1, 1);
+  page.drawText('Désignation', {
+    x: margin + 5,
+    y: tableTop - 14,
+    size: 9,
+    font: helveticaBold,
+    color: whiteColor,
+  });
+  
+  page.drawText('Quantité', {
+    x: width - margin - 200,
+    y: tableTop - 14,
+    size: 9,
+    font: helveticaBold,
+    color: whiteColor,
+  });
+  
+  page.drawText('Prix Unit.', {
+    x: width - margin - 120,
+    y: tableTop - 14,
+    size: 9,
+    font: helveticaBold,
+    color: whiteColor,
+  });
+  
+  page.drawText('Montant HT', {
+    x: width - margin - 60,
+    y: tableTop - 14,
+    size: 9,
+    font: helveticaBold,
+    color: whiteColor,
+  });
+  
+  y = tableTop - 36;
+  
+  // Lignes du tableau
+  if (invoice.hours && invoice.rate_per_hour) {
+    page.drawText('Heures de cours', {
+      x: margin + 5,
+      y: y,
+      size: 9,
+      font: helveticaFont,
+      color: textGray,
+    });
+    
+    page.drawText(`${invoice.hours} h`, {
+      x: width - margin - 200,
+      y: y,
+      size: 9,
+      font: helveticaFont,
+      color: textGray,
+    });
+    
+    page.drawText(`${invoice.rate_per_hour.toFixed(2)} €`, {
+      x: width - margin - 120,
+      y: y,
+      size: 9,
+      font: helveticaFont,
+      color: textGray,
+    });
+    
+    const lineAmount = (invoice.hours * invoice.rate_per_hour).toFixed(2);
+    page.drawText(`${lineAmount} €`, {
+      x: width - margin - 60 - helveticaFont.widthOfTextAtSize(`${lineAmount} €`, 9),
+      y: y,
+      size: 9,
+      font: helveticaFont,
+      color: textGray,
+    });
+    
+    y -= 20;
+  }
+  
+  if (invoice.other_amount) {
+    page.drawText('Autres prestations', {
+      x: margin + 5,
+      y: y,
+      size: 9,
+      font: helveticaFont,
+      color: textGray,
+    });
+    
+    page.drawText('-', {
+      x: width - margin - 200,
+      y: y,
+      size: 9,
+      font: helveticaFont,
+      color: textGray,
+    });
+    
+    page.drawText('-', {
+      x: width - margin - 120,
+      y: y,
+      size: 9,
+      font: helveticaFont,
+      color: textGray,
+    });
+    
+    const otherAmount = invoice.other_amount.toFixed(2);
+    page.drawText(`${otherAmount} €`, {
+      x: width - margin - 60 - helveticaFont.widthOfTextAtSize(`${otherAmount} €`, 9),
+      y: y,
+      size: 9,
+      font: helveticaFont,
+      color: textGray,
+    });
+    
+    y -= 20;
+  }
+  
+  // Section totaux (fond gris)
+  y -= 20;
+  const totalBoxX = width - margin - 150;
+  const totalBoxY = y - 60;
+  
+  page.drawRectangle({
+    x: totalBoxX,
+    y: totalBoxY,
+    width: 140,
+    height: 60,
+    color: rgb(0.95, 0.96, 0.97),
+    borderColor: rgb(0.9, 0.91, 0.93),
+    borderWidth: 1,
+  });
+  
+  y = totalBoxY + 45;
+  
+  // Total HT
+  page.drawText('Total HT:', {
+    x: totalBoxX + 10,
+    y: y,
+    size: 9,
+    font: helveticaFont,
+    color: textGray,
+  });
+  
+  const totalHT = invoice.total_amount.toFixed(2);
+  page.drawText(`${totalHT} €`, {
+    x: totalBoxX + 130 - helveticaFont.widthOfTextAtSize(`${totalHT} €`, 9),
+    y: y,
+    size: 9,
+    font: helveticaFont,
+    color: textGray,
+  });
+  
+  y -= 15;
+  
+  // TVA
+  page.drawText('TVA (0%):', {
+    x: totalBoxX + 10,
+    y: y,
+    size: 9,
+    font: helveticaFont,
+    color: textGray,
+  });
+  
+  page.drawText('0.00 €', {
+    x: totalBoxX + 130 - helveticaFont.widthOfTextAtSize('0.00 €', 9),
+    y: y,
+    size: 9,
+    font: helveticaFont,
+    color: textGray,
+  });
+  
+  y -= 5;
+  
+  // Ligne de séparation
+  page.drawLine({
+    start: { x: totalBoxX + 10, y: y },
+    end: { x: totalBoxX + 130, y: y },
+    thickness: 1,
+    color: primaryBlue,
+  });
+  
+  y -= 15;
+  
+  // Total TTC
+  page.drawText('TOTAL TTC:', {
+    x: totalBoxX + 10,
+    y: y,
+    size: 11,
+    font: helveticaBold,
+    color: primaryBlue,
+  });
+  
+  const totalTTC = invoice.total_amount.toFixed(2);
+  page.drawText(`${totalTTC} €`, {
+    x: totalBoxX + 130 - helveticaBold.widthOfTextAtSize(`${totalTTC} €`, 11),
+    y: y,
+    size: 11,
+    font: helveticaBold,
+    color: primaryBlue,
+  });
+  
+  // Coordonnées bancaires
+  if (invoice?.bank_iban) {
+    y = totalBoxY - 40;
+    
+    page.drawText('COORDONNÉES BANCAIRES', {
+      x: margin,
+      y: y,
+      size: 10,
+      font: helveticaBold,
+      color: primaryBlue,
+    });
+    y -= 16;
+    
+    page.drawText(`IBAN: ${invoice.bank_iban}`, {
+      x: margin,
+      y: y,
+      size: 9,
+      font: helveticaFont,
+      color: textGray,
+    });
+    
+    if (invoice.bank_bic) {
+      y -= 14;
+      page.drawText(`BIC: ${invoice.bank_bic}`, {
+        x: margin,
+        y: y,
+        size: 9,
+        font: helveticaFont,
+        color: textGray,
+      });
     }
-    .company-info {
-      flex: 1;
-    }
-    .company-info h1 {
-      color: #2563eb;
-      font-size: 24px;
-      margin-bottom: 10px;
-    }
-    .invoice-info {
-      text-align: right;
-    }
-    .invoice-number {
-      font-size: 20px;
-      font-weight: bold;
-      color: #2563eb;
-      margin-bottom: 5px;
-    }
-    .section {
-      margin-bottom: 30px;
-    }
-    .section-title {
-      font-weight: bold;
-      margin-bottom: 10px;
-      color: #2563eb;
-      font-size: 14px;
-      text-transform: uppercase;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    thead {
-      background: #2563eb;
-      color: white;
-    }
-    th, td {
-      padding: 12px;
-      text-align: left;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    th {
-      font-weight: bold;
-    }
-    .text-right {
-      text-align: right;
-    }
-    .total-section {
-      margin-top: 30px;
-      display: flex;
-      justify-content: flex-end;
-    }
-    .total-box {
-      background: #f3f4f6;
-      padding: 20px;
-      border-radius: 8px;
-      min-width: 300px;
-    }
-    .total-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    .total-row.grand-total {
-      font-size: 18px;
-      font-weight: bold;
-      color: #2563eb;
-      border-top: 2px solid #2563eb;
-      padding-top: 10px;
-      margin-top: 10px;
-    }
-    .footer {
-      margin-top: 60px;
-      padding-top: 20px;
-      border-top: 1px solid #e5e7eb;
-      font-size: 12px;
-      color: #6b7280;
-      text-align: center;
-    }
-    @media print {
-      body {
-        padding: 20px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div class="company-info">
-      <h1>${profile?.full_name || 'Enseignant'}</h1>
-      ${profile?.address ? `<p>${profile.address.replace(/\n/g, '<br>')}</p>` : ''}
-      ${invoice?.siret ? `<p>SIRET: ${invoice.siret}</p>` : ''}
-      ${profile?.email ? `<p>Email: ${profile.email}</p>` : ''}
-      ${profile?.phone ? `<p>Tél: ${profile.phone}</p>` : ''}
-    </div>
-    <div class="invoice-info">
-      <div class="invoice-number">FACTURE</div>
-      <div class="invoice-number">${invoice.invoice_number}</div>
-      <p>Date: ${invoiceDate}</p>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Client</div>
-    <p><strong>Regen School</strong></p>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Description</div>
-    <p>${invoice.description}</p>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Désignation</th>
-        <th class="text-right">Quantité</th>
-        <th class="text-right">Prix Unitaire</th>
-        <th class="text-right">Montant HT</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${invoice.hours && invoice.rate_per_hour ? `
-      <tr>
-        <td>Heures de cours</td>
-        <td class="text-right">${invoice.hours} h</td>
-        <td class="text-right">${invoice.rate_per_hour.toFixed(2)} €</td>
-        <td class="text-right">${(invoice.hours * invoice.rate_per_hour).toFixed(2)} €</td>
-      </tr>
-      ` : ''}
-      ${invoice.other_amount ? `
-      <tr>
-        <td>Autres prestations</td>
-        <td class="text-right">-</td>
-        <td class="text-right">-</td>
-        <td class="text-right">${invoice.other_amount.toFixed(2)} €</td>
-      </tr>
-      ` : ''}
-    </tbody>
-  </table>
-
-  <div class="total-section">
-    <div class="total-box">
-      <div class="total-row">
-        <span>Total HT:</span>
-        <span>${invoice.total_amount.toFixed(2)} €</span>
-      </div>
-      <div class="total-row">
-        <span>TVA (0%):</span>
-        <span>0.00 €</span>
-      </div>
-      <div class="total-row grand-total">
-        <span>TOTAL TTC:</span>
-        <span>${invoice.total_amount.toFixed(2)} €</span>
-      </div>
-    </div>
-  </div>
-
-  ${invoice?.bank_iban ? `
-  <div class="section" style="margin-top: 40px;">
-    <div class="section-title">Coordonnées Bancaires</div>
-    <p>IBAN: ${invoice.bank_iban}</p>
-    ${invoice.bank_bic ? `<p>BIC: ${invoice.bank_bic}</p>` : ''}
-  </div>
-  ` : ''}
-
-  <div class="footer">
-    <p>Facture générée le ${new Date().toLocaleDateString('fr-FR')}</p>
-    <p>En cas de retard de paiement, des pénalités de 3 fois le taux d'intérêt légal seront appliquées.</p>
-  </div>
-</body>
-</html>
-  `;
+  }
+  
+  // Pied de page
+  const footerY = 60;
+  page.drawText(`Facture générée le ${currentDate}`, {
+    x: width / 2 - helveticaFont.widthOfTextAtSize(`Facture générée le ${currentDate}`, 8) / 2,
+    y: footerY,
+    size: 8,
+    font: helveticaFont,
+    color: lightGray,
+  });
+  
+  const legalText = 'En cas de retard de paiement, des pénalités de 3 fois le taux d\'intérêt légal seront appliquées.';
+  page.drawText(legalText, {
+    x: width / 2 - helveticaFont.widthOfTextAtSize(legalText, 8) / 2,
+    y: footerY - 12,
+    size: 8,
+    font: helveticaFont,
+    color: lightGray,
+  });
+  
+  // Sauvegarder le PDF
+  const pdfBytes = await pdfDoc.save();
+  return pdfBytes;
 }
