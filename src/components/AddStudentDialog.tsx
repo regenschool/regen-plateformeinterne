@@ -5,11 +5,14 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { studentSchema } from "@/lib/validation";
 import { useAddStudent } from "@/hooks/useStudents";
+import { useClassesReferential } from "@/hooks/useReferentials";
+import { toast } from "sonner";
 
 type AddStudentDialogProps = {
   onStudentAdded: () => void;
@@ -29,9 +32,23 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
   });
 
   const addStudent = useAddStudent();
+  const { data: classes = [], isLoading: isLoadingClasses } = useClassesReferential(true);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validation: la classe doit être sélectionnée
+    if (!formData.class_name) {
+      toast.error("Vous devez sélectionner une classe existante");
+      return;
+    }
+
+    // Vérifier que la classe existe dans le référentiel
+    const classExists = classes.some(c => c.name === formData.class_name);
+    if (!classExists) {
+      toast.error("La classe sélectionnée n'existe pas. Veuillez d'abord créer la classe dans les Paramètres.");
+      return;
+    }
 
     try {
       const validatedData = studentSchema.parse({
@@ -110,14 +127,30 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="class_name">Class *</Label>
-            <Input
-              id="class_name"
+            <Label htmlFor="class_name">Classe *</Label>
+            <Select
               value={formData.class_name}
-              onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
-              placeholder="e.g., 2024 Cohort A"
-              required
-            />
+              onValueChange={(value) => setFormData({ ...formData, class_name: value })}
+            >
+              <SelectTrigger id="class_name">
+                <SelectValue placeholder="Sélectionner une classe existante" />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingClasses ? (
+                  <SelectItem value="loading" disabled>Chargement...</SelectItem>
+                ) : classes.length === 0 ? (
+                  <SelectItem value="no-classes" disabled>
+                    Aucune classe. Créez-en une dans Paramètres.
+                  </SelectItem>
+                ) : (
+                  classes.map((cls) => (
+                    <SelectItem key={cls.id} value={cls.name}>
+                      {cls.name} {cls.level ? `(${cls.level})` : ''}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
