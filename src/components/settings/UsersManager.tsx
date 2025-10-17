@@ -164,6 +164,12 @@ export const UsersManager = () => {
       const hasRole = currentRoles.includes(role);
 
       if (hasRole) {
+        // Empêcher de retirer le dernier rôle
+        if (currentRoles.length === 1) {
+          toast.error("Impossible de retirer le dernier rôle. L'utilisateur doit avoir au moins un rôle.");
+          return;
+        }
+
         // Retirer le rôle
         const { error } = await supabase
           .from("user_roles")
