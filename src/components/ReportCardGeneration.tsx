@@ -420,26 +420,37 @@ export const ReportCardGeneration = () => {
                               )}
                             </TableCell>
                             <TableCell className="text-right">
-                              <Button
-                                size="sm"
-                                variant={existingReport ? "outline" : "default"}
-                                onClick={() => generateReportCard.mutate({
-                                  studentId: student.id,
-                                  schoolYear: selectedSchoolYear,
-                                  semester: selectedSemester,
-                                  className: selectedClass,
-                                })}
-                                disabled={generateReportCard.isPending}
-                              >
-                                {generateReportCard.isPending ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <>
-                                    <FileText className="mr-2 h-4 w-4" />
-                                    {existingReport ? 'Regénérer' : 'Générer'}
-                                  </>
-                                )}
-                              </Button>
+                              {existingReport && existingReport.status === 'draft' ? (
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  onClick={() => navigate(`/bulletins/edit/${existingReport.id}`)}
+                                >
+                                  <FileText className="mr-2 h-4 w-4" />
+                                  Éditer le brouillon
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant={existingReport ? "outline" : "default"}
+                                  onClick={() => generateReportCard.mutate({
+                                    studentId: student.id,
+                                    schoolYear: selectedSchoolYear,
+                                    semester: selectedSemester,
+                                    className: selectedClass,
+                                  })}
+                                  disabled={generateReportCard.isPending}
+                                >
+                                  {generateReportCard.isPending ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <FileText className="mr-2 h-4 w-4" />
+                                      {existingReport ? 'Créer nouveau brouillon' : 'Créer brouillon'}
+                                    </>
+                                  )}
+                                </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                         );

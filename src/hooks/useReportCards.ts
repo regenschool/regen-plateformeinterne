@@ -10,6 +10,63 @@ interface GenerateReportCardParams {
   className: string;
 }
 
+interface SubjectAverage {
+  subject: string;
+  average: number;
+  maxGrade: number;
+  weighting: number;
+  assessmentType: string;
+  appreciation?: string;
+  gradeCount: number;
+}
+
+// Fonction pour grouper les notes par matière et calculer les moyennes
+const calculateSubjectAverages = (grades: any[]): SubjectAverage[] => {
+  const subjectMap = new Map<string, any[]>();
+  
+  // Grouper les notes par matière
+  grades.forEach(grade => {
+    const key = grade.subject;
+    if (!subjectMap.has(key)) {
+      subjectMap.set(key, []);
+    }
+    subjectMap.get(key)!.push(grade);
+  });
+  
+  // Calculer la moyenne pour chaque matière
+  const subjectAverages: SubjectAverage[] = [];
+  subjectMap.forEach((subjectGrades, subject) => {
+    // Calculer la moyenne pondérée des notes de la matière
+    const totalWeightedGrade = subjectGrades.reduce(
+      (acc, g) => acc + (g.grade / g.max_grade) * 20 * g.weighting, 
+      0
+    );
+    const totalWeighting = subjectGrades.reduce((acc, g) => acc + g.weighting, 0);
+    const average = totalWeightedGrade / totalWeighting;
+    
+    // Prendre le coefficient de la première note (devrait être uniforme pour une matière)
+    const weighting = subjectGrades[0].weighting;
+    
+    // Combiner les appréciations si plusieurs
+    const appreciations = subjectGrades
+      .map(g => g.appreciation)
+      .filter(Boolean);
+    const appreciation = appreciations.length > 0 ? appreciations.join(' - ') : undefined;
+    
+    subjectAverages.push({
+      subject,
+      average: parseFloat(average.toFixed(2)),
+      maxGrade: 20, // Normalisé à 20
+      weighting,
+      assessmentType: 'Moyenne', // Type = moyenne pour distinguer des épreuves individuelles
+      appreciation,
+      gradeCount: subjectGrades.length,
+    });
+  });
+  
+  return subjectAverages;
+};
+
 export const useGenerateReportCard = () => {
   const queryClient = useQueryClient();
 
@@ -48,26 +105,35 @@ export const useGenerateReportCard = () => {
         console.warn('No default template found, using basic template');
       }
 
-      // 4. Calculer les moyennes
-      const studentAverage = grades && grades.length > 0
-        ? grades.reduce((acc, g) => acc + (g.grade / g.max_grade) * 20 * g.weighting, 0) /
-          grades.reduce((acc, g) => acc + g.weighting, 0)
+      // 4. Calculer les moyennes par matière
+      const subjectAverages = grades && grades.length > 0 
+        ? calculateSubjectAverages(grades) 
+        : [];
+      
+      // Calculer la moyenne générale (moyenne pondérée des moyennes de matières)
+      const studentAverage = subjectAverages.length > 0
+        ? subjectAverages.reduce((acc, s) => acc + s.average * s.weighting, 0) /
+          subjectAverages.reduce((acc, s) => acc + s.weighting, 0)
         : 0;
 
-      // Pour la moyenne de classe, on calcule sur tous les étudiants de la même classe
+      // Pour la moyenne de classe, récupérer toutes les notes de la classe et calculer par matière
       const { data: classGrades } = await supabase
         .from('grades')
-        .select('grade, max_grade, weighting')
+        .select('*')
         .eq('class_name', className)
         .eq('school_year', schoolYear)
         .eq('semester', semester);
 
-      const classAverage = classGrades && classGrades.length > 0
-        ? classGrades.reduce((acc, g) => acc + (g.grade / g.max_grade) * 20 * g.weighting, 0) /
-          classGrades.reduce((acc, g) => acc + g.weighting, 0)
+      const classSubjectAverages = classGrades && classGrades.length > 0
+        ? calculateSubjectAverages(classGrades)
+        : [];
+        
+      const classAverage = classSubjectAverages.length > 0
+        ? classSubjectAverages.reduce((acc, s) => acc + s.average * s.weighting, 0) /
+          classSubjectAverages.reduce((acc, s) => acc + s.weighting, 0)
         : 0;
 
-      // 5. Construire les données pour le PDF
+      // 5. Construire les données pour le PDF (utilise les moyennes par matière)
       const reportCardData: ReportCardData = {
         student: {
           firstName: student.first_name,
@@ -80,14 +146,15 @@ export const useGenerateReportCard = () => {
           schoolYear,
           semester,
         },
-        grades: grades?.map(g => ({
-          subject: g.subject,
-          grade: g.grade,
-          maxGrade: g.max_grade,
-          weighting: g.weighting,
-          assessmentType: g.assessment_type,
-          appreciation: g.appreciation,
-        })) || [],
+        // Utiliser les moyennes par matière au lieu des notes individuelles
+        grades: subjectAverages.map(s => ({
+          subject: s.subject,
+          grade: s.average,
+          maxGrade: s.maxGrade,
+          weighting: s.weighting,
+          assessmentType: s.assessmentType,
+          appreciation: s.appreciation,
+        })),
         template: template ? {
           name: template.name,
           headerColor: template.header_color,
@@ -104,30 +171,7 @@ export const useGenerateReportCard = () => {
         },
       };
 
-      // 6. Générer le PDF avec Puppeteer
-      const generator = createPDFGenerator(true);
-      const pdfBlob = await generator.generateReportCard(reportCardData);
-
-      // 7. Uploader le PDF dans le storage
-      const fileName = `${studentId}_${schoolYear}_${semester}_${Date.now()}.pdf`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('report-cards')
-        .upload(fileName, pdfBlob, {
-          contentType: 'application/pdf',
-          upsert: false,
-        });
-
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        throw uploadError;
-      }
-
-      // Obtenir l'URL publique
-      const { data: { publicUrl } } = supabase.storage
-        .from('report-cards')
-        .getPublicUrl(fileName);
-
-      // 8. Sauvegarder dans la base de données avec l'URL du PDF
+      // 6. Créer un brouillon éditable (status = 'draft')
       const { data: reportCard, error: insertError } = await supabase
         .from('student_report_cards')
         .insert([{
@@ -137,19 +181,19 @@ export const useGenerateReportCard = () => {
           class_name: className,
           template_id: template?.id,
           generated_data: reportCardData as any,
-          status: 'generated',
-          pdf_url: publicUrl,
+          status: 'draft', // Statut brouillon pour permettre l'édition
+          pdf_url: null, // Pas encore de PDF
         }])
         .select()
         .single();
 
       if (insertError) throw insertError;
 
-      return { reportCard, pdfBlob, pdfUrl: publicUrl };
+      return { reportCard, reportCardData };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['report-cards'] });
-      toast.success('Bulletin généré avec succès');
+      toast.success('Brouillon créé avec succès - vous pouvez maintenant l\'éditer');
     },
     onError: (error: Error) => {
       console.error('Error generating report card:', error);

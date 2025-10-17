@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Save, Eye, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSaveDraft, useGenerateFinalPDF } from '@/hooks/useReportCardActions';
 
 interface Grade {
   subject: string;
@@ -31,6 +32,16 @@ interface ReportCardData {
     semester: string;
   };
   grades: Grade[];
+  template?: {
+    name: string;
+    headerColor: string;
+    logoUrl?: string;
+    footerText?: string;
+    sections: string[];
+    htmlTemplate?: string;
+    cssTemplate?: string;
+    useCustomHtml?: boolean;
+  };
   averages?: {
     student: number;
     class: number;
@@ -41,29 +52,32 @@ interface ReportCardData {
 interface ReportCardEditorProps {
   reportCardId: string;
   initialData: ReportCardData;
-  onSave: (editedData: ReportCardData) => Promise<void>;
-  onGeneratePdf: () => void;
+  onClose?: () => void;
 }
 
 export const ReportCardEditor = ({
   reportCardId,
   initialData,
-  onSave,
-  onGeneratePdf,
+  onClose,
 }: ReportCardEditorProps) => {
   const [editedData, setEditedData] = useState<ReportCardData>(initialData);
-  const [isSaving, setIsSaving] = useState(false);
+  const saveDraft = useSaveDraft();
+  const generatePDF = useGenerateFinalPDF();
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      await onSave(editedData);
-      toast.success('Modifications enregistrées');
-    } catch (error) {
-      console.error('Erreur lors de la sauvegarde:', error);
-      toast.error('Erreur lors de la sauvegarde');
-    } finally {
-      setIsSaving(false);
+  useEffect(() => {
+    setEditedData(initialData);
+  }, [initialData]);
+
+  const handleSave = () => {
+    saveDraft.mutate({ reportCardId, data: editedData });
+  };
+
+  const handleGeneratePdf = async () => {
+    const result = await generatePDF.mutateAsync({ reportCardId, data: editedData });
+    if (result.pdfUrl && onClose) {
+      // Télécharger automatiquement le PDF
+      window.open(result.pdfUrl, '_blank');
+      onClose();
     }
   };
 
@@ -94,13 +108,20 @@ export const ReportCardEditor = ({
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={handleSave} disabled={isSaving}>
+              <Button 
+                variant="outline" 
+                onClick={handleSave} 
+                disabled={saveDraft.isPending}
+              >
                 <Save className="h-4 w-4 mr-2" />
-                {isSaving ? 'Enregistrement...' : 'Enregistrer'}
+                {saveDraft.isPending ? 'Enregistrement...' : 'Enregistrer'}
               </Button>
-              <Button onClick={onGeneratePdf}>
+              <Button 
+                onClick={handleGeneratePdf}
+                disabled={generatePDF.isPending}
+              >
                 <FileDown className="h-4 w-4 mr-2" />
-                Générer le PDF final
+                {generatePDF.isPending ? 'Génération...' : 'Générer le PDF final'}
               </Button>
             </div>
           </div>
@@ -113,7 +134,7 @@ export const ReportCardEditor = ({
           <CardHeader>
             <CardTitle className="text-lg">Édition des données</CardTitle>
             <CardDescription>
-              Modifiez les notes et appréciations avant la génération finale
+              Modifiez les moyennes et appréciations avant la génération finale
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -136,7 +157,7 @@ export const ReportCardEditor = ({
 
                 {/* Édition des notes */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold">Notes et appréciations par matière</h3>
+                  <h3 className="font-semibold">Moyennes et appréciations par matière</h3>
                   {editedData.grades.map((grade, index) => (
                     <Card key={index} className="p-4">
                       <div className="space-y-3">
@@ -149,13 +170,13 @@ export const ReportCardEditor = ({
 
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-2">
-                            <Label className="text-xs">Note</Label>
+                            <Label className="text-xs">Moyenne</Label>
                             <div className="flex items-center gap-2">
                               <Input
                                 type="number"
                                 min="0"
                                 max={grade.maxGrade}
-                                step="0.5"
+                                step="0.01"
                                 value={grade.grade}
                                 onChange={(e) =>
                                   updateGradeValue(index, parseFloat(e.target.value) || 0)
@@ -200,71 +221,105 @@ export const ReportCardEditor = ({
               Aperçu en temps réel
             </CardTitle>
             <CardDescription>
-              Visualisez les modifications avant génération
+              Visualisez les modifications avant génération (identique au PDF final)
             </CardDescription>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[600px] pr-4">
-              <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
-                {/* Aperçu simplifié */}
-                <div className="bg-primary text-primary-foreground p-4 rounded-lg">
-                  <h2 className="text-xl font-bold">Bulletin Scolaire</h2>
-                  <p className="text-sm opacity-90">
-                    {editedData.academic.schoolYear} - {editedData.academic.semester}
-                  </p>
+              <div className="space-y-4 bg-white p-6 rounded-lg border shadow-sm">
+                {/* En-tête */}
+                <div 
+                  className="p-6 rounded-lg flex items-center justify-between" 
+                  style={{ backgroundColor: editedData.template?.headerColor || '#1e40af', color: 'white' }}
+                >
+                  {editedData.template?.logoUrl && (
+                    <img src={editedData.template.logoUrl} alt="Logo" className="h-16 object-contain" />
+                  )}
+                  <div className="text-center flex-1">
+                    <h2 className="text-2xl font-bold">BULLETIN SCOLAIRE</h2>
+                    <p className="text-sm mt-1">{editedData.academic.schoolYear} - {editedData.academic.semester}</p>
+                  </div>
+                  {editedData.template?.logoUrl && <div className="w-16" />}
                 </div>
 
-                <div className="bg-background p-4 rounded-lg space-y-3">
-                  <h3 className="font-semibold">
-                    {editedData.student.firstName} {editedData.student.lastName}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Classe: {editedData.student.className}
-                  </p>
+                {/* Informations de l'élève */}
+                <div className="bg-muted/30 p-4 rounded-lg space-y-2">
+                  <h3 className="font-semibold text-lg">Informations de l'élève</h3>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div><strong>Nom:</strong> {editedData.student.lastName}</div>
+                    <div><strong>Prénom:</strong> {editedData.student.firstName}</div>
+                    <div><strong>Classe:</strong> {editedData.student.className}</div>
+                    {editedData.student.birthDate && (
+                      <div><strong>Date de naissance:</strong> {editedData.student.birthDate}</div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="bg-background p-4 rounded-lg space-y-3">
-                  <h4 className="font-semibold text-sm">Notes</h4>
-                  {editedData.grades.map((grade, index) => (
-                    <div key={index} className="space-y-1 pb-2 border-b last:border-0">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">{grade.subject}</span>
-                        <span className="font-bold text-primary">
-                          {grade.grade}/{grade.maxGrade}
-                        </span>
-                      </div>
-                      {grade.appreciation && (
-                        <p className="text-xs text-muted-foreground italic">
-                          {grade.appreciation}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                {/* Tableau des notes */}
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-lg">Notes et Moyennes par Matière</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse border">
+                      <thead>
+                        <tr className="bg-muted">
+                          <th className="border p-3 text-left">Matière</th>
+                          <th className="border p-3 text-center">Moyenne</th>
+                          <th className="border p-3 text-center">Coef.</th>
+                          <th className="border p-3 text-center">Type</th>
+                          <th className="border p-3 text-left">Appréciation</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {editedData.grades.map((grade, idx) => (
+                          <tr key={idx} className="hover:bg-muted/20">
+                            <td className="border p-3 font-medium">{grade.subject}</td>
+                            <td className="border p-3 text-center font-bold text-primary">
+                              {grade.grade.toFixed(2)}/{grade.maxGrade}
+                            </td>
+                            <td className="border p-3 text-center">{grade.weighting}</td>
+                            <td className="border p-3 text-center text-xs">{grade.assessmentType}</td>
+                            <td className="border p-3 text-sm italic text-muted-foreground">
+                              {grade.appreciation || '-'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
+                {/* Moyennes */}
                 {editedData.averages && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-primary/10 p-3 rounded-lg text-center">
-                      <p className="text-xs text-muted-foreground">Moyenne élève</p>
-                      <p className="text-2xl font-bold text-primary">
-                        {editedData.averages.student.toFixed(2)}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-primary/10 p-4 rounded-lg text-center">
+                      <p className="text-sm text-muted-foreground">Moyenne générale de l'élève</p>
+                      <p className="text-3xl font-bold text-primary mt-1">
+                        {editedData.averages.student.toFixed(2)}/20
                       </p>
                     </div>
-                    <div className="bg-primary/10 p-3 rounded-lg text-center">
-                      <p className="text-xs text-muted-foreground">Moyenne classe</p>
-                      <p className="text-2xl font-bold text-primary">
-                        {editedData.averages.class.toFixed(2)}
+                    <div className="bg-muted p-4 rounded-lg text-center">
+                      <p className="text-sm text-muted-foreground">Moyenne de la classe</p>
+                      <p className="text-3xl font-bold mt-1">
+                        {editedData.averages.class.toFixed(2)}/20
                       </p>
                     </div>
                   </div>
                 )}
 
+                {/* Appréciation générale */}
                 {editedData.generalAppreciation && (
-                  <div className="bg-background p-4 rounded-lg">
-                    <h4 className="font-semibold text-sm mb-2">Appréciation générale</h4>
+                  <div className="bg-muted/30 p-4 rounded-lg">
+                    <h4 className="font-semibold mb-2">Appréciation générale</h4>
                     <p className="text-sm text-muted-foreground italic">
                       {editedData.generalAppreciation}
                     </p>
+                  </div>
+                )}
+
+                {/* Footer */}
+                {editedData.template?.footerText && (
+                  <div className="border-t pt-4 text-xs text-center text-muted-foreground">
+                    {editedData.template.footerText}
                   </div>
                 )}
               </div>

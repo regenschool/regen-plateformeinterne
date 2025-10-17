@@ -56,13 +56,13 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
     html = html.replace(/SCHOOL_YEAR/g, academic.schoolYear);
     html = html.replace(/SEMESTER/g, academic.semester);
     
-    // Générer les lignes de notes
+    // Générer les lignes de notes (moyennes par matière)
     const gradesRows = grades.map(grade => `
       <tr>
         <td><strong>${grade.subject}</strong></td>
-        <td>${grade.assessmentType}</td>
-        <td class="grade-cell">${grade.grade}/${grade.maxGrade}</td>
-        <td>${grade.weighting}</td>
+        <td class="grade-cell">${grade.grade.toFixed(2)}/${grade.maxGrade}</td>
+        <td class="text-center">${grade.weighting}</td>
+        <td class="text-center text-xs">${grade.assessmentType}</td>
         <td class="appreciation">${grade.appreciation || '-'}</td>
       </tr>
     `).join('');
@@ -259,9 +259,9 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
         <thead>
           <tr>
             <th>Matière</th>
-            <th>Type</th>
-            <th>Note</th>
+            <th>Moyenne</th>
             <th>Coefficient</th>
+            <th>Type</th>
             <th>Appréciation</th>
           </tr>
         </thead>
@@ -269,9 +269,9 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
           ${grades.map(grade => `
             <tr>
               <td><strong>${grade.subject}</strong></td>
-              <td>${grade.assessmentType}</td>
-              <td class="grade-cell">${grade.grade}/${grade.maxGrade}</td>
+              <td class="grade-cell">${grade.grade.toFixed(2)}/${grade.maxGrade}</td>
               <td>${grade.weighting}</td>
+              <td class="text-center text-xs">${grade.assessmentType}</td>
               <td class="appreciation">${grade.appreciation || '-'}</td>
             </tr>
           `).join('')}
