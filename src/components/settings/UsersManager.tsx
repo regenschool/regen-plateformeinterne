@@ -27,15 +27,7 @@ type UserWithRole = {
 export const UsersManager = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
-  
-  // Formulaire nouveau utilisateur
-  const [newUserEmail, setNewUserEmail] = useState("");
-  const [newUserPassword, setNewUserPassword] = useState("");
-  const [newUserRoles, setNewUserRoles] = useState<string[]>(["teacher"]);
-  const [newUserFullName, setNewUserFullName] = useState("");
-  const [newUserPhone, setNewUserPhone] = useState("");
 
   // Formulaire édition
   const [editFullName, setEditFullName] = useState("");
@@ -100,62 +92,6 @@ export const UsersManager = () => {
       toast.error("Erreur lors du chargement des utilisateurs");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const createUser = async () => {
-    if (!newUserEmail || !newUserPassword || !newUserFullName) {
-      toast.error("Email, mot de passe et nom complet requis");
-      return;
-    }
-
-    try {
-      // 1. Créer l'utilisateur
-      const { data, error } = await supabase.auth.signUp({
-        email: newUserEmail,
-        password: newUserPassword,
-        options: {
-          data: {
-            full_name: newUserFullName,
-          },
-        },
-      });
-
-      if (error) throw error;
-      if (!data.user) throw new Error("Utilisateur non créé");
-
-      // 2. Ajouter les rôles
-      const roleInserts = newUserRoles.map(role => ({
-        user_id: data.user.id,
-        role: role as any,
-      }));
-
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert(roleInserts);
-
-      if (roleError) throw roleError;
-
-      // 3. Si enseignant, créer l'entrée teachers
-      if (newUserRoles.includes('teacher')) {
-        const { error: teacherError } = await supabase
-          .from("teachers")
-          .insert([{
-            user_id: data.user.id,
-            full_name: newUserFullName,
-            phone: newUserPhone || null,
-          }]);
-
-        if (teacherError) throw teacherError;
-      }
-
-      toast.success("✅ Utilisateur créé avec succès");
-      setShowAddDialog(false);
-      resetForm();
-      setTimeout(() => fetchUsers(), 1000);
-    } catch (error: any) {
-      console.error("Error creating user:", error);
-      toast.error(error.message || "Erreur lors de la création");
     }
   };
 
@@ -241,14 +177,6 @@ export const UsersManager = () => {
     }
   };
 
-  const resetForm = () => {
-    setNewUserEmail("");
-    setNewUserPassword("");
-    setNewUserRoles(["teacher"]);
-    setNewUserFullName("");
-    setNewUserPhone("");
-  };
-
   const handleResetPassword = async (userId: string) => {
     try {
       const { data, error } = await supabase.functions.invoke("admin-reset-password", {
@@ -306,88 +234,6 @@ export const UsersManager = () => {
         <div className="flex items-center gap-2">
           <ImportUsersDialog onImportComplete={fetchUsers} />
           <InviteUserDialog onInvite={handleInviteUser} />
-          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <UserPlus className="w-4 h-4" />
-              Créer un utilisateur
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Nouveau Utilisateur</DialogTitle>
-              <DialogDescription>
-                Créez un compte utilisateur avec les rôles appropriés
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newUserEmail}
-                  onChange={(e) => setNewUserEmail(e.target.value)}
-                  placeholder="utilisateur@regen-school.com"
-                />
-              </div>
-              <div>
-                <Label htmlFor="password">Mot de passe *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={newUserPassword}
-                  onChange={(e) => setNewUserPassword(e.target.value)}
-                  placeholder="••••••••"
-                  minLength={6}
-                />
-              </div>
-              <div>
-                <Label htmlFor="fullname">Nom complet *</Label>
-                <Input
-                  id="fullname"
-                  value={newUserFullName}
-                  onChange={(e) => setNewUserFullName(e.target.value)}
-                  placeholder="Jean Dupont"
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone">Téléphone (optionnel)</Label>
-                <Input
-                  id="phone"
-                  value={newUserPhone}
-                  onChange={(e) => setNewUserPhone(e.target.value)}
-                  placeholder="+33 6 12 34 56 78"
-                />
-              </div>
-              <div>
-                <Label>Rôles *</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {(['admin', 'teacher', 'moderator'] as const).map(role => (
-                    <Badge
-                      key={role}
-                      variant={newUserRoles.includes(role) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => {
-                        if (newUserRoles.includes(role)) {
-                          setNewUserRoles(newUserRoles.filter(r => r !== role));
-                        } else {
-                          setNewUserRoles([...newUserRoles, role]);
-                        }
-                      }}
-                    >
-                      {newUserRoles.includes(role) && <CheckCircle2 className="w-3 h-3 mr-1" />}
-                      {role}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              <Button onClick={createUser} className="w-full">
-                Créer l'utilisateur
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
         </div>
       </div>
 
