@@ -123,13 +123,20 @@ serve(async (req) => {
       );
     }
 
-    // Get public URL
-    const { data: urlData } = supabaseClient
+    // Generate a signed URL valid for 5 minutes
+    const { data: signed, error: signError } = await supabaseClient
       .storage
       .from('teacher-invoices')
-      .getPublicUrl(`${invoice.teacher_id}/${fileName}`);
+      .createSignedUrl(`${invoice.teacher_id}/${fileName}`, 60 * 5);
 
-    // Update invoice with PDF path
+    if (signError || !signed?.signedUrl) {
+      return new Response(
+        JSON.stringify({ error: 'Failed to sign invoice URL' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Update invoice with storage path
     await supabaseClient
       .from('teacher_invoices')
       .update({ pdf_path: `${invoice.teacher_id}/${fileName}` })
@@ -138,7 +145,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        pdfUrl: urlData.publicUrl,
+        pdfUrl: signed.signedUrl,
         message: 'Invoice generated successfully'
       }),
       { 

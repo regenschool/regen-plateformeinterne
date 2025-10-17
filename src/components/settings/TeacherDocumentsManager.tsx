@@ -113,12 +113,15 @@ export function TeacherDocumentsManager() {
   const downloadDocument = async (filePath: string, fileName: string) => {
     try {
       const { data, error } = await supabase.storage
-        .from("school-documents")
-        .download(filePath);
+        .from("teacher-invoices")
+        .createSignedUrl(filePath, 60);
 
       if (error) throw error;
+      if (!data?.signedUrl) throw new Error("URL de téléchargement indisponible");
 
-      const url = URL.createObjectURL(data);
+      const response = await fetch(data.signedUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = fileName;
@@ -127,7 +130,7 @@ export function TeacherDocumentsManager() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error: any) {
-      toast.error("Erreur lors du téléchargement");
+      toast.error("Erreur lors du téléchargement: " + (error.message || ""));
     }
   };
 

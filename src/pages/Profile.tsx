@@ -452,11 +452,14 @@ const Profile = () => {
     try {
       const { data, error } = await supabase.storage
         .from("school-documents")
-        .download(filePath);
+        .createSignedUrl(filePath, 60);
 
       if (error) throw error;
+      if (!data?.signedUrl) throw new Error("URL de téléchargement indisponible");
 
-      const url = URL.createObjectURL(data);
+      const response = await fetch(data.signedUrl);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = title;
