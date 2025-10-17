@@ -11,9 +11,15 @@ serve(async (req) => {
   }
 
   try {
-    // Read the markdown file
-    const markdownPath = new URL("../../../public/docs/guides/admin-onboarding.md", import.meta.url);
-    const markdown = await Deno.readTextFile(markdownPath);
+    // Fetch the markdown file from the public URL
+    const markdownUrl = new URL("/docs/guides/admin-onboarding.md", req.url).toString();
+    const markdownResponse = await fetch(markdownUrl);
+    
+    if (!markdownResponse.ok) {
+      throw new Error(`Failed to fetch markdown: ${markdownResponse.statusText}`);
+    }
+    
+    const markdown = await markdownResponse.text();
 
     // Convert markdown to styled HTML
     const html = generateStyledHTML(markdown);
