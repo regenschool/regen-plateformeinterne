@@ -23,121 +23,83 @@ export default function Settings() {
     return <Navigate to="/" />;
   }
 
+  const tabs = [
+    { value: "school-years", label: t("settings.schoolYears"), icon: Calendar, component: SchoolYearsManager, desc: t("settings.schoolYearsDesc") },
+    { value: "classes", label: t("settings.classes"), icon: GraduationCap, component: ClassesManager, desc: t("settings.classesDesc") },
+    { value: "levels", label: t("settings.levels"), icon: Award, component: LevelsManager, desc: t("settings.levelsDesc") },
+    { value: "periods", label: t("settings.periods"), icon: BookOpen, component: AcademicPeriodsManager, desc: t("settings.periodsDesc") },
+    { value: "subjects", label: t("settings.subjects"), icon: BookOpen, component: SubjectsManager, desc: null },
+    { value: "users", label: t("settings.users"), icon: Users, component: UsersManager, desc: null },
+    { value: "archive", label: t("settings.archive"), icon: Archive, component: ArchiveManager, desc: null },
+  ];
+
+  const activeTabData = tabs.find(tab => tab.value === activeTab);
+
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-8 flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <SettingsIcon className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-bold">{t("settings.title")}</h1>
+    <div className="min-h-screen bg-muted/30">
+      <div className="container mx-auto py-8 px-4">
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <SettingsIcon className="h-8 w-8 text-primary" />
+              <h1 className="text-4xl font-bold">{t("settings.title")}</h1>
+            </div>
+            <p className="text-muted-foreground">
+              {t("settings.subtitle")}
+            </p>
           </div>
-          <p className="text-muted-foreground">
-            {t("settings.subtitle")}
-          </p>
+          <SyncReferentialsButton />
         </div>
-        <SyncReferentialsButton />
+
+        <div className="flex gap-6">
+          {/* Navigation latérale */}
+          <Card className="w-64 h-fit sticky top-6">
+            <CardContent className="p-4">
+              <nav className="space-y-1">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.value;
+                  
+                  return (
+                    <button
+                      key={tab.value}
+                      onClick={() => setActiveTab(tab.value)}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                        isActive 
+                          ? 'bg-primary text-primary-foreground shadow-sm' 
+                          : 'hover:bg-muted'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span className="text-sm font-medium">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            </CardContent>
+          </Card>
+
+          {/* Contenu */}
+          <div className="flex-1 max-w-4xl">
+            {activeTabData && (
+              <Card>
+                {activeTabData.desc && (
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <activeTabData.icon className="h-5 w-5" />
+                      {activeTabData.label}
+                    </CardTitle>
+                    <CardDescription>{activeTabData.desc}</CardDescription>
+                  </CardHeader>
+                )}
+                <CardContent className={activeTabData.desc ? "" : "pt-6"}>
+                  <activeTabData.component />
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
       </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7 lg:w-[1400px]">
-          <TabsTrigger value="school-years" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("settings.schoolYears")}</span>
-          </TabsTrigger>
-          <TabsTrigger value="classes" className="flex items-center gap-2">
-            <GraduationCap className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("settings.classes")}</span>
-          </TabsTrigger>
-          <TabsTrigger value="levels" className="flex items-center gap-2">
-            <Award className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("settings.levels")}</span>
-          </TabsTrigger>
-          <TabsTrigger value="periods" className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("settings.periods")}</span>
-          </TabsTrigger>
-          <TabsTrigger value="subjects" className="flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("settings.subjects")}</span>
-          </TabsTrigger>
-          <TabsTrigger value="users" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("settings.users")}</span>
-          </TabsTrigger>
-          <TabsTrigger value="archive" className="flex items-center gap-2">
-            <Archive className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("settings.archive")}</span>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="school-years">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("settings.schoolYears")}</CardTitle>
-              <CardDescription>
-                {t("settings.schoolYearsDesc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SchoolYearsManager />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="classes">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("settings.classes")}</CardTitle>
-              <CardDescription>
-                {t("settings.classesDesc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ClassesManager />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="levels">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("settings.levels")}</CardTitle>
-              <CardDescription>
-                {t("settings.levelsDesc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <LevelsManager />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="periods">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("settings.periods")}</CardTitle>
-              <CardDescription>
-                {t("settings.periodsDesc")}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <AcademicPeriodsManager />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="subjects">
-          <SubjectsManager />
-        </TabsContent>
-
-        <TabsContent value="users">
-          <UsersManager />
-        </TabsContent>
-
-        <TabsContent value="archive">
-          <ArchiveManager />
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }
