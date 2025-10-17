@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import { Loader2, FileText, Download } from 'lucide-react';
 import { useGenerateReportCard, useReportCards } from '@/hooks/useReportCards';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useNavigate } from 'react-router-dom';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface SubjectWeight {
   subject_id: string;
@@ -25,7 +27,7 @@ export const ReportCardGeneration = () => {
   
   const queryClient = useQueryClient();
   const generateReportCard = useGenerateReportCard();
-
+  const navigate = useNavigate();
   // Récupérer les classes
   const { data: classes } = useQuery({
     queryKey: ['classes'],
@@ -281,6 +283,22 @@ export const ReportCardGeneration = () => {
             </div>
           </div>
 
+          {/* Alerte si aucune matière pour les filtres sélectionnés */}
+          {selectedClass && selectedSchoolYear && selectedSemester && subjects && subjects.length === 0 && (
+            <Alert>
+              <AlertTitle>Aucune matière trouvée</AlertTitle>
+              <AlertDescription>
+                Aucune matière n’a été définie pour cette classe ({selectedClass}), cette année ({selectedSchoolYear}) et ce semestre ({selectedSemester}).
+                Ajoutez d’abord les matières pour pouvoir configurer les coefficients.
+              </AlertDescription>
+              <div className="mt-3">
+                <Button variant="outline" onClick={() => navigate('/settings')}>
+                  Gérer les matières
+                </Button>
+              </div>
+            </Alert>
+          )}
+
           {/* Configuration des pondérations */}
           {subjects && subjects.length > 0 && subjectWeights.length > 0 && (
             <div className="space-y-4">
@@ -330,7 +348,7 @@ export const ReportCardGeneration = () => {
           )}
 
           {/* Génération des bulletins */}
-          {selectedClass && selectedSchoolYear && selectedSemester && students && (
+          {selectedClass && selectedSchoolYear && selectedSemester && students && subjects && subjects.length > 0 && (
             <div className="space-y-4 pt-6 border-t">
               <div className="flex items-center justify-between">
                 <div>
