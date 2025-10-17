@@ -158,23 +158,22 @@ export default function Grades() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Récupérer l'année scolaire active
-      const { data: activeYear } = await supabase
-        .from("school_years")
-        .select("label")
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (!activeYear) {
-        console.warn("Aucune année scolaire active trouvée");
-        return;
-      }
+      // Calculer l'année scolaire en cours basée sur la date actuelle
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1; // 1-12
+      
+      // Si on est entre janvier et août, on est dans l'année N-1/N
+      // Si on est entre septembre et décembre, on est dans l'année N/N+1
+      const schoolYear = currentMonth >= 9 
+        ? `${currentYear}-${currentYear + 1}`
+        : `${currentYear - 1}-${currentYear}`;
 
       const { data, error } = await supabase
         .from("subjects")
         .select("subject_name, class_name, school_year, semester, teacher_name, school_year_fk_id, academic_period_id")
         .eq("teacher_id", user.id)
-        .eq("school_year", activeYear.label)
+        .eq("school_year", schoolYear)
         .order("subject_name");
 
       if (error) throw error;
