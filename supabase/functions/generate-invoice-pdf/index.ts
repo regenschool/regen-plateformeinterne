@@ -359,11 +359,11 @@ function generateInvoiceHTML(invoice: any, profile: any): string {
     </div>
   </div>
 
-  ${profile?.bank_iban ? `
+  ${invoice?.bank_iban ? `
   <div class="section" style="margin-top: 40px;">
     <div class="section-title">Coordonnées Bancaires</div>
-    <p>IBAN: ${profile.bank_iban}</p>
-    ${profile.bank_bic ? `<p>BIC: ${profile.bank_bic}</p>` : ''}
+    <p>IBAN: ${invoice.bank_iban}</p>
+    ${invoice.bank_bic ? `<p>BIC: ${invoice.bank_bic}</p>` : ''}
   </div>
   ` : ''}
 

@@ -32,8 +32,6 @@ type TeacherProfile = {
   phone: string | null;
   address: string | null;
   siret: string | null;
-  bank_iban: string | null;
-  bank_bic: string | null;
 };
 
 type EnrichedProfile = {
@@ -46,8 +44,6 @@ type EnrichedProfile = {
   secondary_email: string | null;
   phone: string | null;
   address: string | null;
-  bank_iban: string | null;
-  bank_bic: string | null;
   siret: string | null;
   subjects: string[];
   documents_approved: number;
@@ -112,6 +108,8 @@ type Invoice = {
   total_amount: number;
   status: string;
   pdf_path: string | null;
+  bank_iban: string | null;
+  bank_bic: string | null;
 };
 
 const Profile = () => {
@@ -139,6 +137,8 @@ const Profile = () => {
     hours: "",
     rate_per_hour: "",
     other_amount: "",
+    bank_iban: "",
+    bank_bic: "",
   });
 
   useEffect(() => {
@@ -387,8 +387,6 @@ const Profile = () => {
           phone: profile.phone,
           address: profile.address,
           siret: profile.siret,
-          bank_iban: profile.bank_iban,
-          bank_bic: profile.bank_bic,
         }, {
           onConflict: 'user_id'
         });
@@ -427,6 +425,8 @@ const Profile = () => {
         other_amount: otherAmount > 0 ? otherAmount : null,
         total_amount: total,
         status: "draft",
+        bank_iban: invoiceForm.bank_iban || null,
+        bank_bic: invoiceForm.bank_bic || null,
       });
 
       if (error) throw error;
@@ -440,6 +440,8 @@ const Profile = () => {
         hours: "",
         rate_per_hour: "",
         other_amount: "",
+        bank_iban: "",
+        bank_bic: "",
       });
       fetchInvoices();
     } catch (error: any) {
@@ -748,25 +750,6 @@ const Profile = () => {
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="iban">IBAN</Label>
-                          <Input
-                            id="iban"
-                            value={profile.bank_iban || ""}
-                            onChange={(e) => setProfile({ ...profile, bank_iban: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="bic">BIC</Label>
-                          <Input
-                            id="bic"
-                            value={profile.bank_bic || ""}
-                            onChange={(e) => setProfile({ ...profile, bank_bic: e.target.value })}
-                          />
-                        </div>
-                      </div>
-
                       <Button onClick={saveProfile} disabled={saving}>
                         <Save className="w-4 h-4 mr-2" />
                         {saving ? "Enregistrement..." : "Enregistrer"}
@@ -1044,6 +1027,31 @@ const Profile = () => {
                             setInvoiceForm({ ...invoiceForm, other_amount: e.target.value })
                           }
                           placeholder="0"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="invoice_iban">IBAN</Label>
+                        <Input
+                          id="invoice_iban"
+                          value={invoiceForm.bank_iban}
+                          onChange={(e) =>
+                            setInvoiceForm({ ...invoiceForm, bank_iban: e.target.value })
+                          }
+                          placeholder="FR76 1234 5678 9012 3456 7890 123"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="invoice_bic">BIC</Label>
+                        <Input
+                          id="invoice_bic"
+                          value={invoiceForm.bank_bic}
+                          onChange={(e) =>
+                            setInvoiceForm({ ...invoiceForm, bank_bic: e.target.value })
+                          }
+                          placeholder="BNPAFRPP"
                         />
                       </div>
                     </div>

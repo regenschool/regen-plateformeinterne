@@ -890,6 +890,8 @@ export type Database = {
       }
       teacher_invoices: {
         Row: {
+          bank_bic: string | null
+          bank_iban: string | null
           created_at: string
           description: string
           hours: number | null
@@ -905,6 +907,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          bank_bic?: string | null
+          bank_iban?: string | null
           created_at?: string
           description: string
           hours?: number | null
@@ -920,6 +924,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          bank_bic?: string | null
+          bank_iban?: string | null
           created_at?: string
           description?: string
           hours?: number | null
@@ -996,8 +1002,6 @@ export type Database = {
       teacher_profiles: {
         Row: {
           address: string | null
-          bank_bic: string | null
-          bank_iban: string | null
           created_at: string
           email: string
           first_name: string | null
@@ -1012,8 +1016,6 @@ export type Database = {
         }
         Insert: {
           address?: string | null
-          bank_bic?: string | null
-          bank_iban?: string | null
           created_at?: string
           email: string
           first_name?: string | null
@@ -1028,8 +1030,6 @@ export type Database = {
         }
         Update: {
           address?: string | null
-          bank_bic?: string | null
-          bank_iban?: string | null
           created_at?: string
           email?: string
           first_name?: string | null
@@ -1365,8 +1365,6 @@ export type Database = {
       v_teacher_profiles_enriched: {
         Row: {
           address: string | null
-          bank_bic: string | null
-          bank_iban: string | null
           checklist_completed: number | null
           checklist_total: number | null
           created_at: string | null
