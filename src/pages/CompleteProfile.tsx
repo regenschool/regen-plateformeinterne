@@ -20,17 +20,56 @@ export default function CompleteProfile() {
   });
 
   useEffect(() => {
-    checkProfileComplete();
+    handleAuthCallback();
   }, []);
+
+  const handleAuthCallback = async () => {
+    try {
+      // Vérifier si on a un hash dans l'URL (lien d'invitation)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      const type = hashParams.get('type');
+
+      // Si on a un token d'invitation, l'échanger contre une session
+      if (accessToken && type === 'invite') {
+        console.log("Traitement du lien d'invitation...");
+        
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken!,
+        });
+
+        if (error) {
+          console.error("Erreur lors de l'établissement de la session:", error);
+          toast.error("Erreur lors de l'activation du lien d'invitation");
+          return;
+        }
+
+        console.log("Session établie avec succès:", data.user?.email);
+        
+        // Nettoyer l'URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      // Maintenant vérifier le profil
+      await checkProfileComplete();
+    } catch (error: any) {
+      console.error("Erreur handleAuthCallback:", error);
+      toast.error("Erreur lors de l'initialisation");
+    }
+  };
 
   const checkProfileComplete = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
       // Pas encore connecté, c'est normal pour un nouvel utilisateur
+      console.log("Aucun utilisateur authentifié détecté");
       return;
     }
 
+    console.log("Utilisateur détecté:", user.email);
     setUserEmail(user.email || "");
     setUserName(user.user_metadata?.full_name || "");
 
