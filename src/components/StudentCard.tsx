@@ -216,12 +216,33 @@ export const StudentCard = ({
     }
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Éviter la navigation si on clique sur un bouton ou input
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('input') || target.closest('textarea')) {
+      return;
+    }
+    
+    if (isAdmin) {
+      navigate(`/student/${student.id}`);
+    }
+  };
+
   return (
     <Card 
-      className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-      onClick={() => isAdmin && navigate(`/student/${student.id}`)}
+      className={`overflow-hidden transition-all duration-300 ${
+        isAdmin 
+          ? 'cursor-pointer hover:shadow-2xl hover:-translate-y-2 hover:scale-[1.02] group' 
+          : 'hover:shadow-lg hover:-translate-y-1'
+      }`}
+      onClick={handleCardClick}
     >
-      <CardHeader className="p-0">
+      <CardHeader className="p-0 relative">
+        {/* Overlay premium pour indiquer que c'est cliquable */}
+        {isAdmin && (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-primary/0 group-hover:from-primary/10 group-hover:to-accent/10 transition-all duration-500 z-10 pointer-events-none" />
+        )}
+        
         <div className="relative w-full h-40 bg-gradient-to-br from-primary/10 to-accent/10">
           {student.photo_url ? (
             <img
@@ -237,10 +258,22 @@ export const StudentCard = ({
               </div>
             </div>
           )}
-          <div className="absolute top-1.5 right-1.5 bg-primary text-primary-foreground px-2 py-0.5 rounded-full text-xs font-medium">
-            {student.class_name}
+          <div className="absolute top-1.5 right-1.5 flex gap-1 items-center z-20">
+            <div className="bg-primary text-primary-foreground px-2 py-0.5 rounded-full text-xs font-medium group-hover:scale-110 transition-transform">
+              {student.class_name}
+            </div>
+            {isAdmin && (
+              <div className="bg-primary/90 text-primary-foreground px-2 py-0.5 rounded-full text-xs font-medium opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center gap-1">
+                <span>Voir profil</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+            )}
           </div>
-          <div className="absolute top-1.5 left-1.5 flex gap-1">
+          <div className="absolute top-1.5 left-1.5 flex gap-1 z-20"
+            onClick={(e) => e.stopPropagation()}
+          >
             <EditStudentDialog student={student} onStudentUpdated={onUpdate} />
             
             <DropdownMenu>

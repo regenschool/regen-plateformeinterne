@@ -75,39 +75,57 @@ export default function StudentDetail() {
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+    <div className="container mx-auto py-8 space-y-6 animate-fade-in">
+      <div className="flex items-center gap-4 animate-scale-in">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => navigate("/")}
+          className="hover:scale-110 transition-transform"
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold">
+        <div className="flex-1">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             {student.first_name} {student.last_name}
           </h1>
-          <p className="text-muted-foreground">{student.class_name}</p>
+          <p className="text-muted-foreground flex items-center gap-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+            {student.class_name}
+          </p>
         </div>
       </div>
 
       <Tabs defaultValue="info" className="w-full">
-        <TabsList>
-          <TabsTrigger value="info">
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="info" className="transition-all hover:scale-105">
             <User className="h-4 w-4 mr-2" />
             Informations
           </TabsTrigger>
-          <TabsTrigger value="grades">
+          <TabsTrigger value="grades" className="transition-all hover:scale-105">
             <GraduationCap className="h-4 w-4 mr-2" />
             Notes
           </TabsTrigger>
-          <TabsTrigger value="reports">
+          <TabsTrigger value="reports" className="transition-all hover:scale-105">
             <FileText className="h-4 w-4 mr-2" />
-            Bulletins ({reportCards?.length || 0})
+            <span>Bulletins</span>
+            {reportCards && reportCards.length > 0 && (
+              <span className="ml-2 px-2 py-0.5 bg-primary text-primary-foreground rounded-full text-xs">
+                {reportCards.length}
+              </span>
+            )}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="info" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informations personnelles</CardTitle>
+        <TabsContent value="info" className="space-y-4 animate-fade-in">
+          <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
+              <CardTitle className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-4 w-4 text-primary" />
+                </div>
+                Informations personnelles
+              </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
               <div>
@@ -146,19 +164,25 @@ export default function StudentDetail() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="grades" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Notes récentes</CardTitle>
+        <TabsContent value="grades" className="space-y-4 animate-fade-in">
+          <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
+              <CardTitle className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <GraduationCap className="h-4 w-4 text-primary" />
+                </div>
+                Notes récentes
+              </CardTitle>
               <CardDescription>Dernières évaluations de l'étudiant</CardDescription>
             </CardHeader>
             <CardContent>
               {grades && grades.length > 0 ? (
                 <div className="space-y-2">
-                  {grades.slice(0, 10).map((grade) => (
+                  {grades.slice(0, 10).map((grade, index) => (
                     <div
                       key={grade.id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 hover:scale-[1.02] transition-all cursor-pointer animate-fade-in"
+                      style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <div>
                         <p className="font-medium">{grade.subject}</p>
@@ -186,19 +210,25 @@ export default function StudentDetail() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="reports" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Bulletins scolaires</CardTitle>
+        <TabsContent value="reports" className="space-y-4 animate-fade-in">
+          <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
+              <CardTitle className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-primary" />
+                </div>
+                Bulletins scolaires
+              </CardTitle>
               <CardDescription>Historique des bulletins générés</CardDescription>
             </CardHeader>
             <CardContent>
               {reportCards && reportCards.length > 0 ? (
                 <div className="space-y-2">
-                  {reportCards.map((report) => (
+                  {reportCards.map((report, index) => (
                     <div
                       key={report.id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 hover:scale-[1.02] transition-all animate-fade-in"
+                      style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <div>
                         <p className="font-medium">
@@ -218,7 +248,7 @@ export default function StudentDetail() {
                         >
                           {report.status === "finalized" ? "Finalisé" : "Brouillon"}
                         </span>
-                        <Button size="sm">Ouvrir</Button>
+                        <Button size="sm" className="hover:scale-110 transition-transform">Ouvrir</Button>
                       </div>
                     </div>
                   ))}
