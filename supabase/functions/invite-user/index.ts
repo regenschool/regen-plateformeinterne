@@ -69,7 +69,18 @@ serve(async (req) => {
 
     if (roleError) throw roleError;
 
-    // Si c'est un enseignant, créer le profil enseignant
+    // Créer TOUJOURS le profil dans teacher_profiles (pour tous les rôles)
+    const { error: profileError } = await supabaseClient
+      .from("teacher_profiles")
+      .insert({
+        user_id: newUser.user.id,
+        email: email,
+        full_name: fullName,
+      });
+
+    if (profileError) throw profileError;
+
+    // Si c'est un enseignant, créer aussi dans teachers
     if (role === "teacher") {
       const { error: teacherError } = await supabaseClient
         .from("teachers")
@@ -80,16 +91,6 @@ serve(async (req) => {
         });
 
       if (teacherError) throw teacherError;
-
-      const { error: profileError } = await supabaseClient
-        .from("teacher_profiles")
-        .insert({
-          user_id: newUser.user.id,
-          email: email,
-          full_name: fullName,
-        });
-
-      if (profileError) throw profileError;
     }
 
     // Générer un lien de connexion magic link

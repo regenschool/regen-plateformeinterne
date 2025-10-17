@@ -69,14 +69,18 @@ export default function CompleteProfile() {
 
       if (passwordError) throw passwordError;
 
-      // Mettre à jour le profil enseignant
+      // Mettre à jour le profil enseignant (upsert pour créer si n'existe pas)
       const { error: profileError } = await supabase
         .from("teacher_profiles")
-        .update({
+        .upsert({
+          user_id: user.id,
+          email: user.email!,
+          full_name: user.user_metadata?.full_name || user.email!.split("@")[0],
           phone: formData.phone,
           address: formData.address,
-        })
-        .eq("user_id", user.id);
+        }, {
+          onConflict: 'user_id'
+        });
 
       if (profileError) throw profileError;
 
