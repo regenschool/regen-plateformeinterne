@@ -1,45 +1,152 @@
-# Guide d'Onboarding Administrateur - Regen School
+# 📘 Guide d'Onboarding Administrateur
+## Plateforme Regen School - Version Débutant
 
-## Bienvenue sur la plateforme Regen School
+> **Ce guide est fait pour vous !**  
+> Même sans expérience informatique, vous allez découvrir pas à pas comment gérer votre établissement avec Regen School.  
+> Prenez votre temps, suivez les étapes dans l'ordre, et n'hésitez pas à revenir sur ce guide quand vous en avez besoin.
 
-Ce guide vous accompagne pas à pas dans la prise en main de la plateforme en tant qu'administrateur.
+---
+
+## 🎯 Ce que vous allez apprendre
+
+✅ Comment vous connecter pour la première fois  
+✅ Comment inviter vos enseignants  
+✅ Comment créer l'année scolaire et les classes  
+✅ Comment ajouter vos étudiants  
+✅ Comment consulter les notes  
+✅ Comment assurer la sécurité des données  
+
+**Temps de lecture estimé** : 45 minutes  
+**Difficulté** : ⭐ Débutant (aucune compétence technique requise)
 
 ---
 
 ## 📋 Table des matières
 
-1. [Première connexion](#première-connexion)
-2. [Comprendre l'interface](#comprendre-linterface)
-3. [Gestion des utilisateurs](#gestion-des-utilisateurs)
-4. [Configuration de l'année scolaire](#configuration-de-lannée-scolaire)
-5. [Gestion des classes et niveaux](#gestion-des-classes-et-niveaux)
-6. [Gestion des matières](#gestion-des-matières)
-7. [Gestion des étudiants](#gestion-des-étudiants)
-8. [Consultation des notes](#consultation-des-notes)
-9. [Gestion des documents](#gestion-des-documents)
-10. [Journal d'audit](#journal-daudit)
-11. [Bonnes pratiques](#bonnes-pratiques)
+### 🚀 Démarrage
+1. [Première connexion - Créer votre compte](#première-connexion)
+2. [Découvrir l'interface - Où tout se trouve](#comprendre-linterface)
+
+### 👥 Gérer les personnes
+3. [Inviter des enseignants](#gestion-des-utilisateurs)
+4. [Ajouter des étudiants](#gestion-des-étudiants)
+
+### 🏫 Organiser l'établissement
+5. [Créer l'année scolaire](#configuration-de-lannée-scolaire)
+6. [Créer les classes et niveaux](#gestion-des-classes-et-niveaux)
+7. [Gérer les matières](#gestion-des-matières)
+
+### 📊 Suivre l'activité
+8. [Consulter les notes](#consultation-des-notes)
+9. [Gérer les documents](#gestion-des-documents)
+10. [Vérifier la sécurité](#journal-daudit)
+
+### ✨ Devenir expert
+11. [Bonnes pratiques et astuces](#bonnes-pratiques)
+12. [Cas pratiques détaillés](#cas-pratiques)
 
 ---
 
-## 🔐 Première connexion
+## 🔐 Première connexion - Créer votre compte
 
-### Étape 1 : Réception de l'invitation
-Vous avez reçu un email d'invitation avec un lien unique. Ce lien reste valide jusqu'à ce que vous créiez votre compte.
+### 📧 Étape 1 : Vous avez reçu un email
 
-### Étape 2 : Création de votre compte
-1. Cliquez sur le lien dans l'email
-2. Vous êtes redirigé vers la page "Compléter mon profil"
-3. **Définissez votre mot de passe** (minimum 8 caractères)
-4. Remplissez vos informations de profil :
-   - Téléphone (optionnel)
-   - Adresse (optionnel)
-5. Cliquez sur "Enregistrer"
+**À quoi ressemble l'email ?**
 
-### Étape 3 : Première visite
-Après validation, vous êtes automatiquement connecté et redirigé vers le tableau de bord.
+```
+┌─────────────────────────────────────────────┐
+│ 📨 Objet : Invitation - Regen School        │
+├─────────────────────────────────────────────┤
+│                                             │
+│ Bonjour [Votre Nom],                        │
+│                                             │
+│ Vous êtes invité(e) à rejoindre Regen      │
+│ School en tant qu'administrateur.           │
+│                                             │
+│ [Créer mon compte] ← Cliquez ici            │
+│                                             │
+│ Ce lien reste valide jusqu'à ce que vous    │
+│ créiez votre compte.                        │
+└─────────────────────────────────────────────┘
+```
 
-**Note importante** : En tant qu'administrateur, vous avez également le rôle "enseignant" pour pouvoir accéder à toutes les fonctionnalités.
+💡 **Conseil** : Vérifiez vos spams si vous ne trouvez pas l'email.
+
+---
+
+### 🆕 Étape 2 : Créer votre mot de passe
+
+Après avoir cliqué sur le lien, vous arrivez sur cette page :
+
+**Ce que vous voyez :**
+```
+┌──────────────────────────────────────┐
+│  ✓ Compléter mon profil              │
+├──────────────────────────────────────┤
+│                                      │
+│  Votre email : sophie@ecole.fr       │
+│  (déjà enregistré, non modifiable)   │
+│                                      │
+│  🔒 Nouveau mot de passe *           │
+│  [____________]                      │
+│                                      │
+│  📞 Téléphone (optionnel)            │
+│  [____________]                      │
+│                                      │
+│  🏠 Adresse (optionnel)              │
+│  [____________]                      │
+│                                      │
+│  [Enregistrer et créer mon compte]   │
+└──────────────────────────────────────┘
+```
+
+**Comment choisir un bon mot de passe ?**
+
+✅ **BON** : `MonEcole2025!` (12 caractères, majuscule, chiffre, symbole)  
+✅ **BON** : `Regen@School24` (facile à retenir, sécurisé)  
+❌ **MAUVAIS** : `12345678` (trop simple)  
+❌ **MAUVAIS** : `password` (mot courant)
+
+🎯 **Exemple concret pour vous :**
+- Prenez le nom de votre établissement : `Regen`
+- Ajoutez l'année : `2025`
+- Ajoutez un symbole : `!`
+- Résultat : `Regen2025!`
+
+📝 **Notez ce mot de passe** dans un endroit sûr (pas sur un post-it sur l'écran ! 😊)
+
+---
+
+### ✅ Étape 3 : Vous êtes connecté !
+
+Bravo ! Vous venez de créer votre compte. Vous êtes automatiquement redirigé vers le **tableau de bord**.
+
+**Ce que vous voyez maintenant :**
+```
+┌──────────────────────────────────────────────────┐
+│ 🏠 Regen School          👤 Sophie | Déconnexion│
+├──────────────────────────────────────────────────┤
+│                                                  │
+│  📊 Tableau de bord                              │
+│                                                  │
+│  ┌─────────────┐  ┌─────────────┐              │
+│  │ 0 Étudiants │  │ 0 Classes   │              │
+│  └─────────────┘  └─────────────┘              │
+│                                                  │
+│  Prochaines étapes :                            │
+│  1. Créer l'année scolaire                      │
+│  2. Inviter des enseignants                     │
+│  3. Créer les classes                           │
+│                                                  │
+└──────────────────────────────────────────────────┘
+```
+
+🎉 **Félicitations !** Vous êtes prêt à configurer votre école.
+
+⚠️ **Important à savoir** :
+- En tant qu'administrateur, vous avez **tous les droits**
+- Vous pouvez aussi voir la vue "enseignant" (pour tester)
+- Votre mot de passe est personnel : ne le partagez jamais
 
 ---
 

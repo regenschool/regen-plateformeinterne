@@ -1,10 +1,14 @@
-import { FileText, Download } from "lucide-react";
+import { FileText, Download, FileCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useState } from "react";
 
 const ADMIN_GUIDE_URL = "/docs/guides/admin-onboarding.md";
 
 export const DocumentationSection = () => {
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const handleDownload = async (url: string, filename: string) => {
     try {
       const response = await fetch(url);
@@ -20,6 +24,11 @@ export const DocumentationSection = () => {
     } catch (error) {
       console.error("Erreur lors du téléchargement:", error);
     }
+  };
+
+  const handleOpenGuide = () => {
+    window.open(ADMIN_GUIDE_URL, '_blank');
+    toast.success("Utilisez Ctrl+P pour imprimer en PDF");
   };
 
   return (
@@ -56,12 +65,22 @@ export const DocumentationSection = () => {
               <li>Utiliser le journal d'audit</li>
               <li>Suivre les bonnes pratiques</li>
             </ul>
-            <Button 
-              onClick={() => handleDownload(ADMIN_GUIDE_URL, "guide-admin-regen-school.md")}
-              className="w-full sm:w-auto"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Télécharger le guide (Markdown)
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button 
+                onClick={handleOpenGuide}
+                className="flex-1"
+                variant="default"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Ouvrir le guide (PDF via impression)
+              </Button>
+              <Button 
+                onClick={() => handleDownload(ADMIN_GUIDE_URL, "guide-admin-regen-school.md")}
+                className="flex-1"
+                variant="outline"
+              >
+                <FileCode className="h-4 w-4 mr-2" />
+                Version Markdown
             </Button>
           </div>
         </CardContent>
