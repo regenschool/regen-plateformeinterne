@@ -7,11 +7,15 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Plus, Save, Eye } from "lucide-react";
+import { Loader2, Plus, Save, Eye, Code, Palette, Settings2, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ReportCardPreview } from "./ReportCardPreview";
 import { HtmlTemplateEditor } from "./HtmlTemplateEditor";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 interface ReportCardTemplate {
   id: string;
@@ -42,7 +46,6 @@ interface ReportCardTemplate {
 
 export const ReportCardTemplatesManager = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<ReportCardTemplate | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const queryClient = useQueryClient();
 
@@ -70,12 +73,11 @@ export const ReportCardTemplatesManager = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["report-card-templates"] });
-      toast.success("Modèle mis à jour");
-      setIsEditing(false);
+      toast.success("Modèle enregistré avec succès");
     },
     onError: (error) => {
       console.error("Erreur lors de la mise à jour:", error);
-      toast.error("Erreur lors de la mise à jour");
+      toast.error("Erreur lors de la sauvegarde");
     },
   });
 
@@ -89,7 +91,7 @@ export const ReportCardTemplatesManager = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["report-card-templates"] });
-      toast.success("Modèle créé");
+      toast.success("Nouveau modèle créé");
     },
     onError: (error) => {
       console.error("Erreur lors de la création:", error);
@@ -112,16 +114,17 @@ export const ReportCardTemplatesManager = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Modèles de Bulletins</h2>
-          <p className="text-muted-foreground">
-            Configurez l'apparence et le contenu des bulletins PDF
+          <h2 className="text-3xl font-bold tracking-tight">Modèles de Bulletins</h2>
+          <p className="text-muted-foreground mt-1">
+            Créez et personnalisez vos templates de bulletins PDF
           </p>
         </div>
         <Dialog>
           <DialogTrigger asChild>
-            <Button>
+            <Button size="lg">
               <Plus className="h-4 w-4 mr-2" />
               Nouveau modèle
             </Button>
@@ -134,7 +137,7 @@ export const ReportCardTemplatesManager = () => {
               <div className="space-y-2">
                 <Label>Nom du modèle</Label>
                 <Input
-                  placeholder="Ex: Modèle Personnalisé"
+                  placeholder="Ex: Bulletin Standard 2025"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       const input = e.target as HTMLInputElement;
@@ -150,268 +153,394 @@ export const ReportCardTemplatesManager = () => {
         </Dialog>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
+        {/* Sidebar - Liste des templates */}
         <Card>
           <CardHeader>
-            <CardTitle>Modèles disponibles</CardTitle>
-            <CardDescription>Sélectionnez un modèle à configurer</CardDescription>
+            <CardTitle className="text-lg">Mes modèles</CardTitle>
+            <CardDescription>Sélectionnez un modèle à modifier</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
-            {templates?.map((template) => (
-              <div key={template.id} className="flex gap-2">
-                <Button
-                  variant={selectedTemplate?.id === template.id ? "default" : "outline"}
-                  className="flex-1 justify-start"
-                  onClick={() => {
-                    setSelectedTemplate(template);
-                    setIsEditing(false);
-                  }}
-                >
-                  {template.name}
-                  {template.is_default && " (Par défaut)"}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    setSelectedTemplate(template);
-                    setShowPreview(true);
-                  }}
-                  title="Aperçu"
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
+          <CardContent>
+            <ScrollArea className="h-[600px] pr-4">
+              <div className="space-y-2">
+                {templates?.map((template) => (
+                  <div
+                    key={template.id}
+                    onClick={() => setSelectedTemplate(template)}
+                    className={`group relative p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedTemplate?.id === template.id
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50 hover:bg-accent/50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{template.name}</p>
+                        <div className="flex gap-2 mt-2">
+                          {template.is_default && (
+                            <Badge variant="secondary" className="text-xs">
+                              Par défaut
+                            </Badge>
+                          )}
+                          {template.is_active && (
+                            <Badge variant="outline" className="text-xs">
+                              Actif
+                            </Badge>
+                          )}
+                          {template.use_custom_html && (
+                            <Badge variant="outline" className="text-xs">
+                              <Code className="h-3 w-3 mr-1" />
+                              HTML
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTemplate(template);
+                          setShowPreview(true);
+                        }}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </ScrollArea>
           </CardContent>
         </Card>
 
-        {selectedTemplate && (
+        {/* Main Content - Configuration du template */}
+        {selectedTemplate ? (
           <Card>
             <CardHeader>
-              <CardTitle>Configuration: {selectedTemplate.name}</CardTitle>
-              <CardDescription>Personnalisez le modèle de bulletin</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl">{selectedTemplate.name}</CardTitle>
+                  <CardDescription className="mt-1">
+                    Personnalisez l'apparence et le contenu du bulletin
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPreview(true)}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Aperçu
+                  </Button>
+                  <Button onClick={handleSaveTemplate} disabled={updateTemplateMutation.isPending}>
+                    {updateTemplateMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-2" />
+                    )}
+                    Enregistrer
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="font-semibold">Sections à afficher</h3>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="show_header">En-tête</Label>
-                  <Switch
-                    id="show_header"
-                    checked={selectedTemplate.show_header}
-                    onCheckedChange={(checked) =>
-                      setSelectedTemplate({ ...selectedTemplate, show_header: checked })
-                    }
-                  />
-                </div>
+            <CardContent>
+              <Tabs defaultValue="content" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="content">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Contenu
+                  </TabsTrigger>
+                  <TabsTrigger value="style">
+                    <Palette className="h-4 w-4 mr-2" />
+                    Style
+                  </TabsTrigger>
+                  <TabsTrigger value="advanced">
+                    <Code className="h-4 w-4 mr-2" />
+                    Avancé
+                  </TabsTrigger>
+                </TabsList>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="show_student_info">Informations étudiant</Label>
-                  <Switch
-                    id="show_student_info"
-                    checked={selectedTemplate.show_student_info}
-                    onCheckedChange={(checked) =>
-                      setSelectedTemplate({ ...selectedTemplate, show_student_info: checked })
-                    }
-                  />
-                </div>
+                {/* Onglet Contenu */}
+                <TabsContent value="content" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Sections à afficher</CardTitle>
+                      <CardDescription>
+                        Choisissez les informations à inclure dans le bulletin
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="show_header">En-tête</Label>
+                            <p className="text-sm text-muted-foreground">
+                              Logo et titre du bulletin
+                            </p>
+                          </div>
+                          <Switch
+                            id="show_header"
+                            checked={selectedTemplate.show_header}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_header: checked })
+                            }
+                          />
+                        </div>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="show_grades_table">Tableau des notes</Label>
-                  <Switch
-                    id="show_grades_table"
-                    checked={selectedTemplate.show_grades_table}
-                    onCheckedChange={(checked) =>
-                      setSelectedTemplate({ ...selectedTemplate, show_grades_table: checked })
-                    }
-                  />
-                </div>
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="show_student_info">Infos étudiant</Label>
+                            <p className="text-sm text-muted-foreground">
+                              Nom, classe, date de naissance
+                            </p>
+                          </div>
+                          <Switch
+                            id="show_student_info"
+                            checked={selectedTemplate.show_student_info}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_student_info: checked })
+                            }
+                          />
+                        </div>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="show_average">Moyenne générale</Label>
-                  <Switch
-                    id="show_average"
-                    checked={selectedTemplate.show_average}
-                    onCheckedChange={(checked) =>
-                      setSelectedTemplate({ ...selectedTemplate, show_average: checked })
-                    }
-                  />
-                </div>
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="show_grades_table">Tableau des notes</Label>
+                            <p className="text-sm text-muted-foreground">
+                              Liste détaillée des notes
+                            </p>
+                          </div>
+                          <Switch
+                            id="show_grades_table"
+                            checked={selectedTemplate.show_grades_table}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_grades_table: checked })
+                            }
+                          />
+                        </div>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="show_class_average">Moyenne de classe</Label>
-                  <Switch
-                    id="show_class_average"
-                    checked={selectedTemplate.show_class_average}
-                    onCheckedChange={(checked) =>
-                      setSelectedTemplate({ ...selectedTemplate, show_class_average: checked })
-                    }
-                  />
-                </div>
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="show_average">Moyenne générale</Label>
+                            <p className="text-sm text-muted-foreground">
+                              Note moyenne de l'étudiant
+                            </p>
+                          </div>
+                          <Switch
+                            id="show_average"
+                            checked={selectedTemplate.show_average}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_average: checked })
+                            }
+                          />
+                        </div>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="show_appreciation">Appréciations</Label>
-                  <Switch
-                    id="show_appreciation"
-                    checked={selectedTemplate.show_appreciation}
-                    onCheckedChange={(checked) =>
-                      setSelectedTemplate({ ...selectedTemplate, show_appreciation: checked })
-                    }
-                  />
-                </div>
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="show_class_average">Moyenne de classe</Label>
+                            <p className="text-sm text-muted-foreground">
+                              Comparaison avec la classe
+                            </p>
+                          </div>
+                          <Switch
+                            id="show_class_average"
+                            checked={selectedTemplate.show_class_average}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_class_average: checked })
+                            }
+                          />
+                        </div>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="show_absences">Absences</Label>
-                  <Switch
-                    id="show_absences"
-                    checked={selectedTemplate.show_absences}
-                    onCheckedChange={(checked) =>
-                      setSelectedTemplate({ ...selectedTemplate, show_absences: checked })
-                    }
-                  />
-                </div>
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="show_appreciation">Appréciations</Label>
+                            <p className="text-sm text-muted-foreground">
+                              Commentaires par matière
+                            </p>
+                          </div>
+                          <Switch
+                            id="show_appreciation"
+                            checked={selectedTemplate.show_appreciation}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_appreciation: checked })
+                            }
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="show_signature">Signature</Label>
-                  <Switch
-                    id="show_signature"
-                    checked={selectedTemplate.show_signature}
-                    onCheckedChange={(checked) =>
-                      setSelectedTemplate({ ...selectedTemplate, show_signature: checked })
-                    }
-                  />
-                </div>
-              </div>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Détails des notes</CardTitle>
+                      <CardDescription>
+                        Informations complémentaires dans le tableau
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <Label htmlFor="show_weighting">Coefficient</Label>
+                          <Switch
+                            id="show_weighting"
+                            checked={selectedTemplate.show_weighting}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_weighting: checked })
+                            }
+                          />
+                        </div>
 
-              <div className="space-y-4">
-                <h3 className="font-semibold">Format d'affichage des notes</h3>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="show_grade_detail">Afficher le détail par note</Label>
-                  <Switch
-                    id="show_grade_detail"
-                    checked={selectedTemplate.show_grade_detail}
-                    onCheckedChange={(checked) =>
-                      setSelectedTemplate({ ...selectedTemplate, show_grade_detail: checked })
-                    }
-                  />
-                </div>
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <Label htmlFor="show_max_grade">Note maximale</Label>
+                          <Switch
+                            id="show_max_grade"
+                            checked={selectedTemplate.show_max_grade}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_max_grade: checked })
+                            }
+                          />
+                        </div>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="show_subject_average">Afficher moyenne par matière</Label>
-                  <Switch
-                    id="show_subject_average"
-                    checked={selectedTemplate.show_subject_average}
-                    onCheckedChange={(checked) =>
-                      setSelectedTemplate({ ...selectedTemplate, show_subject_average: checked })
-                    }
-                  />
-                </div>
-              </div>
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <Label htmlFor="show_assessment_type">Type d'évaluation</Label>
+                          <Switch
+                            id="show_assessment_type"
+                            checked={selectedTemplate.show_assessment_type}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_assessment_type: checked })
+                            }
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
 
-              <div className="space-y-4">
-                <h3 className="font-semibold">Détails des notes</h3>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="show_weighting">Coefficient</Label>
-                  <Switch
-                    id="show_weighting"
-                    checked={selectedTemplate.show_weighting}
-                    onCheckedChange={(checked) =>
-                      setSelectedTemplate({ ...selectedTemplate, show_weighting: checked })
-                    }
-                  />
-                </div>
+                {/* Onglet Style */}
+                <TabsContent value="style" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Couleurs et design</CardTitle>
+                      <CardDescription>
+                        Personnalisez l'apparence visuelle du bulletin
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="header_color">Couleur principale</Label>
+                          <div className="flex gap-4 items-center">
+                            <Input
+                              id="header_color"
+                              type="color"
+                              value={selectedTemplate.header_color}
+                              onChange={(e) =>
+                                setSelectedTemplate({ ...selectedTemplate, header_color: e.target.value })
+                              }
+                              className="w-20 h-10"
+                            />
+                            <Input
+                              type="text"
+                              value={selectedTemplate.header_color}
+                              onChange={(e) =>
+                                setSelectedTemplate({ ...selectedTemplate, header_color: e.target.value })
+                              }
+                              className="font-mono"
+                            />
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Utilisée pour l'en-tête et les accents
+                          </p>
+                        </div>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="show_max_grade">Note maximale</Label>
-                  <Switch
-                    id="show_max_grade"
-                    checked={selectedTemplate.show_max_grade}
-                    onCheckedChange={(checked) =>
-                      setSelectedTemplate({ ...selectedTemplate, show_max_grade: checked })
-                    }
-                  />
-                </div>
+                        <Separator />
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="show_assessment_type">Type d'évaluation</Label>
-                  <Switch
-                    id="show_assessment_type"
-                    checked={selectedTemplate.show_assessment_type}
-                    onCheckedChange={(checked) =>
-                      setSelectedTemplate({ ...selectedTemplate, show_assessment_type: checked })
-                    }
-                  />
-                </div>
-              </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="footer_text">Texte de pied de page</Label>
+                          <Textarea
+                            id="footer_text"
+                            value={selectedTemplate.footer_text || ""}
+                            onChange={(e) =>
+                              setSelectedTemplate({ ...selectedTemplate, footer_text: e.target.value })
+                            }
+                            placeholder="Ex: École Supérieure - Année 2025-2026"
+                            rows={3}
+                          />
+                          <p className="text-sm text-muted-foreground">
+                            Texte affiché en bas du bulletin
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-              <div className="space-y-4">
-                <h3 className="font-semibold">Personnalisation visuelle</h3>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="header_color">Couleur de l'en-tête</Label>
-                  <Input
-                    id="header_color"
-                    type="color"
-                    value={selectedTemplate.header_color}
-                    onChange={(e) =>
-                      setSelectedTemplate({ ...selectedTemplate, header_color: e.target.value })
-                    }
-                  />
-                </div>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Paramètres du modèle</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between p-3 rounded-lg border">
+                        <div className="space-y-0.5">
+                          <Label htmlFor="is_active">Modèle actif</Label>
+                          <p className="text-sm text-muted-foreground">
+                            Utilisable pour la génération de bulletins
+                          </p>
+                        </div>
+                        <Switch
+                          id="is_active"
+                          checked={selectedTemplate.is_active}
+                          onCheckedChange={(checked) =>
+                            setSelectedTemplate({ ...selectedTemplate, is_active: checked })
+                          }
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
 
-                <div className="space-y-2">
-                  <Label htmlFor="footer_text">Texte de pied de page</Label>
-                  <Textarea
-                    id="footer_text"
-                    value={selectedTemplate.footer_text || ""}
-                    onChange={(e) =>
-                      setSelectedTemplate({ ...selectedTemplate, footer_text: e.target.value })
-                    }
-                    placeholder="Texte personnalisé en bas du bulletin"
-                  />
-                </div>
-              </div>
-
-              <HtmlTemplateEditor
-                htmlTemplate={selectedTemplate.html_template || undefined}
-                cssTemplate={selectedTemplate.css_template || undefined}
-                useCustomHtml={selectedTemplate.use_custom_html || false}
-                onHtmlChange={(html) =>
-                  setSelectedTemplate({ ...selectedTemplate, html_template: html })
-                }
-                onCssChange={(css) =>
-                  setSelectedTemplate({ ...selectedTemplate, css_template: css })
-                }
-                onUseCustomHtmlChange={(use) =>
-                  setSelectedTemplate({ ...selectedTemplate, use_custom_html: use })
-                }
-              />
-
-              <div className="flex items-center justify-between pt-4 border-t">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is_active"
-                    checked={selectedTemplate.is_active}
-                    onCheckedChange={(checked) =>
-                      setSelectedTemplate({ ...selectedTemplate, is_active: checked })
-                    }
-                  />
-                  <Label htmlFor="is_active">Modèle actif</Label>
-                </div>
-
-                <Button onClick={handleSaveTemplate} disabled={updateTemplateMutation.isPending}>
-                  {updateTemplateMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Save className="h-4 w-4 mr-2" />
-                  )}
-                  Enregistrer
-                </Button>
-              </div>
+                {/* Onglet Avancé - HTML/CSS */}
+                <TabsContent value="advanced" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Code className="h-5 w-5" />
+                        Personnalisation HTML/CSS
+                      </CardTitle>
+                      <CardDescription>
+                        Pour les utilisateurs avancés : créez un template complètement personnalisé
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <HtmlTemplateEditor
+                        htmlTemplate={selectedTemplate.html_template || undefined}
+                        cssTemplate={selectedTemplate.css_template || undefined}
+                        useCustomHtml={selectedTemplate.use_custom_html || false}
+                        onHtmlChange={(html) =>
+                          setSelectedTemplate({ ...selectedTemplate, html_template: html })
+                        }
+                        onCssChange={(css) =>
+                          setSelectedTemplate({ ...selectedTemplate, css_template: css })
+                        }
+                        onUseCustomHtmlChange={(use) =>
+                          setSelectedTemplate({ ...selectedTemplate, use_custom_html: use })
+                        }
+                      />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center h-[600px] text-center">
+              <Settings2 className="h-16 w-16 text-muted-foreground mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Aucun modèle sélectionné</h3>
+              <p className="text-muted-foreground max-w-md">
+                Sélectionnez un modèle dans la liste ou créez-en un nouveau pour commencer
+              </p>
             </CardContent>
           </Card>
         )}
