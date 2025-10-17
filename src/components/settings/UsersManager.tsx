@@ -57,10 +57,10 @@ export const UsersManager = () => {
         .select("user_id, role");
       if (rolesError) throw rolesError;
 
-      // 3) Informations enseignants
+      // 3) Informations enseignants (nom uniquement depuis teachers)
       const { data: teachersData, error: teachersError } = await supabase
         .from("teachers")
-        .select("user_id, full_name, phone, email, created_at");
+        .select("user_id, full_name, created_at");
       if (teachersError && teachersError.code !== 'PGRST116') throw teachersError;
 
       // Construire la liste d'IDs unique
@@ -84,7 +84,7 @@ export const UsersManager = () => {
           _user_id: id 
         });
 
-        const email = emailData || profile?.email || teacher?.email || "";
+        const email = emailData || profile?.email || "";
         const createdAt = profile?.created_at || teacher?.created_at || new Date().toISOString();
         const fullName = teacher?.full_name || profile?.full_name || email.split("@")[0] || "";
 
@@ -100,7 +100,7 @@ export const UsersManager = () => {
           status,
           teacher_info: {
             full_name: fullName,
-            phone: teacher?.phone || null,
+            phone: profile?.phone || null,
           },
         });
       }

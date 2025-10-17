@@ -206,7 +206,6 @@ export const NewSubjectDialog = ({
       await addTeacherMutation.mutateAsync({
         user_id: userId,
         full_name: newTeacherFullName,
-        phone: newTeacherPhone || undefined,
       });
 
       setSelectedTeacherId(userId);
@@ -297,7 +296,7 @@ export const NewSubjectDialog = ({
                       ) : (
                         teachers?.map((teacher) => (
                           <SelectItem key={teacher.user_id} value={teacher.user_id}>
-                            {teacher.full_name} {teacher.email ? `(${teacher.email})` : ''}
+                            {teacher.full_name}
                           </SelectItem>
                         ))
                       )}

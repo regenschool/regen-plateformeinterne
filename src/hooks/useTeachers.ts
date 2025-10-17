@@ -5,16 +5,15 @@ import { toast } from 'sonner';
 /**
  * ARCHITECTURE: Teachers = Users with 'teacher' role
  * 
- * - teachers table: extension de profil, user_id est la PRIMARY KEY
+ * - teachers table: table légère pour jointures fréquentes (grades, subjects)
+ *   Contient: user_id (PK) + full_name uniquement
+ * - teacher_profiles table: données complètes et sensibles (email, phone, IBAN, etc.)
  * - Quand on insère dans teachers, le trigger sync_teacher_role crée automatiquement le rôle
- * - email est synchronisé automatiquement depuis auth.users via trigger
  */
 
 export type Teacher = {
   user_id: string; // PRIMARY KEY
   full_name: string;
-  email: string | null; // Sync auto depuis auth.users
-  phone: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -59,8 +58,7 @@ export const useAddTeacher = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (teacher: { user_id: string; full_name: string; phone?: string }) => {
-      // L'email sera synchronisé automatiquement par le trigger
+    mutationFn: async (teacher: { user_id: string; full_name: string }) => {
       // Le rôle 'teacher' sera créé automatiquement par le trigger
       const { data, error } = await (supabase as any)
         .from('teachers')
@@ -87,12 +85,9 @@ export const useUpdateTeacher = () => {
   
   return useMutation({
     mutationFn: async ({ user_id, updates }: { user_id: string; updates: Partial<Teacher> }) => {
-      // email est en lecture seule (sync auto depuis auth.users)
-      const { email, ...safeUpdates } = updates;
-      
       const { data, error } = await supabase
         .from('teachers')
-        .update(safeUpdates)
+        .update(updates)
         .eq('user_id', user_id)
         .select()
         .single();

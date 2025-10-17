@@ -33,18 +33,16 @@ export const TeachersManager = () => {
   const deleteTeacher = useDeleteTeacher();
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<{ full_name: string; phone: string }>({
+  const [editValues, setEditValues] = useState<{ full_name: string }>({
     full_name: "",
-    phone: "",
   });
   const [isAdding, setIsAdding] = useState(false);
-  const [newTeacher, setNewTeacher] = useState({ user_id: "", full_name: "", phone: "" });
+  const [newTeacher, setNewTeacher] = useState({ user_id: "", full_name: "" });
 
   const handleEdit = (teacher: Teacher) => {
     setEditingId(teacher.user_id);
     setEditValues({
       full_name: teacher.full_name,
-      phone: teacher.phone || "",
     });
   };
 
@@ -67,7 +65,7 @@ export const TeachersManager = () => {
 
   const handleCancel = () => {
     setEditingId(null);
-    setEditValues({ full_name: "", phone: "" });
+    setEditValues({ full_name: "" });
   };
 
   const handleAdd = async () => {
@@ -84,9 +82,8 @@ export const TeachersManager = () => {
       await addTeacher.mutateAsync({
         user_id: newTeacher.user_id,
         full_name: newTeacher.full_name,
-        phone: newTeacher.phone,
       });
-      setNewTeacher({ user_id: "", full_name: "", phone: "" });
+      setNewTeacher({ user_id: "", full_name: "" });
       setIsAdding(false);
     } catch (error) {
       console.error("Error adding teacher:", error);
@@ -136,8 +133,7 @@ export const TeachersManager = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Nom complet</TableHead>
-              <TableHead>Email (auto)</TableHead>
-              <TableHead>Téléphone</TableHead>
+              <TableHead>User ID</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -155,15 +151,7 @@ export const TeachersManager = () => {
                   <Input
                     value={newTeacher.user_id}
                     onChange={(e) => setNewTeacher({ ...newTeacher, user_id: e.target.value })}
-                    placeholder="ID utilisateur (UUID)"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="tel"
-                    value={newTeacher.phone}
-                    onChange={(e) => setNewTeacher({ ...newTeacher, phone: e.target.value })}
-                    placeholder="0123456789"
+                  placeholder="ID utilisateur (UUID)"
                   />
                 </TableCell>
                 <TableCell>
@@ -173,7 +161,7 @@ export const TeachersManager = () => {
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => {
                       setIsAdding(false);
-                      setNewTeacher({ user_id: "", full_name: "", phone: "" });
+                      setNewTeacher({ user_id: "", full_name: "" });
                     }}>
                       <X className="h-4 w-4" />
                     </Button>
@@ -194,18 +182,7 @@ export const TeachersManager = () => {
                   )}
                 </TableCell>
                 <TableCell>
-                  <span className="text-muted-foreground italic">{teacher.email || "(non connecté)"}</span>
-                </TableCell>
-                <TableCell>
-                  {editingId === teacher.user_id ? (
-                    <Input
-                      type="tel"
-                      value={editValues.phone}
-                      onChange={(e) => setEditValues({ ...editValues, phone: e.target.value })}
-                    />
-                  ) : (
-                    <span className="text-muted-foreground">{teacher.phone || "-"}</span>
-                  )}
+                  <span className="text-muted-foreground text-xs font-mono">{teacher.user_id}</span>
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
@@ -252,7 +229,7 @@ export const TeachersManager = () => {
             ))}
             {teachers.length === 0 && !isAdding && (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground">
+                <TableCell colSpan={3} className="text-center text-muted-foreground">
                   Aucun enseignant enregistré
                 </TableCell>
               </TableRow>

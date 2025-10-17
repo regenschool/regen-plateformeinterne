@@ -1086,28 +1086,22 @@ export type Database = {
       teachers: {
         Row: {
           created_at: string
-          email: string | null
           full_name: string
           id: string
-          phone: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          email?: string | null
           full_name: string
           id?: string
-          phone?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
-          email?: string | null
           full_name?: string
           id?: string
-          phone?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1334,6 +1328,7 @@ export type Database = {
           school_year_id: string | null
           school_year_label: string | null
           special_needs: string | null
+          teacher_id: string | null
           updated_at: string | null
         }
         Relationships: [

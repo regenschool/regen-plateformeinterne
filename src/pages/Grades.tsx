@@ -469,26 +469,42 @@ export default function Grades() {
         // Find teacher by name to get their user_id
         const { data: teacher } = await supabase
           .from('teachers')
-          .select('*')
+          .select('user_id, full_name')
           .eq('full_name', teacherName)
           .maybeSingle();
 
         if (teacher) {
           teacherId = teacher.user_id;
-          teacherEmail = teacher.email;
           teacherFkId = teacher.user_id;
+          
+          // Get email from teacher_profiles
+          const { data: profile } = await supabase
+            .from('teacher_profiles')
+            .select('email')
+            .eq('user_id', teacher.user_id)
+            .maybeSingle();
+          
+          teacherEmail = profile?.email;
         }
       } else {
         // For non-admin users, get their teacher record
         const { data: teacher } = await supabase
           .from('teachers')
-          .select('*')
+          .select('user_id, full_name')
           .eq('user_id', user.id)
           .maybeSingle();
 
         if (teacher) {
           teacherFkId = teacher.user_id;
-          teacherEmail = teacher.email;
+          
+          // Get email from teacher_profiles
+          const { data: profile } = await supabase
+            .from('teacher_profiles')
+            .select('email')
+            .eq('user_id', teacher.user_id)
+            .maybeSingle();
+          
+          teacherEmail = profile?.email;
         }
       }
 
