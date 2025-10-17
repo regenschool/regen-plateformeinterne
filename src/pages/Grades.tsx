@@ -8,7 +8,6 @@ import { GradeEntryDialog } from "@/components/GradeEntryDialog";
 import { EditGradeDialog } from "@/components/EditGradeDialog";
 import { BulkGradeImport } from "@/components/BulkGradeImport";
 import { NewSubjectDialog } from "@/components/NewSubjectDialog";
-import { ReportCardGeneration } from "@/components/ReportCardGeneration";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useAdmin } from "@/contexts/AdminContext";
@@ -16,7 +15,6 @@ import { toast } from "sonner";
 import { ClipboardList, Upload, TrendingUp, FileText, AlertTriangle, Trash2, ArrowLeft, ChevronLeft, ChevronRight, PlusCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -716,30 +714,33 @@ export default function Grades() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
-      {isAdmin ? (
-        <Tabs defaultValue="grades" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
-            <TabsTrigger value="grades">Gestion des notes</TabsTrigger>
-            <TabsTrigger value="bulletins">Bulletins</TabsTrigger>
-          </TabsList>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">{t("grades.title")}</h1>
+        {isAdmin && (
+          <Button
+            variant="outline"
+            onClick={() => window.location.href = '/tests'}
+            className="gap-2"
+          >
+            <FileText className="w-4 h-4" />
+            Générer des bulletins
+          </Button>
+        )}
+      </div>
 
-          <TabsContent value="grades" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {selectedSubject && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleResetSelection}
-                    className="gap-2"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    Retour à la sélection
-                  </Button>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {selectedSubject && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleResetSelection}
+              className="gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Retour à la sélection
+            </Button>
           )}
-          <h1 className="text-3xl font-bold text-foreground">
-            {isAdmin ? "Gestion des Notes" : t("grades.title")}
-          </h1>
         </div>
         {selectedSubject && subjects.length > 1 && (
           <div className="flex items-center gap-2">
@@ -1315,20 +1316,7 @@ export default function Grades() {
           defaultSemester={selectedSemester}
           className={selectedClass}
         />
-        </TabsContent>
-
-        <TabsContent value="bulletins">
-          <ReportCardGeneration />
-        </TabsContent>
-      </Tabs>
-      ) : (
-        <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">{t("grades.title")}</h1>
-          </div>
-          {/* Content will be duplicated here for teachers */}
-        </div>
-      )}
+      </div>
     </div>
   );
 }
