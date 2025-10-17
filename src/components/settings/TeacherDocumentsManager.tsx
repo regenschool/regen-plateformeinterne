@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { FileText, Download, Upload, Trash2, Filter, Calendar, User, CheckCircle2, Clock, XCircle, Search } from "lucide-react";
+import { FileText, Download, Upload, Trash2, Filter, Calendar, User, CheckCircle2, Clock, XCircle, Search, ChevronDown, Folder } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -165,6 +166,25 @@ export function TeacherDocumentsManager() {
     return true;
   });
 
+  // Grouper les documents par catégorie
+  const documentsByCategory = filteredDocuments.reduce((acc, doc) => {
+    const categoryName = doc.category?.name || "Sans catégorie";
+    if (!acc[categoryName]) {
+      acc[categoryName] = [];
+    }
+    acc[categoryName].push(doc);
+    return acc;
+  }, {} as Record<string, TeacherDocument[]>);
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'approved': return 'default';
+      case 'pending': return 'secondary';
+      case 'rejected': return 'destructive';
+      default: return 'outline';
+    }
+  };
+
   if (isLoading) {
     return <div className="p-8 text-center">Chargement...</div>;
   }
@@ -250,117 +270,126 @@ export function TeacherDocumentsManager() {
         </CardContent>
       </Card>
 
-      {/* Tableau des documents */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>{filteredDocuments.length} document(s)</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Enseignant</TableHead>
-                <TableHead>Fichier</TableHead>
-                <TableHead>Catégorie</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredDocuments.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
-                    Aucun document
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredDocuments.map((doc) => (
-                  <TableRow key={doc.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-sm">{doc.teacher_profile?.full_name}</p>
-                          <p className="text-xs text-muted-foreground">{doc.teacher_profile?.email}</p>
-                        </div>
+      {/* Documents groupés par catégorie en accordions */}
+      {filteredDocuments.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <p>Aucun document trouvé</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Accordion type="multiple" className="space-y-4" defaultValue={Object.keys(documentsByCategory)}>
+          {Object.entries(documentsByCategory).map(([categoryName, categoryDocs]) => (
+            <AccordionItem key={categoryName} value={categoryName} className="border rounded-lg">
+              <Card className="border-0">
+                <AccordionTrigger className="hover:no-underline px-6 py-4">
+                  <div className="flex items-center justify-between w-full pr-4">
+                    <div className="flex items-center gap-3">
+                      <Folder className="w-5 h-5 text-primary" />
+                      <div className="text-left">
+                        <h3 className="font-semibold text-base">{categoryName}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {categoryDocs.length} document{categoryDocs.length > 1 ? 's' : ''}
+                        </p>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">{doc.title || doc.file_name}</p>
-                        {doc.description && (
-                          <p className="text-xs text-muted-foreground">{doc.description}</p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {doc.category?.name || <span className="text-muted-foreground">-</span>}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(doc.status)}
-                        <span className="text-sm">{getStatusLabel(doc.status)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={doc.upload_source === 'admin' ? 'default' : 'secondary'}>
-                        {doc.upload_source === 'admin' ? 'Admin' : 'Enseignant'}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">
+                        {categoryDocs.filter(d => d.status === 'pending').length} en attente
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(doc.created_at), "dd MMM yyyy", { locale: fr })}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => downloadDocument(doc.file_path, doc.file_name)}
-                        >
-                          <Download className="w-4 h-4" />
-                        </Button>
-                        {doc.status === 'pending' && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => updateStatusMutation.mutate({ id: doc.id, status: 'approved' })}
-                            >
-                              <CheckCircle2 className="w-4 h-4 text-green-600" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => updateStatusMutation.mutate({ id: doc.id, status: 'rejected' })}
-                            >
-                              <XCircle className="w-4 h-4 text-red-600" />
-                            </Button>
-                          </>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            if (confirm("Supprimer ce document ?")) {
-                              deleteMutation.mutate(doc.id);
-                            }
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        {categoryDocs.filter(d => d.status === 'approved').length} approuvé{categoryDocs.filter(d => d.status === 'approved').length > 1 ? 's' : ''}
+                      </Badge>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="px-6 pb-4">
+                    <div className="space-y-3">
+                      {categoryDocs.map((doc) => (
+                        <div key={doc.id} className="border rounded-lg p-4 hover:bg-accent/50 transition-colors animate-fade-in">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-3 mb-2">
+                                <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-sm truncate">{doc.title || doc.file_name}</p>
+                                  {doc.description && (
+                                    <p className="text-xs text-muted-foreground mt-1">{doc.description}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground ml-7">
+                                <div className="flex items-center gap-1">
+                                  <User className="w-3 h-3" />
+                                  <span>{doc.teacher_profile?.full_name}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  <span>{format(new Date(doc.created_at), "dd MMM yyyy", { locale: fr })}</span>
+                                </div>
+                                <Badge variant={getStatusBadgeVariant(doc.status)} className="text-xs">
+                                  {getStatusLabel(doc.status)}
+                                </Badge>
+                                <Badge variant={doc.upload_source === 'admin' ? 'default' : 'secondary'} className="text-xs">
+                                  {doc.upload_source === 'admin' ? 'Admin' : 'Enseignant'}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => downloadDocument(doc.file_path, doc.file_name)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Download className="w-4 h-4" />
+                              </Button>
+                              {doc.status === 'pending' && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => updateStatusMutation.mutate({ id: doc.id, status: 'approved' })}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => updateStatusMutation.mutate({ id: doc.id, status: 'rejected' })}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <XCircle className="w-4 h-4 text-red-600" />
+                                  </Button>
+                                </>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  if (confirm("Supprimer ce document ?")) {
+                                    deleteMutation.mutate(doc.id);
+                                  }
+                                }}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      )}
     </div>
   );
 }
