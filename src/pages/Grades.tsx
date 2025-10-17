@@ -158,11 +158,14 @@ export default function Grades() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      const currentYear = new Date().getFullYear();
+      const currentSchoolYear = `${currentYear}-${currentYear + 1}`;
+
       const { data, error } = await supabase
         .from("subjects")
         .select("subject_name, class_name, school_year, semester, teacher_name, school_year_fk_id, academic_period_id")
         .eq("teacher_id", user.id)
-        .order("school_year", { ascending: false })
+        .eq("school_year", currentSchoolYear)
         .order("subject_name");
 
       if (error) throw error;
@@ -745,7 +748,7 @@ export default function Grades() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <ClipboardList className="w-5 h-5" />
-              Mes Matières
+              Mes Matières (année en cours)
             </CardTitle>
             <CardDescription>
               Cliquez directement sur une matière pour accéder rapidement à vos notes
@@ -762,7 +765,7 @@ export default function Grades() {
                 >
                   <span className="font-semibold text-base">{subject.subject_name}</span>
                   <span className="text-xs text-muted-foreground">
-                    {subject.class_name} • {subject.school_year} • {subject.semester}
+                    {subject.class_name} • {subject.semester}
                   </span>
                 </Button>
               ))}
