@@ -81,7 +81,8 @@ export const DocumentationSection = () => {
               >
                 <FileCode className="h-4 w-4 mr-2" />
                 Version Markdown
-            </Button>
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
