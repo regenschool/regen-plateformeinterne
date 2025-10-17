@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -266,6 +266,30 @@ export function DocumentCategoriesManager() {
     setIsTemplateDialogOpen(true);
   };
 
+  // Auto-générer le field_name à partir du field_label
+  useEffect(() => {
+    if (templateForm.field_label && !editingTemplate) {
+      const generatedName = templateForm.field_label
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Enlever les accents
+        .replace(/[^a-z0-9]+/g, "_") // Remplacer les caractères spéciaux par _
+        .replace(/^_+|_+$/g, ""); // Enlever les _ au début et à la fin
+      
+      setTemplateForm((prev) => ({ ...prev, field_name: generatedName }));
+    }
+  }, [templateForm.field_label, editingTemplate]);
+
+  // Définir l'ordre d'affichage automatiquement
+  useEffect(() => {
+    if (isTemplateDialogOpen && !editingTemplate && templates.length > 0) {
+      const maxOrder = Math.max(...templates.map((t) => t.display_order));
+      setTemplateForm((prev) => ({ ...prev, display_order: maxOrder + 1 }));
+    } else if (isTemplateDialogOpen && !editingTemplate) {
+      setTemplateForm((prev) => ({ ...prev, display_order: 1 }));
+    }
+  }, [isTemplateDialogOpen, editingTemplate, templates]);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -518,7 +542,7 @@ export function DocumentCategoriesManager() {
               />
             </div>
             <div>
-              <Label htmlFor="field_name">Nom technique (sans espaces)</Label>
+              <Label htmlFor="field_name">Nom technique (généré automatiquement)</Label>
               <Input
                 id="field_name"
                 value={templateForm.field_name}
@@ -526,9 +550,10 @@ export function DocumentCategoriesManager() {
                   setTemplateForm({ ...templateForm, field_name: e.target.value.toLowerCase().replace(/\s+/g, "_") })
                 }
                 placeholder="Ex: piece_identite, cv"
+                disabled={!editingTemplate}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Utilisé en interne, généré automatiquement à partir du nom
+                Généré automatiquement à partir du nom, modifiable uniquement en édition
               </p>
             </div>
             <div>
