@@ -87,6 +87,26 @@ export function TeacherDocumentsSection({ userId }: TeacherDocumentsSectionProps
     },
   });
 
+  // Charger TOUS les templates de toutes les catégories actives
+  const { data: allTemplates = [] } = useQuery({
+    queryKey: ["all-category-templates"],
+    queryFn: async () => {
+      if (categories.length === 0) return [];
+      
+      const categoryIds = categories.map((c) => c.id);
+      const { data, error } = await supabase
+        .from("document_templates")
+        .select("*")
+        .in("category_id", categoryIds)
+        .order("display_order");
+      
+      if (error) throw error;
+      return data as DocumentTemplate[];
+    },
+    enabled: categories.length > 0,
+  });
+
+  // Templates pour la catégorie sélectionnée (pour la dialog)
   const { data: templates = [] } = useQuery({
     queryKey: ["category-templates", selectedCategory?.id],
     queryFn: async () => {
@@ -363,10 +383,12 @@ export function TeacherDocumentsSection({ userId }: TeacherDocumentsSectionProps
                     <AccordionContent>
                       <div className="px-4 pb-3 space-y-4">
                         {/* Champs spécifiques définis dans les templates */}
-                        {templates.length > 0 && (
+                        {(() => {
+                          const categoryTemplates = allTemplates.filter((t) => t.category_id === category.id);
+                          return categoryTemplates.length > 0 && (
                           <div className="space-y-3">
                             <h4 className="text-sm font-semibold text-muted-foreground">Documents demandés :</h4>
-                            {templates.map((template) => {
+                            {categoryTemplates.map((template) => {
                               const templateDoc = categoryDocs.find(
                                 (d) => d.title === template.field_label
                               );
@@ -409,16 +431,20 @@ export function TeacherDocumentsSection({ userId }: TeacherDocumentsSectionProps
                               );
                             })}
                           </div>
-                        )}
+                        );
+                        })()}
 
                         {/* Autres documents de la catégorie */}
                         {categoryDocs.length > 0 && (
                           <div className="space-y-2">
-                            {templates.length > 0 && (
-                              <h4 className="text-sm font-semibold text-muted-foreground">Autres documents :</h4>
-                            )}
+                            {(() => {
+                              const categoryTemplates = allTemplates.filter((t) => t.category_id === category.id);
+                              return categoryTemplates.length > 0 && (
+                                <h4 className="text-sm font-semibold text-muted-foreground">Autres documents :</h4>
+                              );
+                            })()}
                             {categoryDocs
-                              .filter((doc) => !templates.some((t) => t.field_label === doc.title))
+                              .filter((doc) => !allTemplates.some((t) => t.field_label === doc.title && t.category_id === category.id))
                               .map((doc) => (
                                 <div key={doc.id} className="border rounded-lg p-3 hover:bg-accent/50 transition-colors animate-fade-in">
                                   <div className="flex items-start gap-3">
@@ -487,12 +513,15 @@ export function TeacherDocumentsSection({ userId }: TeacherDocumentsSectionProps
                           </div>
                         )}
 
-                        {categoryDocs.length === 0 && templates.length === 0 && (
-                          <div className="text-center py-6 text-muted-foreground">
-                            <FileText className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                            <p className="text-sm">Aucun document dans cette catégorie</p>
-                          </div>
-                        )}
+                        {(() => {
+                          const categoryTemplates = allTemplates.filter((t) => t.category_id === category.id);
+                          return categoryDocs.length === 0 && categoryTemplates.length === 0 && (
+                            <div className="text-center py-6 text-muted-foreground">
+                              <FileText className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                              <p className="text-sm">Aucun document dans cette catégorie</p>
+                            </div>
+                          );
+                        })()}
                       </div>
                     </AccordionContent>
                   </Card>
