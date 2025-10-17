@@ -94,6 +94,9 @@ export const useGenerateReportCard = () => {
           logoUrl: template.logo_url,
           footerText: template.footer_text,
           sections: template.sections_order as string[],
+          htmlTemplate: template.html_template,
+          cssTemplate: template.css_template,
+          useCustomHtml: template.use_custom_html,
         } : undefined,
         averages: {
           student: studentAverage,

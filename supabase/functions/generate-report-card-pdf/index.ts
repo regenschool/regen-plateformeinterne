@@ -32,6 +32,9 @@ interface ReportCardData {
     logoUrl?: string;
     footerText?: string;
     sections: string[];
+    htmlTemplate?: string;
+    cssTemplate?: string;
+    useCustomHtml?: boolean;
   };
   averages?: {
     student: number;
@@ -41,6 +44,43 @@ interface ReportCardData {
 
 const generateHTMLTemplate = (data: ReportCardData): string => {
   const { student, academic, grades, template, averages } = data;
+  
+  // Si un template HTML personnalisé est fourni, l'utiliser
+  if (template?.useCustomHtml && template?.htmlTemplate) {
+    let html = template.htmlTemplate;
+    
+    // Remplacer les variables
+    html = html.replace(/FIRST_NAME/g, student.firstName);
+    html = html.replace(/LAST_NAME/g, student.lastName);
+    html = html.replace(/CLASS_NAME/g, student.className);
+    html = html.replace(/BIRTH_DATE/g, student.birthDate || '');
+    html = html.replace(/SCHOOL_YEAR/g, academic.schoolYear);
+    html = html.replace(/SEMESTER/g, academic.semester);
+    
+    // Générer les lignes de notes
+    const gradesRows = grades.map(grade => `
+      <tr>
+        <td><strong>${grade.subject}</strong></td>
+        <td>${grade.assessmentType}</td>
+        <td class="grade-cell">${grade.grade}/${grade.maxGrade}</td>
+        <td>${grade.weighting}</td>
+        <td class="appreciation">${grade.appreciation || '-'}</td>
+      </tr>
+    `).join('');
+    
+    html = html.replace(/<!-- GRADES_ROWS -->/g, gradesRows);
+    html = html.replace(/STUDENT_AVERAGE/g, averages?.student.toFixed(2) || '0');
+    html = html.replace(/CLASS_AVERAGE/g, averages?.class.toFixed(2) || '0');
+    
+    // Ajouter le CSS personnalisé dans le head si fourni
+    if (template.cssTemplate) {
+      html = html.replace('</head>', `<style>${template.cssTemplate}</style></head>`);
+    }
+    
+    return html;
+  }
+  
+  // Sinon, utiliser le template par défaut
   const headerColor = template?.headerColor || '#1e40af';
   
   return `

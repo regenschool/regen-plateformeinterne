@@ -27,6 +27,9 @@ export interface ReportCardData {
     logoUrl?: string;
     footerText?: string;
     sections: string[];
+    htmlTemplate?: string;
+    cssTemplate?: string;
+    useCustomHtml?: boolean;
   };
   averages?: {
     student: number;

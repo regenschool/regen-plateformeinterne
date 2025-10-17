@@ -495,8 +495,10 @@ export type Database = {
       report_card_templates: {
         Row: {
           created_at: string
+          css_template: string | null
           footer_text: string | null
           header_color: string | null
+          html_template: string | null
           id: string
           is_active: boolean | null
           is_default: boolean | null
@@ -519,11 +521,14 @@ export type Database = {
           show_weighting: boolean | null
           student_fields: Json | null
           updated_at: string
+          use_custom_html: boolean | null
         }
         Insert: {
           created_at?: string
+          css_template?: string | null
           footer_text?: string | null
           header_color?: string | null
+          html_template?: string | null
           id?: string
           is_active?: boolean | null
           is_default?: boolean | null
@@ -546,11 +551,14 @@ export type Database = {
           show_weighting?: boolean | null
           student_fields?: Json | null
           updated_at?: string
+          use_custom_html?: boolean | null
         }
         Update: {
           created_at?: string
+          css_template?: string | null
           footer_text?: string | null
           header_color?: string | null
+          html_template?: string | null
           id?: string
           is_active?: boolean | null
           is_default?: boolean | null
@@ -573,6 +581,7 @@ export type Database = {
           show_weighting?: boolean | null
           student_fields?: Json | null
           updated_at?: string
+          use_custom_html?: boolean | null
         }
         Relationships: []
       }

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Loader2, Plus, Save, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ReportCardPreview } from "./ReportCardPreview";
+import { HtmlTemplateEditor } from "./HtmlTemplateEditor";
 
 interface ReportCardTemplate {
   id: string;
@@ -34,6 +35,9 @@ interface ReportCardTemplate {
   show_assessment_type: boolean;
   show_grade_detail: boolean;
   show_subject_average: boolean;
+  html_template?: string | null;
+  css_template?: string | null;
+  use_custom_html?: boolean;
 }
 
 export const ReportCardTemplatesManager = () => {
@@ -371,6 +375,21 @@ export const ReportCardTemplatesManager = () => {
                   />
                 </div>
               </div>
+
+              <HtmlTemplateEditor
+                htmlTemplate={selectedTemplate.html_template || undefined}
+                cssTemplate={selectedTemplate.css_template || undefined}
+                useCustomHtml={selectedTemplate.use_custom_html || false}
+                onHtmlChange={(html) =>
+                  setSelectedTemplate({ ...selectedTemplate, html_template: html })
+                }
+                onCssChange={(css) =>
+                  setSelectedTemplate({ ...selectedTemplate, css_template: css })
+                }
+                onUseCustomHtmlChange={(use) =>
+                  setSelectedTemplate({ ...selectedTemplate, use_custom_html: use })
+                }
+              />
 
               <div className="flex items-center justify-between pt-4 border-t">
                 <div className="flex items-center space-x-2">
