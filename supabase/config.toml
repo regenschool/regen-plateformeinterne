@@ -1,1 +1,10 @@
 project_id = "cynoteapmqcfhzsuurhp"
+
+[functions.generate-invoice-pdf]
+verify_jwt = true
+
+[functions.admin-reset-password]
+verify_jwt = true
+
+[functions.invite-user]
+verify_jwt = true

@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { UserPlus, Trash2, Shield, GraduationCap, Phone, Mail, Edit2, CheckCircle2 } from "lucide-react";
 import { ImportUsersDialog } from "./ImportUsersDialog";
+import InviteUserDialog from "./InviteUserDialog";
 
 type UserWithRole = {
   id: string;
@@ -242,6 +243,38 @@ export const UsersManager = () => {
     setNewUserPhone("");
   };
 
+  const handleResetPassword = async (userId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-reset-password", {
+        body: { userId },
+      });
+
+      if (error) throw error;
+
+      toast.success("Lien de réinitialisation copié dans le presse-papiers");
+      navigator.clipboard.writeText(data.resetLink);
+    } catch (error: any) {
+      console.error("Erreur reset password:", error);
+      toast.error(error.message || "Erreur lors de la réinitialisation");
+    }
+  };
+
+  const handleInviteUser = async (email: string, fullName: string, role: string) => {
+    try {
+      const { error } = await supabase.functions.invoke("invite-user", {
+        body: { email, fullName, role },
+      });
+
+      if (error) throw error;
+
+      toast.success("Invitation envoyée avec succès !");
+      await fetchUsers();
+    } catch (error: any) {
+      console.error("Erreur invitation:", error);
+      toast.error(error.message || "Erreur lors de l'invitation");
+    }
+  };
+
   const getRoleBadge = (role: string) => {
     const variants: Record<string, { icon: any; label: string; variant: "default" | "secondary" | "outline" }> = {
       admin: { icon: Shield, label: "Admin", variant: "default" },
@@ -266,6 +299,7 @@ export const UsersManager = () => {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <ImportUsersDialog onImportComplete={fetchUsers} />
+          <InviteUserDialog onInvite={handleInviteUser} />
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogTrigger asChild>
             <Button className="gap-2">
@@ -421,6 +455,14 @@ export const UsersManager = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleResetPassword(user.id)}
+                          title="Réinitialiser le mot de passe"
+                        >
+                          Réinitialiser MDP
+                        </Button>
                         {user.teacher_info && (
                           <Button
                             variant="ghost"
