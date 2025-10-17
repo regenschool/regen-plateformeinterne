@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, FileText, Download } from 'lucide-react';
+import { Loader2, FileText, Download, Trash2 } from 'lucide-react';
 import { useGenerateReportCard, useReportCards } from '@/hooks/useReportCards';
+import { useDeleteReportCard } from '@/hooks/useReportCardActions';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -28,6 +29,7 @@ export const ReportCardGeneration = () => {
   
   const queryClient = useQueryClient();
   const generateReportCard = useGenerateReportCard();
+  const deleteReportCard = useDeleteReportCard();
   const navigate = useNavigate();
   // Récupérer les classes
   const { data: classes } = useQuery({
@@ -492,9 +494,35 @@ export const ReportCardGeneration = () => {
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm">
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-2 justify-end">
+                            {report.pdf_url && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => window.open(report.pdf_url!, '_blank')}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {report.status === 'draft' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => navigate(`/bulletins/edit/${report.id}`)}
+                              >
+                                <FileText className="mr-2 h-4 w-4" />
+                                Éditer
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteReportCard.mutate(report.id)}
+                              disabled={deleteReportCard.isPending}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );

@@ -83,12 +83,30 @@ export const useSaveDraft = () => {
   });
 };
 
-// Hook pour supprimer un brouillon
-export const useDeleteDraft = () => {
+// Hook pour supprimer un bulletin (brouillon ou généré)
+export const useDeleteReportCard = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (reportCardId: string) => {
+      // Récupérer le bulletin pour savoir s'il y a un PDF à supprimer
+      const { data: reportCard } = await supabase
+        .from('student_report_cards')
+        .select('pdf_url')
+        .eq('id', reportCardId)
+        .single();
+
+      // Supprimer le PDF du storage si existe
+      if (reportCard?.pdf_url) {
+        const fileName = reportCard.pdf_url.split('/').pop();
+        if (fileName) {
+          await supabase.storage
+            .from('report-cards')
+            .remove([fileName]);
+        }
+      }
+
+      // Supprimer l'enregistrement
       const { error } = await supabase
         .from('student_report_cards')
         .delete()
@@ -98,10 +116,10 @@ export const useDeleteDraft = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['report-cards'] });
-      toast.success('Brouillon supprimé');
+      toast.success('Bulletin supprimé');
     },
     onError: (error: Error) => {
-      console.error('Error deleting draft:', error);
+      console.error('Error deleting report card:', error);
       toast.error('Erreur lors de la suppression');
     },
   });

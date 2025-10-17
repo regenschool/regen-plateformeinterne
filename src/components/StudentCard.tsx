@@ -262,14 +262,6 @@ export const StudentCard = ({
             <div className="bg-primary text-primary-foreground px-2 py-0.5 rounded-full text-xs font-medium group-hover:scale-110 transition-transform">
               {student.class_name}
             </div>
-            {isAdmin && (
-              <div className="bg-primary/90 text-primary-foreground px-2 py-0.5 rounded-full text-xs font-medium opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center gap-1">
-                <span>Voir profil</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-              </div>
-            )}
           </div>
           <div className="absolute top-1.5 left-1.5 flex gap-1 z-20"
             onClick={(e) => e.stopPropagation()}
