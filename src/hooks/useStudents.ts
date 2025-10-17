@@ -87,38 +87,54 @@ export const useClasses = () => {
   });
 };
 
-// Hook pour ajouter un étudiant
+// Hook pour ajouter un étudiant avec enrollment automatique
 export const useAddStudent = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: async (studentInput: Record<string, any>) => {
-      const student = { ...studentInput };
+      const { class_name, school_year_id, ...studentData } = studentInput;
       
-      // Si class_name fourni mais pas class_id, chercher l'ID
-      if (student.class_name && !student.class_id) {
-        const { data: classData } = await supabase
-          .from('classes')
-          .select('id')
-          .eq('name', student.class_name)
-          .maybeSingle();
-        
-        if (classData) {
-          student.class_id = classData.id;
-        }
-      }
-      
-      const { data, error } = await (supabase as any)
+      // 1. Créer l'étudiant (données permanentes uniquement)
+      const { data: newStudent, error: studentError } = await (supabase as any)
         .from('students')
-        .insert([student])
+        .insert([studentData])
         .select()
         .single();
       
-      if (error) throw error;
-      return data;
+      if (studentError) throw studentError;
+      
+      // 2. Si school_year_id fourni, créer automatiquement un enrollment
+      if (school_year_id && class_name) {
+        // Récupérer class_id depuis class_name
+        const { data: classData } = await supabase
+          .from('classes')
+          .select('id')
+          .eq('name', class_name)
+          .maybeSingle();
+        
+        if (classData) {
+          const { error: enrollmentError } = await supabase
+            .from('student_enrollments')
+            .insert([{
+              student_id: newStudent.id,
+              school_year_id: school_year_id,
+              class_id: classData.id,
+              class_name: class_name,
+            }]);
+          
+          if (enrollmentError) {
+            console.error('Erreur création enrollment:', enrollmentError);
+            // On ne bloque pas si l'enrollment échoue
+          }
+        }
+      }
+      
+      return newStudent;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['enrollments'] });
       queryClient.invalidateQueries({ queryKey: ['classes'] });
       toast.success('Étudiant ajouté avec succès');
     },
