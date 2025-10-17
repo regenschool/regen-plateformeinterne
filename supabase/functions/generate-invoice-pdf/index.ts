@@ -101,11 +101,12 @@ serve(async (req) => {
 
     console.log(`Génération du PDF pour la facture ${invoice.invoice_number}`);
 
-    // Générer le PDF avec jsPDF
-    const pdfBytes = generateInvoicePDF(invoice, profile);
+    // Générer le PDF avec pdf-lib
+    const pdfBytes = await generateInvoicePDF(invoice, profile);
     
-    // Nom du fichier
-    const fileName = `facture_${invoice.invoice_number.replace(/\//g, '-')}.pdf`;
+    // Nom du fichier (nettoyage)
+    const safeNumber = String(invoice.invoice_number || '').trim().replace(/\//g, '-');
+    const fileName = `facture_${safeNumber}.pdf`;
     const filePath = `${invoice.teacher_id}/invoices/${fileName}`;
     
     console.log(`Upload du PDF vers: ${filePath}`);
