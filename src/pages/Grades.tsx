@@ -744,31 +744,54 @@ export default function Grades() {
 
           <div>
             <label className="text-sm font-medium mb-2 block">{t("grades.subject")}</label>
-            <Select 
-              value={selectedSubject} 
-              onValueChange={(value) => {
-                if (value === "__new__") {
-                  setShowNewSubjectDialog(true);
-                } else {
-                  setSelectedSubject(value);
-                  // Charger les métadonnées de la matière sélectionnée immédiatement
-                  fetchSubjects(value);
-                }
-              }}
-              disabled={!selectedClass || !selectedSchoolYear || !selectedSemester}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t("grades.selectSubject")} />
-              </SelectTrigger>
-              <SelectContent>
-                {subjects.map((subject) => (
-                  <SelectItem key={subject} value={subject}>
-                    {subject}
-                  </SelectItem>
-                ))}
-                <SelectItem value="__new__">{t("grades.newSubject")}</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <Select 
+                value={selectedSubject} 
+                onValueChange={(value) => {
+                  if (value === "__new__") {
+                    setShowNewSubjectDialog(true);
+                  } else {
+                    setSelectedSubject(value);
+                    // Charger les métadonnées de la matière sélectionnée immédiatement
+                    fetchSubjects(value);
+                  }
+                }}
+                disabled={!selectedClass || !selectedSchoolYear || !selectedSemester}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={t("grades.selectSubject")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((subject) => (
+                    <SelectItem key={subject} value={subject}>
+                      {subject}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__new__">{t("grades.newSubject")}</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* Suggestions de matières */}
+              {selectedClass && selectedSchoolYear && selectedSemester && subjects.length > 0 && !selectedSubject && (
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="text-xs text-muted-foreground">Suggestions :</span>
+                  {subjects.slice(0, 5).map((subject) => (
+                    <Button
+                      key={subject}
+                      variant="outline"
+                      size="sm"
+                      className="h-6 text-xs px-2"
+                      onClick={() => {
+                        setSelectedSubject(subject);
+                        fetchSubjects(subject);
+                      }}
+                    >
+                      {subject}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
