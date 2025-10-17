@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { UserPlus, Trash2, Shield, GraduationCap, Phone, Mail, Edit2, CheckCircle2 } from "lucide-react";
+import { UserPlus, Trash2, Shield, GraduationCap, Phone, Mail, Edit2, CheckCircle2, RefreshCw, Clock, CheckCircle } from "lucide-react";
 import { ImportUsersDialog } from "./ImportUsersDialog";
 import InviteUserDialog from "./InviteUserDialog";
 
@@ -17,7 +17,8 @@ type UserWithRole = {
   id: string;
   email: string;
   created_at: string;
-  roles: string[]; // Peut avoir plusieurs rôles: ['admin', 'teacher', 'moderator']
+  roles: string[];
+  status: 'active' | 'pending';
   teacher_info?: {
     full_name: string;
     phone: string | null;
@@ -39,52 +40,65 @@ export const UsersManager = () => {
 
   const fetchUsers = async () => {
     try {
-      // 1) Profils (peuvent être absents si l'utilisateur n'a jamais complété son profil)
+      // 1) Profils enseignants
       const { data: profiles, error: profilesError } = await supabase
         .from("teacher_profiles")
-        .select("user_id, email, full_name, created_at");
+        .select("user_id, email, full_name, created_at, phone, address");
       if (profilesError) throw profilesError;
 
-      // 2) Rôles (source de vérité pour savoir qui existe côté app)
+      // 2) Rôles
       const { data: rolesData, error: rolesError } = await supabase
         .from("user_roles")
         .select("user_id, role");
       if (rolesError) throw rolesError;
 
-      // 3) Informations enseignants (contient souvent email/nom + date de création)
+      // 3) Informations enseignants
       const { data: teachersData, error: teachersError } = await supabase
         .from("teachers")
         .select("user_id, full_name, phone, email, created_at");
       if (teachersError && teachersError.code !== 'PGRST116') throw teachersError;
 
-      // Construire la liste d'IDs unique depuis toutes les sources (évite de rater des utilisateurs)
+      // Construire la liste d'IDs unique
       const ids = new Set<string>();
       (profiles || []).forEach(p => ids.add(p.user_id));
       (rolesData || []).forEach(r => ids.add(r.user_id));
       (teachersData || []).forEach(t => ids.add(t.user_id));
 
-      const usersWithRoles: UserWithRole[] = Array.from(ids).map((id) => {
+      // Pour chaque user_id, récupérer l'email depuis auth.users
+      const usersWithRoles: UserWithRole[] = [];
+      
+      for (const id of Array.from(ids)) {
         const profile = profiles?.find(p => p.user_id === id);
         const userRoles = (rolesData || [])
           .filter(r => r.user_id === id)
           .map(r => r.role);
         const teacher = teachersData?.find(t => t.user_id === id);
 
-        const email = profile?.email || teacher?.email || "";
+        // Récupérer l'email depuis auth.users via RPC
+        const { data: emailData } = await supabase.rpc('get_user_email', { 
+          _user_id: id 
+        });
+
+        const email = emailData || profile?.email || teacher?.email || "";
         const createdAt = profile?.created_at || teacher?.created_at || new Date().toISOString();
         const fullName = teacher?.full_name || profile?.full_name || email.split("@")[0] || "";
 
-        return {
+        // Déterminer le statut : actif si le profil est complété (phone ou address renseignés)
+        const hasCompletedProfile = !!(profile?.phone || profile?.address);
+        const status: 'active' | 'pending' = hasCompletedProfile ? 'active' : 'pending';
+
+        usersWithRoles.push({
           id,
           email,
           created_at: createdAt,
           roles: userRoles,
+          status,
           teacher_info: {
             full_name: fullName,
             phone: teacher?.phone || null,
           },
-        };
-      });
+        });
+      }
 
       setUsers(usersWithRoles);
     } catch (error) {
@@ -209,6 +223,31 @@ export const UsersManager = () => {
     }
   };
 
+  const handleResendInvitation = async (userId: string, userEmail: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-reset-password", {
+        body: { userId },
+      });
+
+      if (error) throw error;
+
+      // Utiliser l'email pour notifier via Resend
+      const { error: emailError } = await supabase.functions.invoke("resend-invitation", {
+        body: { 
+          email: userEmail,
+          resetLink: data.resetLink 
+        },
+      });
+
+      if (emailError) throw emailError;
+
+      toast.success("Invitation renvoyée avec succès !");
+    } catch (error: any) {
+      console.error("Erreur renvoi invitation:", error);
+      toast.error(error.message || "Erreur lors du renvoi de l'invitation");
+    }
+  };
+
   const getRoleBadge = (role: string) => {
     const variants: Record<string, { icon: any; label: string; variant: "default" | "secondary" | "outline" }> = {
       admin: { icon: Shield, label: "Admin", variant: "default" },
@@ -251,6 +290,7 @@ export const UsersManager = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Utilisateur</TableHead>
+                  <TableHead>Statut</TableHead>
                   <TableHead>Rôles</TableHead>
                   <TableHead>Informations</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -287,6 +327,19 @@ export const UsersManager = () => {
                       </div>
                     </TableCell>
                     <TableCell>
+                      {user.status === 'active' ? (
+                        <Badge variant="default" className="gap-1">
+                          <CheckCircle className="w-3 h-3" />
+                          Actif
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="gap-1">
+                          <Clock className="w-3 h-3" />
+                          En attente
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
                       {user.teacher_info ? (
                         <div className="text-sm space-y-1">
                           {user.teacher_info.phone && (
@@ -307,6 +360,16 @@ export const UsersManager = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
+                        {user.status === 'pending' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleResendInvitation(user.id, user.email)}
+                            title="Renvoyer l'invitation"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"

@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.invite-user]
 verify_jwt = true
+
+[functions.resend-invitation]
+verify_jwt = true
