@@ -1,5 +1,5 @@
 // Architecture flexible pour la génération de PDF
-// Permet de basculer facilement entre jsPDF et Puppeteer
+// Utilise HTML to PDF côté client pour éviter les limitations des Edge Functions
 
 export interface ReportCardData {
   student: {
@@ -41,12 +41,17 @@ export interface PDFGenerator {
   generateReportCard(data: ReportCardData): Promise<Blob>;
 }
 
-// Implémentation Puppeteer (via edge function)
+// Implémentation basée sur Edge Function qui retourne HTML + génération PDF côté client
 export class PuppeteerGenerator implements PDFGenerator {
   async generateReportCard(data: ReportCardData): Promise<Blob> {
-    const { supabase } = await import('@/integrations/supabase/client');
+    // Import dynamiques pour éviter les dépendances circulaires
+    const [{ supabase }, { jsPDF }, html2canvas] = await Promise.all([
+      import('@/integrations/supabase/client'),
+      import('jspdf'),
+      import('html2canvas'),
+    ]);
     
-    const { data: pdfData, error } = await supabase.functions.invoke(
+    const { data: response, error } = await supabase.functions.invoke(
       'generate-report-card-pdf',
       {
         body: { reportCardData: data },
@@ -54,19 +59,53 @@ export class PuppeteerGenerator implements PDFGenerator {
     );
 
     if (error) {
-      console.error('Error generating PDF with Puppeteer:', error);
-      throw new Error('Échec de la génération du PDF');
+      console.error('Error generating HTML:', error);
+      throw new Error('Échec de la génération du bulletin');
     }
 
-    return new Blob([pdfData], { type: 'application/pdf' });
+    // L'edge function retourne du HTML
+    const { html } = response;
+    
+    // Créer un élément temporaire pour le rendu
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    tempDiv.style.width = '210mm'; // A4 width
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.left = '-9999px';
+    document.body.appendChild(tempDiv);
+
+    try {
+      // Capturer le HTML comme image
+      const canvas = await html2canvas.default(tempDiv, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      // Créer le PDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      
+      return pdf.output('blob');
+    } finally {
+      document.body.removeChild(tempDiv);
+    }
   }
 }
 
 // Implémentation jsPDF (fallback, à implémenter si besoin)
 export class JsPDFGenerator implements PDFGenerator {
   async generateReportCard(data: ReportCardData): Promise<Blob> {
-    // Implémentation basique avec jsPDF si besoin
-    // Pour l'instant, on utilise Puppeteer
     throw new Error('jsPDF generator not implemented yet');
   }
 }

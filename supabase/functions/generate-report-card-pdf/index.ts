@@ -1,5 +1,4 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import puppeteer from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -310,46 +309,24 @@ Deno.serve(async (req) => {
   try {
     const { reportCardData } = await req.json();
     
-    console.log('Generating report card PDF for:', reportCardData.student);
+    console.log('Generating report card HTML for:', reportCardData.student);
 
-    // Generate HTML from template
+    // Générer le HTML final
     const html = generateHTMLTemplate(reportCardData);
 
-    // Launch Puppeteer
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    console.log('HTML generated successfully');
 
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-
-    // Generate PDF
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '20mm',
-        right: '15mm',
-        bottom: '20mm',
-        left: '15mm',
-      },
-    });
-
-    await browser.close();
-
-    console.log('PDF generated successfully');
-
-    return new Response(pdfBuffer.buffer, {
+    // Retourner le HTML au lieu du PDF
+    // Le client utilisera jsPDF pour générer le PDF côté navigateur
+    return new Response(JSON.stringify({ html }), {
       headers: {
         ...corsHeaders,
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="bulletin_${reportCardData.student.lastName}_${reportCardData.student.firstName}.pdf"`,
+        'Content-Type': 'application/json',
       },
     });
 
   } catch (error) {
-    console.error('Error generating PDF:', error);
+    console.error('Error generating HTML:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
