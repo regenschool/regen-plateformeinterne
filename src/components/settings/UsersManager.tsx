@@ -341,7 +341,7 @@ export const UsersManager = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
                         {(['admin', 'teacher', 'moderator'] as const).map(role => {
                           const hasRole = user.roles.includes(role);
                           return (
