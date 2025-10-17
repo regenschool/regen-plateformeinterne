@@ -27,7 +27,7 @@ export default function Settings() {
     { value: "school-years", label: t("settings.schoolYears"), icon: Calendar, component: SchoolYearsManager, desc: t("settings.schoolYearsDesc") },
     { value: "classes", label: t("settings.classes"), icon: GraduationCap, component: ClassesManager, desc: t("settings.classesDesc") },
     { value: "levels", label: t("settings.levels"), icon: Award, component: LevelsManager, desc: t("settings.levelsDesc") },
-    { value: "periods", label: t("settings.periods"), icon: BookOpen, component: AcademicPeriodsManager, desc: t("settings.periodsDesc") },
+    { value: "periods", label: "Semestre", icon: BookOpen, component: AcademicPeriodsManager, desc: t("settings.periodsDesc") },
     { value: "subjects", label: t("settings.subjects"), icon: BookOpen, component: SubjectsManager, desc: null },
     { value: "users", label: t("settings.users"), icon: Users, component: UsersManager, desc: null },
     { value: "archive", label: t("settings.archive"), icon: Archive, component: ArchiveManager, desc: null },
