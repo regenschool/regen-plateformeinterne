@@ -158,14 +158,23 @@ export default function Grades() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const currentYear = new Date().getFullYear();
-      const currentSchoolYear = `${currentYear}-${currentYear + 1}`;
+      // Récupérer l'année scolaire active
+      const { data: activeYear } = await supabase
+        .from("school_years")
+        .select("label")
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (!activeYear) {
+        console.warn("Aucune année scolaire active trouvée");
+        return;
+      }
 
       const { data, error } = await supabase
         .from("subjects")
         .select("subject_name, class_name, school_year, semester, teacher_name, school_year_fk_id, academic_period_id")
         .eq("teacher_id", user.id)
-        .eq("school_year", currentSchoolYear)
+        .eq("school_year", activeYear.label)
         .order("subject_name");
 
       if (error) throw error;
