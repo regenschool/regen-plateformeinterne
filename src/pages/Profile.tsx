@@ -538,16 +538,33 @@ const Profile = () => {
       <Tabs defaultValue="profile" className="space-y-6">
         {!isAdmin ? (
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="profile">Profil</TabsTrigger>
-            <TabsTrigger value="subjects">Matières</TabsTrigger>
-            <TabsTrigger value="documents">Mes Documents</TabsTrigger>
-            <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
-            <TabsTrigger value="invoices">Factures</TabsTrigger>
+            <TabsTrigger value="profile">
+              <User className="w-4 h-4 mr-2" />
+              Profil
+            </TabsTrigger>
+            <TabsTrigger value="subjects">
+              <BookOpen className="w-4 h-4 mr-2" />
+              Matières
+            </TabsTrigger>
+            <TabsTrigger value="documents">
+              <FileText className="w-4 h-4 mr-2" />
+              Mes Documents
+            </TabsTrigger>
+            <TabsTrigger value="onboarding">
+              <Clipboard className="w-4 h-4 mr-2" />
+              Onboarding
+            </TabsTrigger>
+            <TabsTrigger value="invoices">
+              <Receipt className="w-4 h-4 mr-2" />
+              Factures
+            </TabsTrigger>
           </TabsList>
         ) : (
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="profile">Profil</TabsTrigger>
-            <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-1">
+            <TabsTrigger value="profile">
+              <User className="w-4 h-4 mr-2" />
+              Paramètres
+            </TabsTrigger>
           </TabsList>
         )}
 

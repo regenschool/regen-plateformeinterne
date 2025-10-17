@@ -11,6 +11,7 @@ import { SubjectsManager } from "@/components/settings/SubjectsManager";
 import { SyncReferentialsButton } from "@/components/settings/SyncReferentialsButton";
 import ArchiveManager from "@/components/settings/ArchiveManager";
 import { DocumentCategoriesManager } from "@/components/settings/DocumentCategoriesManager";
+import { TeacherDocumentsManager } from "@/components/settings/TeacherDocumentsManager";
 import { useAdmin } from "@/contexts/AdminContext";
 import { Navigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -31,7 +32,8 @@ export default function Settings() {
     { value: "periods", label: "Semestre", icon: BookOpen, component: AcademicPeriodsManager, desc: t("settings.periodsDesc") },
     { value: "subjects", label: t("settings.subjects"), icon: BookOpen, component: SubjectsManager, desc: null },
     { value: "users", label: t("settings.users"), icon: Users, component: UsersManager, desc: null },
-    { value: "documents", label: "Documents", icon: FileText, component: DocumentCategoriesManager, desc: "Gérer les catégories de documents enseignants" },
+    { value: "doc-categories", label: "Catégories docs", icon: FileText, component: DocumentCategoriesManager, desc: "Sections de documents enseignants" },
+    { value: "doc-management", label: "Docs enseignants", icon: CheckSquare, component: TeacherDocumentsManager, desc: "Tous les documents centralisés" },
     { value: "archive", label: t("settings.archive"), icon: Archive, component: ArchiveManager, desc: null },
   ];
 
