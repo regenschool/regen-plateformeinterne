@@ -292,7 +292,7 @@ function generateInvoiceHTML(invoice: any, profile: any): string {
     <div class="company-info">
       <h1>${profile?.full_name || 'Enseignant'}</h1>
       ${profile?.address ? `<p>${profile.address.replace(/\n/g, '<br>')}</p>` : ''}
-      ${profile?.siret ? `<p>SIRET: ${profile.siret}</p>` : ''}
+      ${invoice?.siret ? `<p>SIRET: ${invoice.siret}</p>` : ''}
       ${profile?.email ? `<p>Email: ${profile.email}</p>` : ''}
       ${profile?.phone ? `<p>Tél: ${profile.phone}</p>` : ''}
     </div>

@@ -31,7 +31,6 @@ type TeacherProfile = {
   secondary_email: string | null;
   phone: string | null;
   address: string | null;
-  siret: string | null;
 };
 
 type EnrichedProfile = {
@@ -44,7 +43,6 @@ type EnrichedProfile = {
   secondary_email: string | null;
   phone: string | null;
   address: string | null;
-  siret: string | null;
   subjects: string[];
   documents_approved: number;
   documents_pending: number;
@@ -110,6 +108,7 @@ type Invoice = {
   pdf_path: string | null;
   bank_iban: string | null;
   bank_bic: string | null;
+  siret: string | null;
 };
 
 const Profile = () => {
@@ -139,6 +138,7 @@ const Profile = () => {
     other_amount: "",
     bank_iban: "",
     bank_bic: "",
+    siret: "",
   });
 
   useEffect(() => {
@@ -386,7 +386,6 @@ const Profile = () => {
           secondary_email: profile.secondary_email,
           phone: profile.phone,
           address: profile.address,
-          siret: profile.siret,
         }, {
           onConflict: 'user_id'
         });
@@ -427,6 +426,7 @@ const Profile = () => {
         status: "draft",
         bank_iban: invoiceForm.bank_iban || null,
         bank_bic: invoiceForm.bank_bic || null,
+        siret: invoiceForm.siret || null,
       });
 
       if (error) throw error;
@@ -442,6 +442,7 @@ const Profile = () => {
         other_amount: "",
         bank_iban: "",
         bank_bic: "",
+        siret: "",
       });
       fetchInvoices();
     } catch (error: any) {
@@ -729,14 +730,6 @@ const Profile = () => {
                             id="phone"
                             value={profile.phone || ""}
                             onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="siret">SIRET</Label>
-                          <Input
-                            id="siret"
-                            value={profile.siret || ""}
-                            onChange={(e) => setProfile({ ...profile, siret: e.target.value })}
                           />
                         </div>
                       </div>
@@ -1031,9 +1024,21 @@ const Profile = () => {
                       </div>
                     </div>
 
+                    <div className="space-y-2">
+                      <Label htmlFor="invoice_siret">SIRET (optionnel)</Label>
+                      <Input
+                        id="invoice_siret"
+                        value={invoiceForm.siret}
+                        onChange={(e) =>
+                          setInvoiceForm({ ...invoiceForm, siret: e.target.value })
+                        }
+                        placeholder="123 456 789 00012"
+                      />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="invoice_iban">IBAN</Label>
+                        <Label htmlFor="invoice_iban">IBAN (optionnel)</Label>
                         <Input
                           id="invoice_iban"
                           value={invoiceForm.bank_iban}
@@ -1044,7 +1049,7 @@ const Profile = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="invoice_bic">BIC</Label>
+                        <Label htmlFor="invoice_bic">BIC (optionnel)</Label>
                         <Input
                           id="invoice_bic"
                           value={invoiceForm.bank_bic}

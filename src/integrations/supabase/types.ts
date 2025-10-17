@@ -901,6 +901,7 @@ export type Database = {
           other_amount: number | null
           pdf_path: string | null
           rate_per_hour: number | null
+          siret: string | null
           status: string | null
           teacher_id: string
           total_amount: number
@@ -918,6 +919,7 @@ export type Database = {
           other_amount?: number | null
           pdf_path?: string | null
           rate_per_hour?: number | null
+          siret?: string | null
           status?: string | null
           teacher_id: string
           total_amount: number
@@ -935,6 +937,7 @@ export type Database = {
           other_amount?: number | null
           pdf_path?: string | null
           rate_per_hour?: number | null
+          siret?: string | null
           status?: string | null
           teacher_id?: string
           total_amount?: number
@@ -1010,7 +1013,6 @@ export type Database = {
           last_name: string | null
           phone: string | null
           secondary_email: string | null
-          siret: string | null
           updated_at: string
           user_id: string
         }
@@ -1024,7 +1026,6 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           secondary_email?: string | null
-          siret?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1038,7 +1039,6 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           secondary_email?: string | null
-          siret?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1379,7 +1379,6 @@ export type Database = {
           onboarding_status: string | null
           phone: string | null
           secondary_email: string | null
-          siret: string | null
           subjects: string[] | null
           updated_at: string | null
           user_id: string | null
