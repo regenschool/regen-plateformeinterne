@@ -350,7 +350,9 @@ const Profile = () => {
     try {
       const { error } = await supabase
         .from("teacher_profiles")
-        .update({
+        .upsert({
+          user_id: userId,
+          email: profile.email,
           first_name: profile.first_name,
           last_name: profile.last_name,
           full_name: profile.full_name,
@@ -360,16 +362,20 @@ const Profile = () => {
           siret: profile.siret,
           bank_iban: profile.bank_iban,
           bank_bic: profile.bank_bic,
-        })
-        .eq("user_id", userId);
+        }, {
+          onConflict: 'user_id'
+        });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error saving profile:", error);
+        throw error;
+      }
 
       toast.success("Profil mis à jour avec succès");
       fetchProfile(); // Refresh enriched profile
     } catch (error: any) {
       console.error("Error saving profile:", error);
-      toast.error("Erreur lors de la sauvegarde du profil");
+      toast.error(`Erreur lors de la sauvegarde du profil: ${error.message || 'Erreur inconnue'}`);
     } finally {
       setSaving(false);
     }

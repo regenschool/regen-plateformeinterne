@@ -60,7 +60,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  return session ? <Layout>{children}</Layout> : <Navigate to="/auth" />;
+  return session ? <Layout>{children}</Layout> : <Navigate to="/auth" replace />;
 };
 
 const App = () => (
