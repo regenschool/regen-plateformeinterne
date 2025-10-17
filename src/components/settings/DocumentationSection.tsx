@@ -26,9 +26,32 @@ export const DocumentationSection = () => {
     }
   };
 
-  const handleOpenGuide = () => {
-    window.open(ADMIN_GUIDE_URL, '_blank');
-    toast.success("Utilisez Ctrl+P pour imprimer en PDF");
+  const handleGeneratePDF = async () => {
+    setIsGeneratingPDF(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-admin-guide-pdf');
+      
+      if (error) throw error;
+      
+      // Open in new tab
+      const blob = new Blob([data], { type: 'text/html' });
+      const url = window.URL.createObjectURL(blob);
+      const newWindow = window.open(url, '_blank');
+      
+      if (newWindow) {
+        // Trigger print dialog after a short delay
+        setTimeout(() => {
+          newWindow.print();
+        }, 1000);
+      }
+      
+      toast.success("Guide ouvert ! Vous pouvez l'enregistrer en PDF via l'impression.");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast.error("Erreur lors de la génération du guide");
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   return (
@@ -67,12 +90,13 @@ export const DocumentationSection = () => {
             </ul>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button 
-                onClick={handleOpenGuide}
+                onClick={handleGeneratePDF}
+                disabled={isGeneratingPDF}
                 className="flex-1"
                 variant="default"
               >
                 <FileText className="h-4 w-4 mr-2" />
-                Ouvrir le guide (PDF via impression)
+                {isGeneratingPDF ? "Génération..." : "Générer le PDF"}
               </Button>
               <Button 
                 onClick={() => handleDownload(ADMIN_GUIDE_URL, "guide-admin-regen-school.md")}
