@@ -1,6 +1,8 @@
 // Architecture flexible pour la génération de PDF
 // Utilise HTML to PDF côté client pour éviter les limitations des Edge Functions
 
+import { supabase } from '@/integrations/supabase/client';
+
 export interface ReportCardData {
   student: {
     firstName: string;
@@ -44,13 +46,6 @@ export interface PDFGenerator {
 // Implémentation basée sur Edge Function qui retourne HTML + génération PDF côté client
 export class PuppeteerGenerator implements PDFGenerator {
   async generateReportCard(data: ReportCardData): Promise<Blob> {
-    // Import dynamiques pour éviter les dépendances circulaires
-    const [{ supabase }, { jsPDF }, html2canvas] = await Promise.all([
-      import('@/integrations/supabase/client'),
-      import('jspdf'),
-      import('html2canvas'),
-    ]);
-    
     const { data: response, error } = await supabase.functions.invoke(
       'generate-report-card-pdf',
       {
@@ -65,6 +60,12 @@ export class PuppeteerGenerator implements PDFGenerator {
 
     // L'edge function retourne du HTML
     const { html } = response;
+    
+    // Lazy load des dépendances
+    const [{ jsPDF }, html2canvas] = await Promise.all([
+      import('jspdf'),
+      import('html2canvas'),
+    ]);
     
     // Créer un élément temporaire pour le rendu
     const tempDiv = document.createElement('div');
