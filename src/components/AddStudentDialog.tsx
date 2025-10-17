@@ -16,9 +16,10 @@ import { toast } from "sonner";
 
 type AddStudentDialogProps = {
   onStudentAdded: () => void;
+  selectedSchoolYearId?: string;
 };
 
-export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
+export const AddStudentDialog = ({ onStudentAdded, selectedSchoolYearId }: AddStudentDialogProps) => {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     first_name: "",
@@ -71,6 +72,7 @@ export const AddStudentDialog = ({ onStudentAdded }: AddStudentDialogProps) => {
         company: validatedData.company || null,
         class_name: validatedData.class_name,
         special_needs: validatedData.special_needs || null,
+        school_year_id: selectedSchoolYearId || null,
       });
 
       setOpen(false);

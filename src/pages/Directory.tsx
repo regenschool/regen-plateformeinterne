@@ -411,7 +411,10 @@ const Directory = () => {
             />
           </Suspense>
           <Suspense fallback={<Button disabled>Chargement...</Button>}>
-            <AddStudentDialog onStudentAdded={() => refetch()} />
+            <AddStudentDialog 
+              onStudentAdded={() => refetch()} 
+              selectedSchoolYearId={selectedSchoolYearId}
+            />
           </Suspense>
         </div>
       </div>
