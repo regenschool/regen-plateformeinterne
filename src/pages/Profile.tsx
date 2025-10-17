@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { User, BookOpen, FileText, Receipt, Save, Download, Plus, Trash2, Upload, Clipboard, CheckCircle2, Circle, AlertCircle, Clock } from "lucide-react";
+import { User, BookOpen, FileText, Receipt, Save, Download, Plus, Trash2, Upload, Clipboard } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,6 +20,7 @@ import { ImportSubjectsDialog } from "@/components/ImportSubjectsDialog";
 import { AddSubjectDialog } from "@/components/AddSubjectDialog";
 import { useAdmin } from "@/contexts/AdminContext";
 import { TeacherDocumentsSection } from "@/components/TeacherDocumentsSection";
+import { TeacherOnboardingChecklist } from "@/components/TeacherOnboardingChecklist";
 
 type TeacherProfile = {
   id: string;
@@ -832,74 +833,7 @@ const Profile = () => {
 
         {!isAdmin && (
           <TabsContent value="onboarding" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Checklist d'Onboarding</CardTitle>
-                    <CardDescription>
-                      Suivez votre progression dans le processus d'intégration
-                    </CardDescription>
-                  </div>
-                  {enrichedProfile && (
-                    <div className="text-sm font-medium">
-                      Progression : {enrichedProfile.checklist_completed} / {enrichedProfile.checklist_total}
-                      <div className="w-48 h-2 bg-muted rounded-full mt-2">
-                        <div 
-                          className="h-full bg-primary rounded-full transition-all"
-                          style={{ 
-                            width: `${enrichedProfile.checklist_total > 0 ? (enrichedProfile.checklist_completed / enrichedProfile.checklist_total * 100) : 0}%` 
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                {onboardingItems.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">
-                    Aucune tâche d'onboarding pour le moment
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {onboardingItems.map((item) => (
-                      <div 
-                        key={item.id}
-                        className={cn(
-                          "flex items-start gap-3 p-4 rounded-lg border",
-                          item.is_completed ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800" : "bg-card"
-                        )}
-                      >
-                        <div className="mt-0.5">
-                          {item.is_completed ? (
-                            <CheckCircle2 className="w-5 h-5 text-green-600" />
-                          ) : (
-                            <Circle className="w-5 h-5 text-muted-foreground" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <h4 className={cn(
-                            "font-medium",
-                            item.is_completed && "line-through text-muted-foreground"
-                          )}>
-                            {item.item_name}
-                          </h4>
-                          {item.notes && (
-                            <p className="text-sm text-muted-foreground mt-1">{item.notes}</p>
-                          )}
-                          {item.completed_at && (
-                            <p className="text-xs text-green-600 mt-1">
-                              Complété le {format(new Date(item.completed_at), "dd/MM/yyyy 'à' HH:mm")}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <TeacherOnboardingChecklist />
           </TabsContent>
         )}
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Trash2, CheckCircle2, Circle, Link2, FileText } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, Circle, Users, ListTodo, TrendingUp, Filter } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -37,6 +37,7 @@ type TeacherOnboarding = {
   is_completed: boolean;
   completed_at: string | null;
   notes: string | null;
+  category_id: string | null;
   teacher_profile?: {
     full_name: string;
     email: string;
@@ -48,6 +49,9 @@ export function OnboardingManager() {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<string>("");
+  const [filterTeacher, setFilterTeacher] = useState<string>("all");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
   const [templateForm, setTemplateForm] = useState({
     item_name: "",
     description: "",
@@ -96,8 +100,19 @@ export function OnboardingManager() {
     },
   });
 
+  // Filtrage et KPIs
+  const filteredItems = useMemo(() => {
+    return allOnboardingItems.filter((item) => {
+      if (filterTeacher !== "all" && item.teacher_id !== filterTeacher) return false;
+      if (filterCategory !== "all" && item.category_id !== filterCategory) return false;
+      if (filterStatus === "completed" && !item.is_completed) return false;
+      if (filterStatus === "pending" && item.is_completed) return false;
+      return true;
+    });
+  }, [allOnboardingItems, filterTeacher, filterCategory, filterStatus]);
+
   // Group by teacher
-  const itemsByTeacher = allOnboardingItems.reduce((acc, item) => {
+  const itemsByTeacher = filteredItems.reduce((acc, item) => {
     const teacherName = item.teacher_profile?.full_name || "Inconnu";
     if (!acc[teacherName]) {
       acc[teacherName] = [];
@@ -105,6 +120,22 @@ export function OnboardingManager() {
     acc[teacherName].push(item);
     return acc;
   }, {} as Record<string, TeacherOnboarding[]>);
+
+  // KPIs globaux
+  const totalTasks = allOnboardingItems.length;
+  const completedTasks = allOnboardingItems.filter((i) => i.is_completed).length;
+  const globalProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const teachersWithFullProgress = Object.values(
+    allOnboardingItems.reduce((acc, item) => {
+      const teacherId = item.teacher_id;
+      if (!acc[teacherId]) {
+        acc[teacherId] = { total: 0, completed: 0 };
+      }
+      acc[teacherId].total += 1;
+      if (item.is_completed) acc[teacherId].completed += 1;
+      return acc;
+    }, {} as Record<string, { total: number; completed: number }>)
+  ).filter((stats) => stats.total > 0 && stats.completed === stats.total).length;
 
   const createItemMutation = useMutation({
     mutationFn: async (data: { teacher_id: string; item_name: string; category_id?: string; notes?: string }) => {
@@ -187,6 +218,55 @@ export function OnboardingManager() {
         </p>
       </div>
 
+      {/* KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription className="flex items-center gap-2">
+              <ListTodo className="w-4 h-4" />
+              Total des tâches
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{totalTasks}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" />
+              Tâches complétées
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{completedTasks}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Progression globale
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{globalProgress}%</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardDescription className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Onboarding complet
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{teachersWithFullProgress}</p>
+            <p className="text-xs text-muted-foreground mt-1">enseignant(s)</p>
+          </CardContent>
+        </Card>
+      </div>
+
       <Tabs defaultValue="by-teacher" className="space-y-4">
         <TabsList>
           <TabsTrigger value="by-teacher">Par enseignant</TabsTrigger>
@@ -194,13 +274,72 @@ export function OnboardingManager() {
         </TabsList>
 
         <TabsContent value="by-teacher" className="space-y-4">
+          {/* Filtres */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="w-5 h-5" />
+                Filtres
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Enseignant</Label>
+                  <Select value={filterTeacher} onValueChange={setFilterTeacher}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tous les enseignants" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les enseignants</SelectItem>
+                      {teachers.map((teacher) => (
+                        <SelectItem key={teacher.user_id} value={teacher.user_id}>
+                          {teacher.full_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Catégorie</Label>
+                  <Select value={filterCategory} onValueChange={setFilterCategory}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Toutes les catégories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Toutes les catégories</SelectItem>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Statut</Label>
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tous les statuts" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les statuts</SelectItem>
+                      <SelectItem value="pending">En attente</SelectItem>
+                      <SelectItem value="completed">Complétées</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Tâches par enseignant</CardTitle>
                   <CardDescription>
-                    Vue d'ensemble de l'onboarding de chaque enseignant
+                    {Object.keys(itemsByTeacher).length} enseignant(s) avec des tâches
                   </CardDescription>
                 </div>
                 <Button onClick={() => setShowAssignDialog(true)}>
