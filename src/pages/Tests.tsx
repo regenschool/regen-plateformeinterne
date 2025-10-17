@@ -5,6 +5,8 @@ import { useAdmin } from "@/contexts/AdminContext";
 import { Navigate } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReportCardGeneration } from "@/components/ReportCardGeneration";
 
 export default function Tests() {
   const { isAdmin } = useAdmin();
@@ -18,12 +20,24 @@ export default function Tests() {
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <FlaskConical className="h-8 w-8 text-primary" />
-          <h1 className="text-4xl font-bold">Tests & Qualité</h1>
+          <h1 className="text-4xl font-bold">Tests & Bulletins</h1>
         </div>
         <p className="text-muted-foreground">
-          Votre code est automatiquement testé à chaque modification
+          Génération de bulletins et tests automatiques
         </p>
       </div>
+
+      <Tabs defaultValue="bulletins" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="bulletins">Bulletins</TabsTrigger>
+          <TabsTrigger value="tests">Tests Qualité</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="bulletins" className="space-y-6">
+          <ReportCardGeneration />
+        </TabsContent>
+
+        <TabsContent value="tests" className="space-y-6">{/* ... keep existing code */}
 
       <Alert className="mb-6 border-green-200 bg-green-50 dark:bg-green-950/30">
         <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -161,7 +175,9 @@ export default function Tests() {
           💡 <strong>En résumé :</strong> Vous n'avez rien à faire ! Les tests s'exécutent automatiquement. 
           Consultez simplement GitHub Actions pour voir si tout est vert ✅
         </p>
-      </div>
+        </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
