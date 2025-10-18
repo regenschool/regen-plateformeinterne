@@ -95,20 +95,12 @@ serve(async (req) => {
         full_name: fullName,
       });
 
-    if (profileError) throw profileError;
-
-    // Si enseignant ou admin, créer aussi dans teachers
-    if (role === "teacher" || role === "admin") {
-      const { error: teacherError } = await supabaseClient
-        .from("teachers")
-        .insert({
-          user_id: newUser.user.id,
-          full_name: fullName,
-          email: email,
-        });
-
-      if (teacherError) throw teacherError;
+    if (profileError) {
+      console.error("Erreur création profil:", profileError);
+      throw profileError;
     }
+
+    console.log("Profil créé dans teacher_profiles");
 
     // Générer un lien d'invitation (reste valide tant que l'email n'est pas confirmé)
     const { data: magicLink, error: linkError } = await supabaseClient.auth.admin.generateLink({
