@@ -143,9 +143,15 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
     }
   };
 
-  const handleGradeClick = (subject: string) => {
-    // Naviguer vers la page de saisie des notes avec filtres pré-remplis
-    navigate(`/grades?subject=${encodeURIComponent(subject)}`);
+  const handleGradeClick = (grade: any) => {
+    // Naviguer vers la page de saisie des notes avec TOUS les filtres pré-remplis
+    const params = new URLSearchParams({
+      subject: grade.subject,
+      class: grade.class_name || student?.class_name || '',
+      schoolYear: grade.school_year || '',
+      semester: grade.semester || '',
+    });
+    navigate(`/grades?${params.toString()}`);
   };
 
   return (
@@ -339,7 +345,7 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
                               key={grade.id}
                               className="flex items-center justify-between p-3 border border-border/50 rounded-lg hover:bg-accent/50 hover:scale-[1.02] hover:shadow-md transition-all cursor-pointer animate-fade-in bg-card/30 backdrop-blur-sm"
                               style={{ animationDelay: `${index * 50}ms` }}
-                              onClick={() => handleGradeClick(grade.subject)}
+                              onClick={() => handleGradeClick(grade)}
                             >
                               <div>
                                 <p className="font-medium text-sm">{grade.subject}</p>

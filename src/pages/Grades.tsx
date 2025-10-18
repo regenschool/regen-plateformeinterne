@@ -108,6 +108,9 @@ export default function Grades() {
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const subjectParam = searchParams.get('subject');
+    const classParam = searchParams.get('class');
+    const schoolYearParam = searchParams.get('schoolYear');
+    const semesterParam = searchParams.get('semester');
     
     if (location.state) {
       const { prefilledClass, prefilledSubject, prefilledSchoolYear, prefilledSemester } = location.state as any;
@@ -115,9 +118,12 @@ export default function Grades() {
       if (prefilledSubject) setSelectedSubject(prefilledSubject);
       if (prefilledSchoolYear) setSelectedSchoolYear(prefilledSchoolYear);
       if (prefilledSemester) setSelectedSemester(prefilledSemester);
-    } else if (subjectParam) {
-      // Si on arrive avec un paramètre ?subject=..., on le pré-sélectionne
-      setSelectedSubject(decodeURIComponent(subjectParam));
+    } else if (subjectParam || classParam || schoolYearParam || semesterParam) {
+      // Pré-remplir depuis les query params
+      if (classParam) setSelectedClass(decodeURIComponent(classParam));
+      if (subjectParam) setSelectedSubject(decodeURIComponent(subjectParam));
+      if (schoolYearParam) setSelectedSchoolYear(decodeURIComponent(schoolYearParam));
+      if (semesterParam) setSelectedSemester(decodeURIComponent(semesterParam));
     } else {
       // Si on arrive sans state ni params (clic sur navigation), réinitialiser tout
       setSelectedClass("");
@@ -128,7 +134,7 @@ export default function Grades() {
       setNewSubjectMetadata(null);
       setAssessments([]);
     }
-  }, [location.state, location.search, location.key]); // Ajout de location.search
+  }, [location.state, location.search, location.key]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
 
   useEffect(() => {
