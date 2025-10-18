@@ -152,36 +152,40 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
       margin: 0 auto;
     }
     
-    /* Header élégant avec logo centré */
+    /* Header élégant avec fond coloré */
     .header {
-      text-align: center;
-      margin-bottom: 35px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid #e5e7eb;
+      background-color: ${headerColor};
+      color: white;
+      padding: 24px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+    .header-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
     .logo {
-      max-width: 60px;
-      max-height: 60px;
+      max-height: 64px;
       object-fit: contain;
-      margin: 0 auto 15px;
-      display: block;
+    }
+    .header-center {
+      flex: 1;
+      text-align: center;
     }
     .title {
-      font-size: 20pt;
+      font-size: 30pt;
       font-weight: 700;
-      color: ${headerColor};
-      margin-bottom: 6px;
-      letter-spacing: -0.5px;
+      margin-bottom: 8px;
     }
     .school-name {
-      font-size: 10pt;
-      color: #6b7280;
-      margin-bottom: 10px;
+      font-size: 18pt;
+      opacity: 0.9;
     }
     .academic-info {
-      font-size: 8.5pt;
-      color: #9ca3af;
-      font-weight: 500;
+      font-size: 14pt;
+      opacity: 0.8;
+      margin-top: 8px;
     }
     
     /* Section étudiant avec design épuré */
@@ -381,17 +385,22 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
   <div class="report-container">
     ${isVisible(config, 'header', 'title') ? `
     <div class="header">
-      ${isVisible(config, 'header', 'logo') && logoUrl ? `
-      <img src="${logoUrl}" alt="Logo" class="logo">` : ''}
-      <div class="title">${title}</div>
-      ${isVisible(config, 'header', 'school_name') ? `
-      <div class="school-name">${schoolName}</div>` : ''}
-      ${isVisible(config, 'header', 'school_year') || isVisible(config, 'header', 'semester') || isVisible(config, 'header', 'program_name') ? `
-      <div class="academic-info">
-        ${isVisible(config, 'header', 'school_year') ? data.academic.schoolYear : ''}
-        ${isVisible(config, 'header', 'semester') ? ` • ${data.academic.semester}` : ''}
-        ${isVisible(config, 'header', 'program_name') && data.academic.programName ? ` • ${data.academic.programName}` : ''}
-      </div>` : ''}
+      <div class="header-content">
+        ${isVisible(config, 'header', 'logo') && logoUrl ? `
+        <img src="${logoUrl}" alt="Logo" class="logo">` : ''}
+        <div class="header-center">
+          <div class="title">${title}</div>
+          ${isVisible(config, 'header', 'school_name') ? `
+          <div class="school-name">${schoolName}</div>` : ''}
+          ${isVisible(config, 'header', 'school_year') || isVisible(config, 'header', 'semester') || isVisible(config, 'header', 'program_name') ? `
+          <div class="academic-info">
+            ${isVisible(config, 'header', 'school_year') ? data.academic.schoolYear : ''}
+            ${isVisible(config, 'header', 'semester') ? ` • ${data.academic.semester}` : ''}
+            ${isVisible(config, 'header', 'program_name') && data.academic.programName ? ` • ${data.academic.programName}` : ''}
+          </div>` : ''}
+        </div>
+        ${isVisible(config, 'header', 'logo') && logoUrl ? `<div style="width: 64px;"></div>` : ''}
+      </div>
     </div>` : ''}
 
     <div class="section-separator"></div>
