@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StudentCard } from "@/components/StudentCard";
 import { StudentDetailDrawer } from "@/components/StudentDetailDrawer";
+import { StudentCardSkeleton } from "@/components/LoadingSkeletons";
 import { Sprout, Download, ArrowUpDown, Trash2, UserMinus, UserX, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -482,7 +483,13 @@ const Directory = () => {
         </div>
       </div>
 
-      {paginatedEnrollments.length === 0 ? (
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <StudentCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : paginatedEnrollments.length === 0 ? (
         <div className="text-center py-12">
           <Sprout className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
           <p className="text-muted-foreground">{t("directory.noStudents")}</p>
