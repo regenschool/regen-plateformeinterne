@@ -339,90 +339,36 @@ export const ReportCardTemplatesManager = () => {
                 <TabsContent value="style" className="space-y-6">
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Couleurs et design</CardTitle>
+                      <CardTitle className="text-base">Couleurs</CardTitle>
                       <CardDescription>
-                        Personnalisez l'apparence visuelle du bulletin
+                        Personnalisez la couleur principale du bulletin
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6">
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="header_color">Couleur principale</Label>
-                          <div className="flex gap-4 items-center">
-                            <Input
-                              id="header_color"
-                              type="color"
-                              value={selectedTemplate.header_color}
-                              onChange={(e) =>
-                                setSelectedTemplate({ ...selectedTemplate, header_color: e.target.value })
-                              }
-                              className="w-20 h-10"
-                            />
-                            <Input
-                              type="text"
-                              value={selectedTemplate.header_color}
-                              onChange={(e) =>
-                                setSelectedTemplate({ ...selectedTemplate, header_color: e.target.value })
-                              }
-                              className="font-mono"
-                            />
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Utilisée pour l'en-tête et les accents
-                          </p>
-                        </div>
-
-                        <Separator />
-
-                        <div className="space-y-2">
-                          <Label htmlFor="logo_url">Logo de l'établissement (URL)</Label>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="header_color">Couleur principale</Label>
+                        <div className="flex gap-4 items-center">
                           <Input
-                            id="logo_url"
-                            value={selectedTemplate.logo_url || ''}
+                            id="header_color"
+                            type="color"
+                            value={selectedTemplate.header_color}
                             onChange={(e) =>
-                              setSelectedTemplate({ ...selectedTemplate, logo_url: e.target.value })
+                              setSelectedTemplate({ ...selectedTemplate, header_color: e.target.value })
                             }
-                            placeholder="https://..."
+                            className="w-20 h-10"
                           />
-                          <p className="text-sm text-muted-foreground">
-                            Uploadez d'abord votre logo dans le stockage puis collez l'URL publique ici
-                          </p>
-                        </div>
-
-                        <Separator />
-
-                        <div className="space-y-2">
-                          <Label htmlFor="signature_url">Signature (Directeur/Responsable)</Label>
                           <Input
-                            id="signature_url"
-                            value={selectedTemplate.signature_url || ''}
+                            type="text"
+                            value={selectedTemplate.header_color}
                             onChange={(e) =>
-                              setSelectedTemplate({ ...selectedTemplate, signature_url: e.target.value })
+                              setSelectedTemplate({ ...selectedTemplate, header_color: e.target.value })
                             }
-                            placeholder="https://..."
+                            className="font-mono"
                           />
-                          <p className="text-sm text-muted-foreground">
-                            Uploadez la signature dans le stockage puis collez l'URL publique ici
-                          </p>
                         </div>
-
-                        <Separator />
-
-                        <div className="space-y-2">
-                          <Label htmlFor="footer_text">Texte de pied de page</Label>
-                          <Textarea
-                            id="footer_text"
-                            value={selectedTemplate.footer_text || ""}
-                            onChange={(e) =>
-                              setSelectedTemplate({ ...selectedTemplate, footer_text: e.target.value })
-                            }
-                            placeholder="Ex: École Supérieure - Année 2025-2026"
-                            rows={3}
-                          />
-                          <p className="text-sm text-muted-foreground">
-                            Texte affiché en bas du bulletin
-                          </p>
-                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Utilisée pour l'en-tête, les titres et les accents du bulletin
+                        </p>
                       </div>
                     </CardContent>
                   </Card>
