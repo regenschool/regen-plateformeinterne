@@ -82,14 +82,22 @@ export const ReportCardPreview = ({ template }: Props) => {
         )}
 
         {/* Informations étudiant */}
-        {getConfigValue('student_info', 'name', 'is_visible') && (
+        {(getConfigValue('student_info', 'first_name', 'is_visible') || 
+          getConfigValue('student_info', 'last_name', 'is_visible') ||
+          getConfigValue('student_info', 'birth_date', 'is_visible') ||
+          getConfigValue('student_info', 'class_name', 'is_visible') ||
+          getConfigValue('student_info', 'age', 'is_visible') ||
+          getConfigValue('student_info', 'program_name', 'is_visible')) && (
           <div className="bg-gray-50 p-4 rounded-lg mb-6">
             <h2 className="font-semibold text-lg mb-3" style={{ color: headerColor }}>
               Informations de l'élève
             </h2>
             <div className="grid grid-cols-2 gap-3 text-sm">
-              {getConfigValue('student_info', 'name', 'is_visible') && (
-                <div><strong>Nom complet :</strong> Jean DUPONT</div>
+              {getConfigValue('student_info', 'first_name', 'is_visible') && (
+                <div><strong>Prénom :</strong> Jean</div>
+              )}
+              {getConfigValue('student_info', 'last_name', 'is_visible') && (
+                <div><strong>Nom :</strong> DUPONT</div>
               )}
               {getConfigValue('student_info', 'birth_date', 'is_visible') && (
                 <div><strong>Date de naissance :</strong> 15/03/2010</div>
@@ -99,6 +107,9 @@ export const ReportCardPreview = ({ template }: Props) => {
               )}
               {getConfigValue('student_info', 'age', 'is_visible') && (
                 <div><strong>Âge :</strong> 14 ans</div>
+              )}
+              {getConfigValue('student_info', 'program_name', 'is_visible') && (
+                <div><strong>Programme :</strong> BTS Services Informatiques</div>
               )}
             </div>
           </div>
