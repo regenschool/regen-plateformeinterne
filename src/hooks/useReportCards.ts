@@ -94,6 +94,8 @@ export const useGenerateReportCard = () => {
 
       if (studentError) throw studentError;
 
+      if (studentError) throw studentError;
+
       // 2. Récupérer les notes
       const { data: grades, error: gradesError } = await supabase
         .from('grades')

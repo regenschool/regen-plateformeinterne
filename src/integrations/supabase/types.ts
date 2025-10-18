@@ -530,6 +530,132 @@ export type Database = {
         }
         Relationships: []
       }
+      report_card_section_elements: {
+        Row: {
+          created_at: string
+          display_order: number
+          element_key: string
+          element_type: string
+          id: string
+          is_editable_in_draft: boolean
+          label: string
+          section_key: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          element_key: string
+          element_type?: string
+          id?: string
+          is_editable_in_draft?: boolean
+          label: string
+          section_key: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          element_key?: string
+          element_type?: string
+          id?: string
+          is_editable_in_draft?: boolean
+          label?: string
+          section_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_card_section_elements_section_key_fkey"
+            columns: ["section_key"]
+            isOneToOne: false
+            referencedRelation: "report_card_sections"
+            referencedColumns: ["section_key"]
+          },
+        ]
+      }
+      report_card_sections: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          label: string
+          section_key: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          label: string
+          section_key: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          label?: string
+          section_key?: string
+        }
+        Relationships: []
+      }
+      report_card_template_config: {
+        Row: {
+          created_at: string
+          default_value: string | null
+          element_key: string
+          id: string
+          is_editable: boolean
+          is_visible: boolean
+          section_key: string
+          style_options: Json | null
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_value?: string | null
+          element_key: string
+          id?: string
+          is_editable?: boolean
+          is_visible?: boolean
+          section_key: string
+          style_options?: Json | null
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_value?: string | null
+          element_key?: string
+          id?: string
+          is_editable?: boolean
+          is_visible?: boolean
+          section_key?: string
+          style_options?: Json | null
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_card_template_config_section_key_element_key_fkey"
+            columns: ["section_key", "element_key"]
+            isOneToOne: false
+            referencedRelation: "report_card_section_elements"
+            referencedColumns: ["section_key", "element_key"]
+          },
+          {
+            foreignKeyName: "report_card_template_config_section_key_fkey"
+            columns: ["section_key"]
+            isOneToOne: false
+            referencedRelation: "report_card_sections"
+            referencedColumns: ["section_key"]
+          },
+          {
+            foreignKeyName: "report_card_template_config_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "report_card_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_card_templates: {
         Row: {
           created_at: string

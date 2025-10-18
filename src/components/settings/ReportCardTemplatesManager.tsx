@@ -9,13 +9,26 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Plus, Save, Eye, Code, Palette, Settings2, FileText } from "lucide-react";
+import { Loader2, Plus, Save, Eye, Code, Palette, Settings2, FileText, Trash2, Sliders } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ReportCardPreview } from "./ReportCardPreview";
 import { HtmlTemplateEditor } from "./HtmlTemplateEditor";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { ReportCardTemplateConfigPanel } from "./ReportCardTemplateConfigPanel";
+import { useDeleteTemplate } from "@/hooks/useReportCardTemplateConfig";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface ReportCardTemplate {
   id: string;
@@ -61,6 +74,7 @@ export const ReportCardTemplatesManager = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<ReportCardTemplate | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const queryClient = useQueryClient();
+  const deleteTemplate = useDeleteTemplate();
 
   const { data: templates, isLoading } = useQuery({
     queryKey: ["report-card-templates"],
@@ -208,18 +222,56 @@ export const ReportCardTemplatesManager = () => {
                           )}
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedTemplate(template);
-                          setShowPreview(true);
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedTemplate(template);
+                            setShowPreview(true);
+                          }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Êtes-vous sûr de vouloir supprimer le modèle "{template.name}" ? 
+                                Cette action supprimera également tous les bulletins générés avec ce modèle.
+                                Cette action est irréversible.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Annuler</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => {
+                                  deleteTemplate.mutate(template.id);
+                                  if (selectedTemplate?.id === template.id) {
+                                    setSelectedTemplate(null);
+                                  }
+                                }}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Supprimer
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -259,8 +311,12 @@ export const ReportCardTemplatesManager = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="content" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+              <Tabs defaultValue="sections" className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="sections">
+                    <Sliders className="h-4 w-4 mr-2" />
+                    Sections
+                  </TabsTrigger>
                   <TabsTrigger value="content">
                     <FileText className="h-4 w-4 mr-2" />
                     Contenu
@@ -274,6 +330,14 @@ export const ReportCardTemplatesManager = () => {
                     Avancé
                   </TabsTrigger>
                 </TabsList>
+
+                {/* Nouvel onglet Sections */}
+                <TabsContent value="sections" className="space-y-6">
+                  <ReportCardTemplateConfigPanel 
+                    templateId={selectedTemplate.id}
+                    templateName={selectedTemplate.name}
+                  />
+                </TabsContent>
 
                 {/* Onglet Contenu */}
                 <TabsContent value="content" className="space-y-6">
