@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -7,8 +8,8 @@ export const useSchoolYearMutations = () => {
   const queryClient = useQueryClient();
 
   const add = useMutation({
-    mutationFn: async (data: any) => {
-      const { error } = await (supabase as any)
+    mutationFn: async (data: { label: string; start_date: string; end_date: string; is_active?: boolean }) => {
+      const { error } = await supabase
         .from('school_years')
         .insert([data]);
       if (error) throw error;
@@ -55,8 +56,8 @@ export const useClassMutations = () => {
   const queryClient = useQueryClient();
 
   const add = useMutation({
-    mutationFn: async (data: any) => {
-      const { error } = await (supabase as any)
+    mutationFn: async (data: { name: string; level?: string | null; capacity?: number | null; is_active?: boolean }) => {
+      const { error } = await supabase
         .from('classes')
         .insert([data]);
       if (error) throw error;
@@ -103,8 +104,8 @@ export const useAcademicPeriodMutations = () => {
   const queryClient = useQueryClient();
 
   const add = useMutation({
-    mutationFn: async (data: any) => {
-      const { error } = await (supabase as any)
+    mutationFn: async (data: { school_year_id: string; label: string; start_date: string; end_date: string; is_active?: boolean }) => {
+      const { error } = await supabase
         .from('academic_periods')
         .insert([data]);
       if (error) throw error;
@@ -197,7 +198,7 @@ export const syncClassToReferential = async (className: string) => {
     .maybeSingle();
 
   if (!existing) {
-    await (supabase as any)
+    await supabase
       .from('classes')
       .insert([{ name: className, is_active: true }]);
   }

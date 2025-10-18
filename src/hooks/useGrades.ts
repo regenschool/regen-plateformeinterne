@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -87,7 +88,7 @@ export const useAddGrade = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (grade: Record<string, any>) => {
+    mutationFn: async (grade: any) => {
       // Vérifier si une note existe déjà pour cette combinaison
       const { data: existingGrade } = await supabase
         .from('grades')
@@ -113,7 +114,7 @@ export const useAddGrade = () => {
         error = result.error;
       } else {
         // Insert new grade
-        const result = await (supabase as any)
+        const result = await supabase
           .from('grades')
           .insert([grade])
           .select()
@@ -138,7 +139,7 @@ export const useUpdateGrade = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
       const { data, error } = await supabase
         .from('grades')
         .update(updates)

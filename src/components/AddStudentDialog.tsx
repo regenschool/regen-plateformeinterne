@@ -87,9 +87,10 @@ export const AddStudentDialog = ({ onStudentAdded, selectedSchoolYearId }: AddSt
         special_needs: "",
       });
       onStudentAdded();
-    } catch (error: any) {
-      if (error.errors) {
-        // Zod validation errors handled by the hook
+    } catch (error) {
+      // Zod validation errors handled by the hook
+      if (error instanceof Error && 'errors' in error) {
+        console.error('Validation error:', error);
       }
     }
   };

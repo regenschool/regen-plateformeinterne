@@ -156,6 +156,7 @@ export const NewSubjectDialog = ({
         }
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schoolYears, defaultSchoolYear, open]);
 
   // Set default academic period from props or active period

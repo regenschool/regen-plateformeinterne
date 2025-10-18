@@ -107,7 +107,7 @@ export function validateUrlField(
   if (!value || value.trim() === "") return null;
 
   // Check if it looks like a date (common mistake)
-  const datePattern = /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/;
+  const datePattern = /^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}$/;
   if (datePattern.test(value)) {
     return {
       row: rowIndex,
@@ -167,7 +167,7 @@ export function validateEmailField(
   }
 
   // Check if it looks like a date
-  const datePattern = /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/;
+  const datePattern = /^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}$/;
   if (datePattern.test(value)) {
     return {
       row: rowIndex,
