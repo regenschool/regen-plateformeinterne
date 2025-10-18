@@ -283,8 +283,8 @@ export const ReportCardEditor = ({
                           <div className="space-y-2">
                             <Label>Titre du signataire</Label>
                             <Input
-                              value={editedData.signatoryTitle || 'Le Directeur des Études'}
-                              onChange={(e) => updateField('signatoryTitle', e.target.value)}
+                              value={getConfigValue('footer', 'signatory_title', 'default_value') || 'Le Directeur des Études'}
+                              onChange={(e) => updateConfigValue('footer', 'signatory_title', e.target.value)}
                             />
                           </div>
                         )}

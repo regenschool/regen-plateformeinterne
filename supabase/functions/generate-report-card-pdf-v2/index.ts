@@ -392,11 +392,10 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
           <div class="title">${title}</div>
           ${isVisible(config, 'header', 'school_name') ? `
           <div class="school-name">${schoolName}</div>` : ''}
-          ${isVisible(config, 'header', 'school_year') || isVisible(config, 'header', 'semester') || isVisible(config, 'header', 'program_name') ? `
+          ${isVisible(config, 'header', 'school_year') || isVisible(config, 'header', 'semester') ? `
           <div class="academic-info">
             ${isVisible(config, 'header', 'school_year') ? data.academic.schoolYear : ''}
             ${isVisible(config, 'header', 'semester') ? ` • ${data.academic.semester}` : ''}
-            ${isVisible(config, 'header', 'program_name') && data.academic.programName ? ` • ${data.academic.programName}` : ''}
           </div>` : ''}
         </div>
         ${isVisible(config, 'header', 'logo') && logoUrl ? `<div style="width: 64px;"></div>` : ''}
