@@ -125,13 +125,7 @@ export const ReportCardTemplateConfigPanel = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Configuration : {templateName}</h3>
-          <p className="text-sm text-muted-foreground">
-            Configurez les sections et éléments affichés dans ce modèle
-          </p>
-        </div>
+      <div className="flex justify-end">
         <Button onClick={handleSave} disabled={upsertConfig.isPending}>
           {upsertConfig.isPending ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
