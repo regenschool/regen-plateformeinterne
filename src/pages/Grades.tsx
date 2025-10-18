@@ -385,12 +385,6 @@ export default function Grades() {
   const calculateAssessments = (allGrades: Grade[]) => {
     const assessmentMap = new Map<string, Assessment>();
     
-    // Ne rien faire si les étudiants ne sont pas encore chargés
-    if (students.length === 0) {
-      setAssessments([]);
-      return;
-    }
-    
     allGrades.forEach(grade => {
       // Générer une clé unique pour l'épreuve
       const key = grade.assessment_name || 
@@ -749,79 +743,80 @@ export default function Grades() {
         )}
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {selectedSubject && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleResetSelection}
-              className="gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Retour à la sélection
-            </Button>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {selectedSubject && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleResetSelection}
+                className="gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Retour à la sélection
+              </Button>
+            )}
+          </div>
+          {selectedSubject && subjects.length > 1 && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleNavigateToSubject('prev')}
+                disabled={!hasPrevSubject}
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Matière précédente
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleNavigateToSubject('next')}
+                disabled={!hasNextSubject}
+              >
+                Matière suivante
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
           )}
         </div>
-        {selectedSubject && subjects.length > 1 && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleNavigateToSubject('prev')}
-              disabled={!hasPrevSubject}
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Matière précédente
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleNavigateToSubject('next')}
-              disabled={!hasNextSubject}
-            >
-              Matière suivante
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
+
+        {/* Section Mes Matières - uniquement pour les enseignants */}
+        {!isAdmin && mySubjects.length > 0 && !selectedSubject && (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <ClipboardList className="w-5 h-5" />
+                Mes Matières (année en cours)
+              </CardTitle>
+              <CardDescription>
+                Cliquez directement sur une matière pour accéder rapidement à vos notes
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {mySubjects.map((subject, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-start gap-1 hover:border-primary hover:bg-primary/10"
+                    onClick={() => handleQuickSelectSubject(subject)}
+                  >
+                    <span className="font-semibold text-base">{subject.subject_name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {subject.class_name} • {subject.semester}
+                    </span>
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
-      </div>
 
-      {/* Section Mes Matières - uniquement pour les enseignants */}
-      {!isAdmin && mySubjects.length > 0 && !selectedSubject && (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <ClipboardList className="w-5 h-5" />
-              Mes Matières (année en cours)
-            </CardTitle>
-            <CardDescription>
-              Cliquez directement sur une matière pour accéder rapidement à vos notes
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {mySubjects.map((subject, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  className="h-auto p-4 flex flex-col items-start gap-1 hover:border-primary hover:bg-primary/10"
-                  onClick={() => handleQuickSelectSubject(subject)}
-                >
-                  <span className="font-semibold text-base">{subject.subject_name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {subject.class_name} • {subject.semester}
-                  </span>
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Section filtres */}
-      {!selectedSubject && (
-        <Card>
+        {/* Section filtres */}
+        {!selectedSubject && (
+          <Card>
           <CardHeader>
             <CardTitle className="text-base">
               {!isAdmin && mySubjects.length > 0 
@@ -939,6 +934,7 @@ export default function Grades() {
       )}
 
       {selectedClass && selectedSubject && selectedSubject !== "__new__" && selectedSchoolYear && selectedSemester && (
+        <div className="space-y-6">
           <>
             {newSubjectMetadata && (
               <Card className="bg-primary/5 border-primary/20">
@@ -1321,27 +1317,29 @@ export default function Grades() {
             </div>
             )}
           </>
-        )}
+        </div>
+      )}
 
-        {showBulkImport && selectedClass && selectedSubject && (
-          <BulkGradeImport
-            students={students}
-            classname={selectedClass}
-            subject={selectedSubject}
-            subjectMetadata={newSubjectMetadata}
-            onClose={() => setShowBulkImport(false)}
-            onImportComplete={handleGradeUpdated}
-          />
-        )}
-
-        <NewSubjectDialog
-          open={showNewSubjectDialog}
-          onClose={() => setShowNewSubjectDialog(false)}
-          onSubjectCreated={handleSubjectCreated}
-          defaultSchoolYear={selectedSchoolYear}
-          defaultSemester={selectedSemester}
-          className={selectedClass}
+      {showBulkImport && selectedClass && selectedSubject && (
+        <BulkGradeImport
+          students={students}
+          classname={selectedClass}
+          subject={selectedSubject}
+          subjectMetadata={newSubjectMetadata}
+          onClose={() => setShowBulkImport(false)}
+          onImportComplete={handleGradeUpdated}
         />
+      )}
+
+      <NewSubjectDialog
+        open={showNewSubjectDialog}
+        onClose={() => setShowNewSubjectDialog(false)}
+        onSubjectCreated={handleSubjectCreated}
+        defaultSchoolYear={selectedSchoolYear}
+        defaultSemester={selectedSemester}
+        className={selectedClass}
+      />
+      </div>
     </div>
   );
 }
