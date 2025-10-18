@@ -24,11 +24,14 @@ export const useBulkGeneratePDFs = () => {
         errors: [] as { id: string; error: string }[],
       };
 
-      // Traiter par lots de 3 pour éviter la surcharge
-      const batchSize = 3;
+      // ✅ OPTIMISÉ : Traiter par lots de 5 avec délai adaptatif
+      const batchSize = 5;
+      const delayBetweenBatches = 500; // ms entre chaque lot
+      
       for (let i = 0; i < reportCardIds.length; i += batchSize) {
         const batch = reportCardIds.slice(i, i + batchSize);
         
+        // Traiter le lot en parallèle
         await Promise.all(
           batch.map(async (reportCardId) => {
             try {
@@ -69,6 +72,11 @@ export const useBulkGeneratePDFs = () => {
             }
           })
         );
+
+        // Petit délai entre les lots pour éviter de surcharger
+        if (i + batchSize < reportCardIds.length) {
+          await new Promise(resolve => setTimeout(resolve, delayBetweenBatches));
+        }
       }
 
       return results;

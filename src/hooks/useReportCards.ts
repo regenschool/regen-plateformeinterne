@@ -86,6 +86,58 @@ const calculateSubjectAverages = (grades: any[]): SubjectAverage[] => {
   return subjectAverages;
 };
 
+// Hook pour récupérer les stats de classe (avec cache)
+export const useClassSubjectStats = (className?: string, schoolYear?: string, semester?: string) => {
+  return useQuery({
+    queryKey: ['class-subject-stats', className, schoolYear, semester],
+    queryFn: async () => {
+      if (!className || !schoolYear || !semester) return null;
+      
+      const { data, error } = await supabase.rpc('calculate_class_subject_stats', {
+        p_class_name: className,
+        p_school_year: schoolYear,
+        p_semester: semester
+      });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!(className && schoolYear && semester),
+    staleTime: 5 * 60 * 1000, // Cache pendant 5 minutes
+    gcTime: 10 * 60 * 1000, // Garde en cache pendant 10 minutes
+  });
+};
+
+// Hook pour récupérer les coefficients (avec cache)
+export const useSubjectWeights = (className?: string, schoolYear?: string, semester?: string) => {
+  return useQuery({
+    queryKey: ['subject-weights', className, schoolYear, semester],
+    queryFn: async () => {
+      if (!className || !schoolYear || !semester) return null;
+      
+      const { data, error } = await supabase.rpc('get_subject_weights_for_class', {
+        p_class_name: className,
+        p_school_year: schoolYear,
+        p_semester: semester
+      });
+
+      if (error) throw error;
+      
+      // Convertir en Map pour accès rapide
+      const weightMap = new Map<string, number>();
+      if (data) {
+        data.forEach((sw: any) => {
+          weightMap.set(sw.subject_name, sw.weight);
+        });
+      }
+      return weightMap;
+    },
+    enabled: !!(className && schoolYear && semester),
+    staleTime: 10 * 60 * 1000, // Cache pendant 10 minutes
+    gcTime: 20 * 60 * 1000,
+  });
+};
+
 export const useGenerateReportCard = () => {
   const queryClient = useQueryClient();
 
@@ -140,22 +192,17 @@ export const useGenerateReportCard = () => {
 
       if (gradesError) throw gradesError;
 
-      // ✅ NOUVEAU : Récupérer les coefficients depuis subject_weights
-      const { data: subjectWeights } = await supabase
-        .from('subject_weights')
-        .select('subject_id, weight, subjects(subject_name)')
-        .eq('class_name', className)
-        .eq('school_year', schoolYear)
-        .eq('semester', semester);
+      // ✅ OPTIMISÉ : Récupérer les coefficients via RPC (avec cache potentiel)
+      const { data: subjectWeightsData } = await supabase.rpc('get_subject_weights_for_class', {
+        p_class_name: className,
+        p_school_year: schoolYear,
+        p_semester: semester
+      });
 
-      // Créer une map subject_name -> weight
       const weightMap = new Map<string, number>();
-      if (subjectWeights) {
-        subjectWeights.forEach(sw => {
-          const subjectName = (sw as any).subjects?.subject_name;
-          if (subjectName) {
-            weightMap.set(subjectName, sw.weight);
-          }
+      if (subjectWeightsData) {
+        subjectWeightsData.forEach((sw: any) => {
+          weightMap.set(sw.subject_name, sw.weight);
         });
       }
 
@@ -217,59 +264,34 @@ export const useGenerateReportCard = () => {
           subjectAverages.reduce((acc, s) => acc + s.weighting, 0)
         : 0;
 
-      // 5. Calculer les stats de classe
-      const { data: classGrades } = await supabase
-        .from('grades')
-        .select('*')
-        .eq('class_name', className)
-        .eq('school_year', schoolYear)
-        .eq('semester', semester);
+      // 5. ✅ OPTIMISÉ : Calculer les stats de classe via SQL
+      const { data: classStats } = await supabase.rpc('calculate_class_subject_stats', {
+        p_class_name: className,
+        p_school_year: schoolYear,
+        p_semester: semester
+      });
 
-      const classSubjectAverages = classGrades && classGrades.length > 0
-        ? calculateSubjectAverages(classGrades)
-        : [];
-        
-      const classAverage = classSubjectAverages.length > 0
-        ? classSubjectAverages.reduce((acc, s) => acc + s.average * s.weighting, 0) /
-          classSubjectAverages.reduce((acc, s) => acc + s.weighting, 0)
-        : 0;
-
-      // Calculer min/max par matière
       const subjectStats = new Map<string, { classAvg: number; min: number; max: number }>();
-      
-      if (classGrades && classGrades.length > 0) {
-        const studentsBySubject = new Map<string, Map<string, { total: number; weight: number }>>();
-        
-        classGrades.forEach(grade => {
-          if (!studentsBySubject.has(grade.subject)) {
-            studentsBySubject.set(grade.subject, new Map());
-          }
-          const subjectMap = studentsBySubject.get(grade.subject)!;
-          
-          if (!subjectMap.has(grade.student_id)) {
-            subjectMap.set(grade.student_id, { total: 0, weight: 0 });
-          }
-          const studentData = subjectMap.get(grade.student_id)!;
-          studentData.total += (grade.grade / grade.max_grade) * 20 * grade.weighting;
-          studentData.weight += grade.weighting;
-        });
-        
-        studentsBySubject.forEach((studentsMap, subject) => {
-          const averages: number[] = [];
-          studentsMap.forEach(data => {
-            if (data.weight > 0) {
-              averages.push(data.total / data.weight);
-            }
+      if (classStats) {
+        classStats.forEach((stat: any) => {
+          subjectStats.set(stat.subject, {
+            classAvg: stat.class_avg,
+            min: stat.min_avg,
+            max: stat.max_avg
           });
-          
-          if (averages.length > 0) {
-            const classAvg = averages.reduce((a, b) => a + b, 0) / averages.length;
-            const min = Math.min(...averages);
-            const max = Math.max(...averages);
-            subjectStats.set(subject, { classAvg, min, max });
-          }
         });
       }
+
+      // Calculer la moyenne de classe générale
+      const classAverage = classStats && classStats.length > 0
+        ? classStats.reduce((sum: number, stat: any) => {
+            const weight = weightMap.get(stat.subject) || 1;
+            return sum + stat.class_avg * weight;
+          }, 0) / classStats.reduce((sum: number, stat: any) => {
+            const weight = weightMap.get(stat.subject) || 1;
+            return sum + weight;
+          }, 0)
+        : 0;
 
       // 6. Enrichir les moyennes avec les stats de classe ET les coefficients
       const enrichedSubjectAverages = subjectAverages.map(s => {
@@ -381,7 +403,12 @@ export const useGenerateReportCard = () => {
       return { reportCard, reportCardData };
     },
     onSuccess: (data, variables) => {
+      // Invalider les caches pertinents
       queryClient.invalidateQueries({ queryKey: ['report-cards'] });
+      queryClient.invalidateQueries({ 
+        queryKey: ['class-subject-stats', variables.className, variables.schoolYear, variables.semester] 
+      });
+      
       const message = data.reportCard.created_at === data.reportCard.updated_at 
         ? 'Brouillon créé - vous pouvez l\'éditer avant génération PDF'
         : 'Brouillon mis à jour - l\'ancien PDF a été supprimé';

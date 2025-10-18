@@ -1851,6 +1851,20 @@ export type Database = {
         Args: { birth_date: string }
         Returns: number
       }
+      calculate_class_subject_stats: {
+        Args: {
+          p_class_name: string
+          p_school_year: string
+          p_semester: string
+        }
+        Returns: {
+          class_avg: number
+          max_avg: number
+          min_avg: number
+          student_count: number
+          subject: string
+        }[]
+      }
       cleanup_old_audit_logs: {
         Args: { days_to_keep?: number }
         Returns: number
@@ -1858,6 +1872,17 @@ export type Database = {
       cleanup_old_rate_limits: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_subject_weights_for_class: {
+        Args: {
+          p_class_name: string
+          p_school_year: string
+          p_semester: string
+        }
+        Returns: {
+          subject_name: string
+          weight: number
+        }[]
       }
       get_user_email: {
         Args: { _user_id: string }
