@@ -111,13 +111,14 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
   });
 
   const subjectStats = Array.from(gradesBySubject.entries()).map(([subject, grades]) => {
-    const avg = grades.reduce((sum, g) => sum + (g.grade / g.maxGrade) * 20, 0) / grades.length;
-    const classAvgs = grades.map(g => g.classAverage || 0).filter(a => a > 0);
-    const minGrade = classAvgs.length > 0 ? Math.min(...classAvgs) : 0;
-    const maxGrade = classAvgs.length > 0 ? Math.max(...classAvgs) : 0;
-    const category = grades[0]?.subject_category;
-    const teacherName = grades[0]?.teacher_name;
-    return { subject, category, grades, avg, minGrade, maxGrade, teacherName };
+    const first: any = grades[0] || {};
+    const avg = typeof first.grade === 'number' ? first.grade : 0;
+    const classAvg = typeof first.classAverage === 'number' ? first.classAverage : 0;
+    const minGrade = typeof first.minAverage === 'number' ? first.minAverage : 0;
+    const maxGrade = typeof first.maxAverage === 'number' ? first.maxAverage : 0;
+    const category = first?.subject_category;
+    const teacherName = first?.teacher_name;
+    return { subject, category, grades, avg, classAvg, minGrade, maxGrade, teacherName };
   });
 
   // Valeurs de configuration - Récupérer TOUS les champs depuis config
@@ -151,7 +152,7 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
       line-height: 1.4;
       color: #1f2937;
       background: white;
-      padding: 30px 40px;
+      padding: 16px 20px;
     }
     .report-container {
       max-width: 750px;
@@ -162,9 +163,9 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
     .header {
       background-color: ${headerColor};
       color: white;
-      padding: 24px;
+      padding: 16px;
       border-radius: 8px;
-      margin-bottom: 24px;
+      margin-bottom: 16px;
     }
     .header-content {
       display: flex;
@@ -180,16 +181,16 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
       text-align: center;
     }
     .title {
-      font-size: 30pt;
+      font-size: 24pt;
       font-weight: 700;
       margin-bottom: 8px;
     }
     .school-name {
-      font-size: 18pt;
+      font-size: 13pt;
       opacity: 0.9;
     }
     .academic-info {
-      font-size: 14pt;
+      font-size: 11pt;
       opacity: 0.8;
       margin-top: 8px;
     }
@@ -200,7 +201,7 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
       border: 1px solid ${headerColor}20;
       border-radius: 8px;
       padding: 18px 24px;
-      margin-bottom: 30px;
+      margin-bottom: 18px;
     }
     .student-grid {
       display: grid;
@@ -245,6 +246,7 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
       border: 1px solid #e5e7eb;
       border-radius: 8px;
       overflow: hidden;
+      table-layout: fixed;
     }
     .grades-table th {
       background: linear-gradient(180deg, ${headerColor}12, ${headerColor}08);
@@ -299,7 +301,7 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
       line-height: 1.4;
       word-wrap: break-word;
       white-space: pre-wrap;
-      max-width: 300px;
+      overflow-wrap: anywhere;
     }
     
     /* Détail des évaluations */
@@ -340,28 +342,28 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
       background: linear-gradient(135deg, ${headerColor}12, ${headerColor}05);
       border: 2px solid ${headerColor}40;
       border-radius: 12px;
-      padding: 24px;
+      padding: 16px;
       text-align: center;
-      margin: 30px 0;
+      margin: 16px 0;
       box-shadow: 0 2px 8px ${headerColor}10;
     }
     .overall-label {
-      font-size: 9.5pt;
+      font-size: 9pt;
       color: #6b7280;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       text-transform: uppercase;
       letter-spacing: 1.2px;
       font-weight: 700;
     }
     .overall-value {
-      font-size: 32pt;
+      font-size: 24pt;
       font-weight: 800;
       color: ${headerColor};
       letter-spacing: -1px;
     }
     .class-average-detail {
-      margin-top: 12px;
-      font-size: 8.5pt;
+      margin-top: 8px;
+      font-size: 8pt;
       color: #6b7280;
       font-weight: 500;
     }
@@ -372,7 +374,7 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
       border-left: 3px solid ${headerColor};
       border-radius: 6px;
       padding: 16px 20px;
-      margin: 20px 0;
+      margin: 12px 0;
       font-size: 9pt;
       line-height: 1.6;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -386,7 +388,7 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
     
     /* Signature raffinée */
     .signature-section {
-      margin-top: 45px;
+      margin-top: 24px;
       display: flex;
       justify-content: flex-end;
     }
@@ -414,17 +416,46 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
     
     /* Footer minimaliste */
     .footer {
-      margin-top: 40px;
-      padding-top: 18px;
+      margin-top: 18px;
+      padding-top: 12px;
       border-top: 1px solid #e5e7eb;
       text-align: center;
       font-size: 7.5pt;
       color: #9ca3af;
     }
+  /* Largeur de colonnes */
+  .grades-table .col-subject { width: 24%; }
+  .grades-table .col-num { width: 8%; text-align: center; }
+  .grades-table .col-coef { width: 6%; text-align: center; }
+  .grades-table .col-teacher { width: 12%; }
+  .grades-table .col-app { width: 42%; }
+  .compact .grades-table .col-app { width: 46%; }
+
+  /* Modes compacts */
+  .compact .header { padding: 14px; }
+  .compact .title { font-size: 20pt; margin-bottom: 4px; }
+  .compact .school-name { font-size: 12pt; }
+  .compact .academic-info { font-size: 10pt; margin-top: 4px; }
+  .compact .student-section { padding: 12px 16px; margin-bottom: 16px; }
+  .compact .student-grid { gap: 6px 16px; font-size: 8pt; }
+  .compact .grades-table { font-size: 7.5pt; }
+  .compact .grades-table th { padding: 6px 8px; font-size: 7pt; }
+  .compact .grades-table td { padding: 6px 8px; }
+  .compact .overall-average { padding: 12px; margin: 14px 0; }
+  .compact .overall-value { font-size: 20pt; }
+  .compact .overall-label { font-size: 8pt; margin-bottom: 6px; }
+  .compact .class-average-detail { font-size: 7.5pt; margin-top: 6px; }
+  .compact .signature-section { margin-top: 18px; }
+  .compact .general-appreciation { padding: 10px 12px; margin: 10px 0; font-size: 8pt; }
+  .ultra-compact .grades-detail { display: none; }
+  .ultra-compact .appreciation-cell { font-size: 7pt; }
+  .ultra-compact .title { font-size: 16pt; }
+  .ultra-compact .grades-table th { padding: 4px 6px; }
+  .ultra-compact .grades-table td { padding: 4px 6px; }
   </style>
 </head>
 <body>
-  <div class="report-container">
+  <div class="report-container ${data.grades.length > 18 ? 'compact' : ''} ${data.grades.length > 26 ? 'ultra-compact' : ''}">
     ${isVisible(config, 'header', 'title') ? `
     <div class="header">
       <div class="header-content">
@@ -476,14 +507,14 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
     <table class="grades-table">
       <thead>
         <tr>
-          <th>Matière</th>
-          ${isVisible(config, 'grades_table', 'student_subject_average') ? '<th style="text-align:center">Moyenne</th>' : ''}
-          ${isVisible(config, 'grades_table', 'class_subject_average') ? '<th style="text-align:center">Moy. Classe</th>' : ''}
-          ${isVisible(config, 'grades_table', 'class_min_average') ? '<th style="text-align:center">Min</th>' : ''}
-          ${isVisible(config, 'grades_table', 'class_max_average') ? '<th style="text-align:center">Max</th>' : ''}
-          ${isVisible(config, 'grades_table', 'subject_weighting') ? '<th style="text-align:center">Coef.</th>' : ''}
-          ${isVisible(config, 'grades_table', 'teacher_name') ? '<th>Enseignant</th>' : ''}
-          ${isVisible(config, 'grades_table', 'subject_appreciation') ? '<th>Appréciation</th>' : ''}
+          <th class="col-subject">Matière</th>
+          ${isVisible(config, 'grades_table', 'student_subject_average') ? '<th class="col-num" style="text-align:center">Moyenne</th>' : ''}
+          ${isVisible(config, 'grades_table', 'class_subject_average') ? '<th class="col-num" style="text-align:center">Moy. Classe</th>' : ''}
+          ${isVisible(config, 'grades_table', 'class_min_average') ? '<th class="col-num" style="text-align:center">Min</th>' : ''}
+          ${isVisible(config, 'grades_table', 'class_max_average') ? '<th class="col-num" style="text-align:center">Max</th>' : ''}
+          ${isVisible(config, 'grades_table', 'subject_weighting') ? '<th class="col-coef" style="text-align:center">Coef.</th>' : ''}
+          ${isVisible(config, 'grades_table', 'teacher_name') ? '<th class="col-teacher">Enseignant</th>' : ''}
+          ${isVisible(config, 'grades_table', 'subject_appreciation') ? '<th class="col-app">Appréciation</th>' : ''}
         </tr>
       </thead>
       <tbody>
@@ -508,8 +539,7 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
             })()}
           </td>
           ${isVisible(config, 'grades_table', 'student_subject_average') ? `<td class="grade-value">${formatGrade(stat.avg, 20, gradeFormat)}</td>` : ''}
-          ${isVisible(config, 'grades_table', 'class_subject_average') ? `<td style="text-align:center;font-size:8pt">${stat.minGrade > 0 ? formatGrade((stat.minGrade + stat.maxGrade) / 2, 20, gradeFormat) : '-'}</td>` : ''}
-          ${isVisible(config, 'grades_table', 'class_subject_average') ? `<td style="text-align:center;font-size:8pt">${stat.minGrade > 0 ? formatGrade((stat.minGrade + stat.maxGrade) / 2, 20, gradeFormat) : '-'}</td>` : ''}
+          ${isVisible(config, 'grades_table', 'class_subject_average') ? `<td style="text-align:center;font-size:8pt">${stat.classAvg > 0 ? formatGrade(stat.classAvg, 20, gradeFormat) : '-'}</td>` : ''}
           ${isVisible(config, 'grades_table', 'class_min_average') ? `<td style="text-align:center;font-size:8pt;color:#dc2626">${stat.minGrade > 0 ? formatGrade(stat.minGrade, 20, gradeFormat) : '-'}</td>` : ''}
           ${isVisible(config, 'grades_table', 'class_max_average') ? `<td style="text-align:center;font-size:8pt;color:#16a34a">${stat.maxGrade > 0 ? formatGrade(stat.maxGrade, 20, gradeFormat) : '-'}</td>` : ''}
           ${isVisible(config, 'grades_table', 'subject_weighting') ? `<td style="text-align:center">${stat.grades[0]?.weighting || 1}</td>` : ''}
