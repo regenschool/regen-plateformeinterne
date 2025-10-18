@@ -123,6 +123,25 @@ export const useGenerateReportCard = () => {
 
       if (gradesError) throw gradesError;
 
+      // ✅ NOUVEAU : Récupérer les coefficients depuis subject_weights
+      const { data: subjectWeights } = await supabase
+        .from('subject_weights')
+        .select('subject_id, weight, subjects(subject_name)')
+        .eq('class_name', className)
+        .eq('school_year', schoolYear)
+        .eq('semester', semester);
+
+      // Créer une map subject_name -> weight
+      const weightMap = new Map<string, number>();
+      if (subjectWeights) {
+        subjectWeights.forEach(sw => {
+          const subjectName = (sw as any).subjects?.subject_name;
+          if (subjectName) {
+            weightMap.set(subjectName, sw.weight);
+          }
+        });
+      }
+
       // 3. Récupérer le template par défaut avec sa config
       const { data: template, error: templateError } = await supabase
         .from('report_card_templates')
@@ -235,11 +254,13 @@ export const useGenerateReportCard = () => {
         });
       }
 
-      // 6. Enrichir les moyennes avec les stats de classe
+      // 6. Enrichir les moyennes avec les stats de classe ET les coefficients
       const enrichedSubjectAverages = subjectAverages.map(s => {
         const stats = subjectStats.get(s.subject);
+        const subjectWeight = weightMap.get(s.subject) || 1; // Utiliser le coefficient depuis subject_weights
         return {
           ...s,
+          weighting: subjectWeight, // ✅ CORRECTION : utiliser le vrai coefficient
           classAverage: stats?.classAvg,
           minAverage: stats?.min,
           maxAverage: stats?.max,
