@@ -336,6 +336,22 @@ export const ReportCardTemplatesManager = () => {
 
                         <div className="flex items-center justify-between p-3 rounded-lg border">
                           <div className="space-y-0.5">
+                            <Label htmlFor="show_academic_info">Informations académiques</Label>
+                            <p className="text-sm text-muted-foreground">
+                              Année scolaire et période
+                            </p>
+                          </div>
+                          <Switch
+                            id="show_academic_info"
+                            checked={selectedTemplate.show_academic_info}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_academic_info: checked })
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <div className="space-y-0.5">
                             <Label htmlFor="show_average">Moyennes</Label>
                             <p className="text-sm text-muted-foreground">
                               Moyenne générale et de classe
@@ -346,6 +362,38 @@ export const ReportCardTemplatesManager = () => {
                             checked={selectedTemplate.show_average}
                             onCheckedChange={(checked) =>
                               setSelectedTemplate({ ...selectedTemplate, show_average: checked })
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="show_absences">Absences</Label>
+                            <p className="text-sm text-muted-foreground">
+                              Nombre de demi-journées d'absence
+                            </p>
+                          </div>
+                          <Switch
+                            id="show_absences"
+                            checked={selectedTemplate.show_absences}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_absences: checked })
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="show_signature">Signature</Label>
+                            <p className="text-sm text-muted-foreground">
+                              Zone de signature du directeur
+                            </p>
+                          </div>
+                          <Switch
+                            id="show_signature"
+                            checked={selectedTemplate.show_signature}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_signature: checked })
                             }
                           />
                         </div>
@@ -568,6 +616,39 @@ export const ReportCardTemplatesManager = () => {
                             checked={selectedTemplate.show_program_name !== false}
                             onCheckedChange={(checked) =>
                               setSelectedTemplate({ ...selectedTemplate, show_program_name: checked })
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <Label htmlFor="show_subject_average">Moyenne par matière</Label>
+                          <Switch
+                            id="show_subject_average"
+                            checked={selectedTemplate.show_subject_average}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_subject_average: checked })
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <Label htmlFor="show_grade_detail">Détail des notes</Label>
+                          <Switch
+                            id="show_grade_detail"
+                            checked={selectedTemplate.show_grade_detail}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_grade_detail: checked })
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <Label htmlFor="show_max_grade">Note maximale</Label>
+                          <Switch
+                            id="show_max_grade"
+                            checked={selectedTemplate.show_max_grade}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_max_grade: checked })
                             }
                           />
                         </div>
