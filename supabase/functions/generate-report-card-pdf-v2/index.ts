@@ -502,11 +502,13 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
       <div>${companyAppreciation}</div>
     </div>` : ''}
 
-    ${isVisible(config, 'footer', 'signature') && signatureUrl ? `
+    ${(isVisible(config, 'footer', 'signature') && signatureUrl) || (isVisible(config, 'footer', 'signatory_title') && signatoryTitle) ? `
     <div class="signature-section">
       <div class="signature-block">
-        <div class="signature-label">${signatoryTitle}</div>
-        <img src="${signatureUrl}" alt="Signature" class="signature-img">
+        ${isVisible(config, 'footer', 'signatory_title') && signatoryTitle ? `
+        <div class="signature-label">${signatoryTitle}</div>` : ''}
+        ${isVisible(config, 'footer', 'signature') && signatureUrl ? `
+        <img src="${signatureUrl}" alt="Signature" class="signature-img">` : ''}
         <div class="signature-line"></div>
       </div>
     </div>` : ''}
