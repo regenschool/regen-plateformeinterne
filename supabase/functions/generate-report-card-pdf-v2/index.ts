@@ -372,28 +372,38 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
       ${isVisible(config, 'header', 'logo') && data.template?.logo_url ? `
       <img src="${data.template.logo_url}" alt="Logo" class="logo">` : ''}
       <div class="title">${getDefault(config, 'header', 'title', 'Bulletin de Notes')}</div>
-      ${isVisible(config, 'header', 'school_name') && getDefault(config, 'header', 'school_name') ? `
-      <div class="school-name">${getDefault(config, 'header', 'school_name')}</div>` : ''}
+      ${isVisible(config, 'header', 'school_name') ? `
+      <div class="school-name">${getDefault(config, 'header', 'school_name', 'École')}</div>` : ''}
+      ${isVisible(config, 'header', 'school_year') || isVisible(config, 'header', 'semester') || isVisible(config, 'header', 'program_name') ? `
       <div class="academic-info">
-        ${isVisible(config, 'academic_info', 'school_year') ? data.academic.schoolYear : ''}
-        ${isVisible(config, 'academic_info', 'semester') ? ` • ${data.academic.semester}` : ''}
-        ${isVisible(config, 'academic_info', 'program_name') && data.academic.programName ? ` • ${data.academic.programName}` : ''}
-      </div>
+        ${isVisible(config, 'header', 'school_year') ? data.academic.schoolYear : ''}
+        ${isVisible(config, 'header', 'semester') ? ` • ${data.academic.semester}` : ''}
+        ${isVisible(config, 'header', 'program_name') && data.academic.programName ? ` • ${data.academic.programName}` : ''}
+      </div>` : ''}
     </div>` : ''}
 
     <div class="section-separator"></div>
 
-    ${isVisible(config, 'student_info', 'name') ? `
+    ${(isVisible(config, 'student_info', 'first_name') || 
+       isVisible(config, 'student_info', 'last_name') ||
+       isVisible(config, 'student_info', 'birth_date') ||
+       isVisible(config, 'student_info', 'age') ||
+       isVisible(config, 'student_info', 'class_name') ||
+       isVisible(config, 'student_info', 'program_name')) ? `
     <div class="student-section">
       <div class="student-grid">
-        ${isVisible(config, 'student_info', 'name') ? `
-        <div><span class="student-label">Nom complet :</span> <span class="student-value">${data.student.firstName} ${data.student.lastName}</span></div>` : ''}
+        ${isVisible(config, 'student_info', 'first_name') ? `
+        <div><span class="student-label">Prénom :</span> <span class="student-value">${data.student.firstName}</span></div>` : ''}
+        ${isVisible(config, 'student_info', 'last_name') ? `
+        <div><span class="student-label">Nom :</span> <span class="student-value">${data.student.lastName}</span></div>` : ''}
         ${isVisible(config, 'student_info', 'birth_date') && data.student.birthDate ? `
         <div><span class="student-label">Date de naissance :</span> <span class="student-value">${new Date(data.student.birthDate).toLocaleDateString('fr-FR')}</span></div>` : ''}
         ${isVisible(config, 'student_info', 'age') && data.student.age ? `
         <div><span class="student-label">Âge :</span> <span class="student-value">${data.student.age} ans</span></div>` : ''}
         ${isVisible(config, 'student_info', 'class_name') ? `
         <div><span class="student-label">Classe :</span> <span class="student-value">${data.student.className}</span></div>` : ''}
+        ${isVisible(config, 'student_info', 'program_name') && data.academic.programName ? `
+        <div><span class="student-label">Programme :</span> <span class="student-value">${data.academic.programName}</span></div>` : ''}
       </div>
     </div>` : ''}
 
