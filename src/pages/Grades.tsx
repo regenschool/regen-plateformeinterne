@@ -426,6 +426,13 @@ export default function Grades() {
     setAssessments(Array.from(assessmentMap.values()));
   };
 
+  // Recalcule les épreuves quand les élèves ou les notes changent
+  useEffect(() => {
+    if (selectedClass && selectedSubject && selectedSchoolYear && selectedSemester) {
+      calculateAssessments(grades);
+    }
+  }, [students, grades, selectedClass, selectedSubject, selectedSchoolYear, selectedSemester]);
+
   const getStudentGrades = (studentId: string) => {
     return grades.filter(g => g.student_id === studentId);
   };
