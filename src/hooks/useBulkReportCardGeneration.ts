@@ -24,9 +24,9 @@ export const useBulkGeneratePDFs = () => {
         errors: [] as { id: string; error: string }[],
       };
 
-      // ✅ OPTIMISÉ : Traiter par lots de 5 avec délai adaptatif
-      const batchSize = 5;
-      const delayBetweenBatches = 500; // ms entre chaque lot
+      // ✅ OPTIMISÉ : Traiter par lots de 10 en parallèle pour production
+      const batchSize = 10;
+      const delayBetweenBatches = 200; // ms entre chaque lot (réduit pour performance)
       
       for (let i = 0; i < reportCardIds.length; i += batchSize) {
         const batch = reportCardIds.slice(i, i + batchSize);
