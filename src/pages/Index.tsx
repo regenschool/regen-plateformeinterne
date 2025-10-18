@@ -23,7 +23,7 @@ const Index = () => {
         <div className="text-center space-y-12">
           <div className="space-y-6">
             <div className="flex justify-center">
-              <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
+              <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center">
                 <Leaf className="w-12 h-12 text-primary" />
               </div>
             </div>

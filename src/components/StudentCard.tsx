@@ -245,9 +245,11 @@ export const StudentCard = ({
         
         <div className="relative w-full h-40 bg-gradient-to-br from-primary/10 to-accent/10">
           {student.photo_url ? (
-            <img
+            <OptimizedImage
               src={student.photo_url}
               alt={`${student.first_name} ${student.last_name}`}
+              width={400}
+              height={160}
               className="w-full h-full object-cover"
             />
           ) : (

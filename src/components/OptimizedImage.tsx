@@ -4,16 +4,20 @@ import { cn } from "@/lib/utils";
 interface OptimizedImageProps {
   src: string | null;
   alt: string;
+  width?: number;
+  height?: number;
   className?: string;
   placeholderClassName?: string;
 }
 
 /**
- * Composant d'image optimisé avec lazy loading et placeholder
+ * Composant d'image optimisé avec lazy loading, dimensions fixes et placeholder
  */
 export const OptimizedImage = ({ 
   src, 
-  alt, 
+  alt,
+  width,
+  height, 
   className, 
   placeholderClassName 
 }: OptimizedImageProps) => {
@@ -57,11 +61,13 @@ export const OptimizedImage = ({
         <div className={cn("absolute inset-0 bg-gradient-to-br from-muted to-muted/50 animate-pulse", placeholderClassName)} />
       )}
       
-      {/* Image réelle avec lazy loading */}
+      {/* Image réelle avec lazy loading et dimensions fixes pour éviter CLS */}
       {isInView && (
         <img
           src={src}
           alt={alt}
+          width={width}
+          height={height}
           loading="lazy"
           className={cn(
             "w-full h-full object-cover transition-opacity duration-300",

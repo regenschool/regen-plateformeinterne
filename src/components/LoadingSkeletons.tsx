@@ -3,14 +3,20 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export const StudentCardSkeleton = () => (
   <Card className="w-full">
-    <CardHeader className="space-y-2">
-      <Skeleton className="h-4 w-3/4" />
-      <Skeleton className="h-3 w-1/2" />
+    <CardHeader className="p-0">
+      <Skeleton className="w-full h-40" />
     </CardHeader>
-    <CardContent className="space-y-3">
-      <Skeleton className="h-3 w-full" />
-      <Skeleton className="h-3 w-5/6" />
-      <Skeleton className="h-8 w-24 mt-4" />
+    <CardContent className="p-3 space-y-2">
+      <div className="space-y-1">
+        <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-3 w-1/2" />
+      </div>
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-5/6" />
+      <div className="pt-2 border-t">
+        <Skeleton className="h-3 w-20 mb-2" />
+        <Skeleton className="h-[50px] w-full" />
+      </div>
     </CardContent>
   </Card>
 );
