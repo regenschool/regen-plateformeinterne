@@ -14,6 +14,7 @@ interface ReportCardData {
   academic: {
     schoolYear: string;
     semester: string;
+    programName?: string;
   };
   grades: Array<{
     subject: string;
@@ -84,7 +85,8 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
 
   const template = (data.template || {}) as Partial<NonNullable<typeof data.template>>;
   const headerColor = template.header_color || template.headerColor || '#1e40af';
-  const programName = template.program_name || 'Programme de Formation';
+  // Prioriser le programme de l'étudiant (dynamique), puis celui du template (fallback)
+  const programName = data.academic.programName || template.program_name || 'Programme de Formation';
   const gradesBySubject = new Map<string, typeof data.grades>();
   data.grades.forEach(grade => {
     const existing = gradesBySubject.get(grade.subject) || [];

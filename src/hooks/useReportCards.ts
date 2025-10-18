@@ -74,10 +74,21 @@ export const useGenerateReportCard = () => {
     mutationFn: async (params: GenerateReportCardParams) => {
       const { studentId, schoolYear, semester, className } = params;
 
-      // 1. Récupérer les données de l'élève
+      // 1. Récupérer les données de l'élève avec sa classe et le programme
       const { data: student, error: studentError } = await supabase
         .from('students')
-        .select('*')
+        .select(`
+          *,
+          classes:class_id (
+            id,
+            name,
+            program_id,
+            programs:program_id (
+              id,
+              name
+            )
+          )
+        `)
         .eq('id', studentId)
         .single();
 
@@ -174,6 +185,9 @@ export const useGenerateReportCard = () => {
         });
       }
 
+      // Récupérer le nom du programme
+      const programName = (student as any).classes?.programs?.name || template?.program_name || 'Programme de Formation';
+
       // 5. Construire les données pour le PDF (utilise les moyennes par matière)
       const reportCardData: ReportCardData = {
         student: {
@@ -186,6 +200,7 @@ export const useGenerateReportCard = () => {
         academic: {
           schoolYear,
           semester,
+          programName, // Nom du programme dynamique de l'étudiant
         },
         // Utiliser les moyennes par matière au lieu des notes individuelles
         grades: subjectAverages.map(s => {

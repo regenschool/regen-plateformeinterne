@@ -14,6 +14,7 @@ export interface ReportCardData {
   academic: {
     schoolYear: string;
     semester: string;
+    programName?: string; // Nom du programme de l'étudiant
   };
   grades: Array<{
     subject: string;
