@@ -61,7 +61,7 @@ export const ImportStudentsDialog = ({ onImportComplete, selectedSchoolYearId }:
         .order('students(last_name)', { ascending: true });
 
       if (enrollments && enrollments.length > 0) {
-        const studentRows: StudentRow[] = enrollments.map((enrollment: any) => ({
+        const studentRows: StudentRow[] = enrollments.map((enrollment) => ({
           first_name: enrollment.students?.first_name || "",
           last_name: enrollment.students?.last_name || "",
           class_name: enrollment.class_name || "",

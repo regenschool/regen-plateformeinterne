@@ -98,10 +98,11 @@ export const EditStudentDialog = ({ student, onStudentUpdated }: EditStudentDial
       toast.success("Fiche étudiant modifiée avec succès !");
       setOpen(false);
       onStudentUpdated();
-    } catch (error: any) {
-      if (error.errors) {
+    } catch (error) {
+      if (error instanceof Error && 'errors' in error) {
         // Zod validation errors
-        toast.error(error.errors[0]?.message || "Données invalides");
+        const zodError = error as { errors: Array<{ message: string }> };
+        toast.error(zodError.errors[0]?.message || "Données invalides");
       } else {
         toast.error("Échec de la modification");
       }
