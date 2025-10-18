@@ -22,6 +22,9 @@ interface ReportCardData {
     weighting: number;
     assessmentType: string;
     appreciation?: string;
+    classAverage?: number;
+    minAverage?: number;
+    maxAverage?: number;
   }>;
   template?: {
     name: string;
@@ -32,11 +35,24 @@ interface ReportCardData {
     htmlTemplate?: string;
     cssTemplate?: string;
     useCustomHtml?: boolean;
+    show_header?: boolean;
+    show_footer?: boolean;
+    show_student_info?: boolean;
+    show_academic_info?: boolean;
+    show_grades_table?: boolean;
+    show_average?: boolean;
+    show_class_average?: boolean;
+    show_appreciation?: boolean;
+    show_student_photo?: boolean;
+    show_logo?: boolean;
   };
   averages?: {
     student: number;
     class: number;
   };
+  generalAppreciation?: string;
+  title?: string;
+  headerText?: string;
 }
 
 const generateHTMLTemplate = (data: ReportCardData): string => {
@@ -55,12 +71,17 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
     html = html.replace(/SEMESTER/g, academic.semester);
     
     // Générer les lignes de notes (moyennes par matière)
+    const showClassAverage = template?.show_class_average !== false;
     const gradesRows = grades.map(grade => `
       <tr>
         <td><strong>${grade.subject}</strong></td>
         <td class="grade-cell">${grade.grade.toFixed(2)}/${grade.maxGrade}</td>
+        ${showClassAverage ? `
+          <td class="text-center text-muted">${grade.classAverage?.toFixed(2) || '-'}</td>
+          <td class="text-center text-xs text-danger">${grade.minAverage?.toFixed(2) || '-'}</td>
+          <td class="text-center text-xs text-success">${grade.maxAverage?.toFixed(2) || '-'}</td>
+        ` : ''}
         <td class="text-center">${grade.weighting}</td>
-        <td class="text-center text-xs">${grade.assessmentType}</td>
         <td class="appreciation">${grade.appreciation || '-'}</td>
       </tr>
     `).join('');
@@ -236,60 +257,92 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
       </style>
     </head>
     <body>
-      <div class="header">
-        <div>
-          <h1>Bulletin Scolaire</h1>
-          <div class="subtitle">${academic.schoolYear} - ${academic.semester}</div>
+      ${template?.show_header !== false ? `
+        <div class="header">
+          <div>
+            <h1>${data.title || 'Bulletin Scolaire'}</h1>
+            <div class="subtitle">${academic.schoolYear} - ${academic.semester}</div>
+            ${data.headerText ? `<div class="subtitle" style="font-size: 12px; margin-top: 5px;">${data.headerText}</div>` : ''}
+          </div>
+          ${template?.show_logo !== false && template?.logoUrl ? `<img src="${template.logoUrl}" class="logo" alt="Logo" />` : ''}
         </div>
-        ${template?.logoUrl ? `<img src="${template.logoUrl}" class="logo" alt="Logo" />` : ''}
-      </div>
+      ` : ''}
       
-      <div class="student-info">
-        ${student.photoUrl ? `<img src="${student.photoUrl}" class="student-photo" alt="${student.firstName}" />` : ''}
-        <div class="student-details">
-          <h2>${student.firstName} ${student.lastName}</h2>
-          <p><strong>Classe:</strong> ${student.className}</p>
-          ${student.birthDate ? `<p><strong>Date de naissance:</strong> ${student.birthDate}</p>` : ''}
+      ${template?.show_student_info !== false ? `
+        <div class="student-info">
+          ${template?.show_student_photo !== false && student.photoUrl ? `<img src="${student.photoUrl}" class="student-photo" alt="${student.firstName}" />` : ''}
+          <div class="student-details">
+            <h2>${student.firstName} ${student.lastName}</h2>
+            <p><strong>Classe:</strong> ${student.className}</p>
+            ${student.birthDate ? `<p><strong>Date de naissance:</strong> ${student.birthDate}</p>` : ''}
+          </div>
         </div>
-      </div>
+      ` : ''}
       
-      <table class="grades-table">
-        <thead>
-          <tr>
-            <th>Matière</th>
-            <th>Moyenne</th>
-            <th>Coefficient</th>
-            <th>Type</th>
-            <th>Appréciation</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${grades.map(grade => `
+      ${template?.show_grades_table !== false ? `
+        <table class="grades-table">
+          <thead>
             <tr>
-              <td><strong>${grade.subject}</strong></td>
-              <td class="grade-cell">${grade.grade.toFixed(2)}/${grade.maxGrade}</td>
-              <td>${grade.weighting}</td>
-              <td class="text-center text-xs">${grade.assessmentType}</td>
-              <td class="appreciation">${grade.appreciation || '-'}</td>
+              <th>Matière</th>
+              <th>Moyenne Élève</th>
+              ${template?.show_class_average ? `
+                <th>Moy. Classe</th>
+                <th>Min</th>
+                <th>Max</th>
+              ` : ''}
+              <th>Coefficient</th>
+              <th>Appréciation</th>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${grades.map(grade => `
+              <tr>
+                <td><strong>${grade.subject}</strong></td>
+                <td class="grade-cell">${grade.grade.toFixed(2)}/${grade.maxGrade}</td>
+                ${template?.show_class_average ? `
+                  <td class="text-center" style="color: #64748b;">${grade.classAverage?.toFixed(2) || '-'}</td>
+                  <td class="text-center text-xs" style="color: #dc2626;">${grade.minAverage?.toFixed(2) || '-'}</td>
+                  <td class="text-center text-xs" style="color: #16a34a;">${grade.maxAverage?.toFixed(2) || '-'}</td>
+                ` : ''}
+                <td class="text-center">${grade.weighting}</td>
+                <td class="appreciation">${grade.appreciation || '-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="background: rgba(30, 64, 175, 0.05); font-weight: bold;">
+              <td colspan="${template?.show_class_average ? 5 : 1}" style="padding: 15px;">Moyenne générale</td>
+              <td colspan="2" style="text-align: center; color: ${headerColor}; font-size: 18px; padding: 15px;">
+                ${averages?.student.toFixed(2)}/20
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      ` : ''}
       
-      ${averages ? `
+      ${template?.show_average && averages ? `
         <div class="averages">
           <div class="average-card">
             <h3>Moyenne de l'élève</h3>
             <div class="value">${averages.student.toFixed(2)}/20</div>
           </div>
-          <div class="average-card">
-            <h3>Moyenne de la classe</h3>
-            <div class="value">${averages.class.toFixed(2)}/20</div>
-          </div>
+          ${template?.show_class_average ? `
+            <div class="average-card">
+              <h3>Moyenne de la classe</h3>
+              <div class="value">${averages.class.toFixed(2)}/20</div>
+            </div>
+          ` : ''}
         </div>
       ` : ''}
       
-      ${template?.footerText ? `
+      ${template?.show_appreciation !== false && data.generalAppreciation ? `
+        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 30px 0;">
+          <h3 style="margin-bottom: 10px; color: ${headerColor};">Appréciation générale</h3>
+          <p style="font-style: italic; color: #64748b;">${data.generalAppreciation}</p>
+        </div>
+      ` : ''}
+      
+      ${template?.show_footer !== false && template?.footerText ? `
         <div class="footer">
           ${template.footerText}
         </div>

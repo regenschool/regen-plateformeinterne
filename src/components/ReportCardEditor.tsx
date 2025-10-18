@@ -17,6 +17,9 @@ interface Grade {
   weighting: number;
   assessmentType: string;
   appreciation?: string;
+  classAverage?: number;
+  minAverage?: number;
+  maxAverage?: number;
 }
 
 interface ReportCardData {
@@ -33,6 +36,7 @@ interface ReportCardData {
   };
   grades: Grade[];
   template?: {
+    id?: string;
     name: string;
     headerColor: string;
     logoUrl?: string;
@@ -41,12 +45,24 @@ interface ReportCardData {
     htmlTemplate?: string;
     cssTemplate?: string;
     useCustomHtml?: boolean;
+    show_header?: boolean;
+    show_footer?: boolean;
+    show_student_info?: boolean;
+    show_academic_info?: boolean;
+    show_grades_table?: boolean;
+    show_average?: boolean;
+    show_class_average?: boolean;
+    show_appreciation?: boolean;
+    show_student_photo?: boolean;
+    show_logo?: boolean;
   };
   averages?: {
     student: number;
     class: number;
   };
   generalAppreciation?: string;
+  title?: string;
+  headerText?: string;
 }
 
 interface ReportCardEditorProps {
@@ -140,18 +156,66 @@ export const ReportCardEditor = ({
           <CardContent>
             <ScrollArea className="h-[600px] pr-4">
               <div className="space-y-6">
+                {/* Sections éditables selon le template */}
+                {editedData.template?.show_header && (
+                  <div className="space-y-2">
+                    <Label>Titre du bulletin</Label>
+                    <Input
+                      value={editedData.title || 'BULLETIN SCOLAIRE'}
+                      onChange={(e) =>
+                        setEditedData({ ...editedData, title: e.target.value })
+                      }
+                      placeholder="Titre du bulletin..."
+                    />
+                  </div>
+                )}
+
+                {editedData.template?.show_header && (
+                  <div className="space-y-2">
+                    <Label>Texte d'en-tête (sous le titre)</Label>
+                    <Input
+                      value={editedData.headerText || ''}
+                      onChange={(e) =>
+                        setEditedData({ ...editedData, headerText: e.target.value })
+                      }
+                      placeholder="Texte facultatif sous le titre..."
+                    />
+                  </div>
+                )}
+
+                {editedData.template?.show_footer && (
+                  <div className="space-y-2">
+                    <Label>Texte du pied de page</Label>
+                    <Textarea
+                      value={editedData.template?.footerText || ''}
+                      onChange={(e) =>
+                        setEditedData({
+                          ...editedData,
+                          template: { ...editedData.template!, footerText: e.target.value },
+                        })
+                      }
+                      placeholder="Informations de contact, mentions légales..."
+                      rows={2}
+                    />
+                  </div>
+                )}
+
+                <Separator />
+
                 {/* Appréciation générale */}
-                <div className="space-y-2">
-                  <Label>Appréciation générale du bulletin</Label>
-                  <Textarea
-                    value={editedData.generalAppreciation || ''}
-                    onChange={(e) =>
-                      setEditedData({ ...editedData, generalAppreciation: e.target.value })
-                    }
-                    placeholder="Appréciation générale du semestre..."
-                    rows={4}
-                  />
-                </div>
+                {editedData.template?.show_appreciation && (
+                  <div className="space-y-2">
+                    <Label>Appréciation générale du bulletin</Label>
+                    <Textarea
+                      value={editedData.generalAppreciation || ''}
+                      onChange={(e) =>
+                        setEditedData({ ...editedData, generalAppreciation: e.target.value })
+                      }
+                      placeholder="Appréciation générale du semestre..."
+                      rows={4}
+                    />
+                  </div>
+                )}
 
                 <Separator />
 
@@ -228,68 +292,105 @@ export const ReportCardEditor = ({
             <ScrollArea className="h-[600px] pr-4">
               <div className="space-y-4 bg-white p-6 rounded-lg border shadow-sm">
                 {/* En-tête */}
-                <div 
-                  className="p-6 rounded-lg flex items-center justify-between" 
-                  style={{ backgroundColor: editedData.template?.headerColor || '#1e40af', color: 'white' }}
-                >
-                  {editedData.template?.logoUrl && (
-                    <img src={editedData.template.logoUrl} alt="Logo" className="h-16 object-contain" />
-                  )}
-                  <div className="text-center flex-1">
-                    <h2 className="text-2xl font-bold">BULLETIN SCOLAIRE</h2>
-                    <p className="text-sm mt-1">{editedData.academic.schoolYear} - {editedData.academic.semester}</p>
+                {editedData.template?.show_header !== false && (
+                  <div 
+                    className="p-6 rounded-lg flex items-center justify-between" 
+                    style={{ backgroundColor: editedData.template?.headerColor || '#1e40af', color: 'white' }}
+                  >
+                    {editedData.template?.show_logo && editedData.template?.logoUrl && (
+                      <img src={editedData.template.logoUrl} alt="Logo" className="h-16 object-contain" />
+                    )}
+                    <div className="text-center flex-1">
+                      <h2 className="text-2xl font-bold">{editedData.title || 'BULLETIN SCOLAIRE'}</h2>
+                      <p className="text-sm mt-1">{editedData.academic.schoolYear} - {editedData.academic.semester}</p>
+                      {editedData.headerText && (
+                        <p className="text-xs mt-1 opacity-90">{editedData.headerText}</p>
+                      )}
+                    </div>
+                    {editedData.template?.show_logo && editedData.template?.logoUrl && <div className="w-16" />}
                   </div>
-                  {editedData.template?.logoUrl && <div className="w-16" />}
-                </div>
+                )}
 
                 {/* Informations de l'élève */}
-                <div className="bg-muted/30 p-4 rounded-lg space-y-2">
-                  <h3 className="font-semibold text-lg">Informations de l'élève</h3>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div><strong>Nom:</strong> {editedData.student.lastName}</div>
-                    <div><strong>Prénom:</strong> {editedData.student.firstName}</div>
-                    <div><strong>Classe:</strong> {editedData.student.className}</div>
-                    {editedData.student.birthDate && (
-                      <div><strong>Date de naissance:</strong> {editedData.student.birthDate}</div>
-                    )}
+                {editedData.template?.show_student_info !== false && (
+                  <div className="bg-muted/30 p-4 rounded-lg space-y-2">
+                    <h3 className="font-semibold text-lg">Informations de l'élève</h3>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div><strong>Nom:</strong> {editedData.student.lastName}</div>
+                      <div><strong>Prénom:</strong> {editedData.student.firstName}</div>
+                      <div><strong>Classe:</strong> {editedData.student.className}</div>
+                      {editedData.student.birthDate && (
+                        <div><strong>Date de naissance:</strong> {editedData.student.birthDate}</div>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Tableau des notes */}
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-lg">Notes et Moyennes par Matière</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm border-collapse border">
-                      <thead>
-                        <tr className="bg-muted">
-                          <th className="border p-3 text-left">Matière</th>
-                          <th className="border p-3 text-center">Moyenne</th>
-                          <th className="border p-3 text-center">Coef.</th>
-                          <th className="border p-3 text-center">Type</th>
-                          <th className="border p-3 text-left">Appréciation</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {editedData.grades.map((grade, idx) => (
-                          <tr key={idx} className="hover:bg-muted/20">
-                            <td className="border p-3 font-medium">{grade.subject}</td>
-                            <td className="border p-3 text-center font-bold text-primary">
-                              {grade.grade.toFixed(2)}/{grade.maxGrade}
+                {editedData.template?.show_grades_table !== false && (
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-lg">Notes et Moyennes par Matière</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm border-collapse border">
+                        <thead>
+                          <tr className="bg-muted">
+                            <th className="border p-3 text-left">Matière</th>
+                            <th className="border p-3 text-center">Moyenne Élève</th>
+                            {editedData.template?.show_class_average && (
+                              <>
+                                <th className="border p-3 text-center">Moy. Classe</th>
+                                <th className="border p-3 text-center">Min</th>
+                                <th className="border p-3 text-center">Max</th>
+                              </>
+                            )}
+                            <th className="border p-3 text-center">Coef.</th>
+                            <th className="border p-3 text-left">Appréciation</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {editedData.grades.map((grade, idx) => (
+                            <tr key={idx} className="hover:bg-muted/20">
+                              <td className="border p-3 font-medium">{grade.subject}</td>
+                              <td className="border p-3 text-center font-bold text-primary">
+                                {grade.grade.toFixed(2)}/{grade.maxGrade}
+                              </td>
+                              {editedData.template?.show_class_average && (
+                                <>
+                                  <td className="border p-3 text-center text-muted-foreground">
+                                    {grade.classAverage?.toFixed(2) || '-'}
+                                  </td>
+                                  <td className="border p-3 text-center text-xs text-destructive">
+                                    {grade.minAverage?.toFixed(2) || '-'}
+                                  </td>
+                                  <td className="border p-3 text-center text-xs text-green-600">
+                                    {grade.maxAverage?.toFixed(2) || '-'}
+                                  </td>
+                                </>
+                              )}
+                              <td className="border p-3 text-center">{grade.weighting}</td>
+                              <td className="border p-3 text-sm italic text-muted-foreground">
+                                {grade.appreciation || '-'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr className="bg-primary/5 font-bold">
+                            <td className="border p-3" colSpan={editedData.template?.show_class_average ? 5 : 1}>
+                              Moyenne générale
                             </td>
-                            <td className="border p-3 text-center">{grade.weighting}</td>
-                            <td className="border p-3 text-center text-xs">{grade.assessmentType}</td>
-                            <td className="border p-3 text-sm italic text-muted-foreground">
-                              {grade.appreciation || '-'}
+                            <td className="border p-3 text-center text-primary text-lg" colSpan={2}>
+                              {editedData.averages?.student.toFixed(2)}/20
                             </td>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </tfoot>
+                      </table>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Moyennes */}
-                {editedData.averages && (
+                {/* Moyennes - uniquement si affichage séparé demandé */}
+                {editedData.template?.show_average && editedData.averages && (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-primary/10 p-4 rounded-lg text-center">
                       <p className="text-sm text-muted-foreground">Moyenne générale de l'élève</p>
@@ -297,17 +398,19 @@ export const ReportCardEditor = ({
                         {editedData.averages.student.toFixed(2)}/20
                       </p>
                     </div>
-                    <div className="bg-muted p-4 rounded-lg text-center">
-                      <p className="text-sm text-muted-foreground">Moyenne de la classe</p>
-                      <p className="text-3xl font-bold mt-1">
-                        {editedData.averages.class.toFixed(2)}/20
-                      </p>
-                    </div>
+                    {editedData.template?.show_class_average && (
+                      <div className="bg-muted p-4 rounded-lg text-center">
+                        <p className="text-sm text-muted-foreground">Moyenne de la classe</p>
+                        <p className="text-3xl font-bold mt-1">
+                          {editedData.averages.class.toFixed(2)}/20
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 {/* Appréciation générale */}
-                {editedData.generalAppreciation && (
+                {editedData.template?.show_appreciation !== false && editedData.generalAppreciation && (
                   <div className="bg-muted/30 p-4 rounded-lg">
                     <h4 className="font-semibold mb-2">Appréciation générale</h4>
                     <p className="text-sm text-muted-foreground italic">
@@ -317,7 +420,7 @@ export const ReportCardEditor = ({
                 )}
 
                 {/* Footer */}
-                {editedData.template?.footerText && (
+                {editedData.template?.show_footer !== false && editedData.template?.footerText && (
                   <div className="border-t pt-4 text-xs text-center text-muted-foreground">
                     {editedData.template.footerText}
                   </div>

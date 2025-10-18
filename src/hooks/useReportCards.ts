@@ -133,6 +133,47 @@ export const useGenerateReportCard = () => {
           classSubjectAverages.reduce((acc, s) => acc + s.weighting, 0)
         : 0;
 
+      // Calculer les statistiques par matière (moyenne, min, max de la classe)
+      // Grouper tous les élèves de la classe par matière pour calculer les stats
+      const subjectStats = new Map<string, { averages: number[]; classAvg: number; min: number; max: number }>();
+      
+      if (classGrades && classGrades.length > 0) {
+        // Grouper les notes par élève et par matière
+        const studentsBySubject = new Map<string, Map<string, { total: number; weight: number; count: number }>>();
+        
+        classGrades.forEach(grade => {
+          if (!studentsBySubject.has(grade.subject)) {
+            studentsBySubject.set(grade.subject, new Map());
+          }
+          const subjectMap = studentsBySubject.get(grade.subject)!;
+          
+          if (!subjectMap.has(grade.student_id)) {
+            subjectMap.set(grade.student_id, { total: 0, weight: 0, count: 0 });
+          }
+          const studentData = subjectMap.get(grade.student_id)!;
+          studentData.total += (grade.grade / grade.max_grade) * 20 * grade.weighting;
+          studentData.weight += grade.weighting;
+          studentData.count++;
+        });
+        
+        // Calculer les moyennes par élève et les statistiques
+        studentsBySubject.forEach((studentsMap, subject) => {
+          const averages: number[] = [];
+          studentsMap.forEach(data => {
+            if (data.weight > 0) {
+              averages.push(data.total / data.weight);
+            }
+          });
+          
+          if (averages.length > 0) {
+            const classAvg = averages.reduce((a, b) => a + b, 0) / averages.length;
+            const min = Math.min(...averages);
+            const max = Math.max(...averages);
+            subjectStats.set(subject, { averages, classAvg, min, max });
+          }
+        });
+      }
+
       // 5. Construire les données pour le PDF (utilise les moyennes par matière)
       const reportCardData: ReportCardData = {
         student: {
@@ -147,15 +188,22 @@ export const useGenerateReportCard = () => {
           semester,
         },
         // Utiliser les moyennes par matière au lieu des notes individuelles
-        grades: subjectAverages.map(s => ({
-          subject: s.subject,
-          grade: s.average,
-          maxGrade: s.maxGrade,
-          weighting: s.weighting,
-          assessmentType: s.assessmentType,
-          appreciation: s.appreciation,
-        })),
+        grades: subjectAverages.map(s => {
+          const stats = subjectStats.get(s.subject);
+          return {
+            subject: s.subject,
+            grade: s.average,
+            maxGrade: s.maxGrade,
+            weighting: s.weighting,
+            assessmentType: s.assessmentType,
+            appreciation: s.appreciation,
+            classAverage: stats?.classAvg,
+            minAverage: stats?.min,
+            maxAverage: stats?.max,
+          };
+        }),
         template: template ? {
+          id: template.id,
           name: template.name,
           headerColor: template.header_color,
           logoUrl: template.logo_url,
@@ -164,6 +212,16 @@ export const useGenerateReportCard = () => {
           htmlTemplate: template.html_template,
           cssTemplate: template.css_template,
           useCustomHtml: template.use_custom_html,
+          show_header: template.show_header,
+          show_footer: template.show_footer,
+          show_student_info: template.show_student_info,
+          show_academic_info: template.show_academic_info,
+          show_grades_table: template.show_grades_table,
+          show_average: template.show_average,
+          show_class_average: template.show_class_average,
+          show_appreciation: template.show_appreciation,
+          show_student_photo: template.show_student_photo,
+          show_logo: template.show_logo,
         } : undefined,
         averages: {
           student: studentAverage,

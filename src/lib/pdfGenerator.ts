@@ -22,8 +22,12 @@ export interface ReportCardData {
     weighting: number;
     assessmentType: string;
     appreciation?: string;
+    classAverage?: number;
+    minAverage?: number;
+    maxAverage?: number;
   }>;
   template?: {
+    id?: string;
     name: string;
     headerColor: string;
     logoUrl?: string;
@@ -32,11 +36,25 @@ export interface ReportCardData {
     htmlTemplate?: string;
     cssTemplate?: string;
     useCustomHtml?: boolean;
+    // Flags pour contrôler l'affichage
+    show_header?: boolean;
+    show_footer?: boolean;
+    show_student_info?: boolean;
+    show_academic_info?: boolean;
+    show_grades_table?: boolean;
+    show_average?: boolean;
+    show_class_average?: boolean;
+    show_appreciation?: boolean;
+    show_student_photo?: boolean;
+    show_logo?: boolean;
   };
   averages?: {
     student: number;
     class: number;
   };
+  generalAppreciation?: string;
+  title?: string;
+  headerText?: string;
 }
 
 export interface PDFGenerator {
