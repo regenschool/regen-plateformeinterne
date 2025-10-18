@@ -9,46 +9,52 @@ export const useGenerateFinalPDF = () => {
 
   return useMutation({
     mutationFn: async ({ reportCardId, data }: { reportCardId: string; data: ReportCardData }) => {
-      // 1. Générer le PDF
-      const generator = createPDFGenerator(true);
-      const pdfBlob = await generator.generateReportCard(data);
+      // 1. Appeler l'edge function pour générer le HTML
+      const { data: htmlData, error: htmlError } = await supabase.functions.invoke(
+        'generate-report-card-pdf-v2',
+        {
+          body: { reportCardData: data },
+        }
+      );
 
-      // 2. Uploader le PDF dans le storage
-      const fileName = `${reportCardId}_${Date.now()}.pdf`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('report-cards')
-        .upload(fileName, pdfBlob, {
-          contentType: 'application/pdf',
-          upsert: false,
-        });
+      if (htmlError) throw htmlError;
+      if (!htmlData?.html) throw new Error('No HTML generated');
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        throw uploadError;
-      }
+      // 2. Convertir le HTML en PDF (via navigateur, plus léger)
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) throw new Error('Impossible d\'ouvrir la fenêtre d\'impression');
 
-      // 3. Obtenir l'URL publique
-      const { data: { publicUrl } } = supabase.storage
-        .from('report-cards')
-        .getPublicUrl(fileName);
+      printWindow.document.write(htmlData.html);
+      printWindow.document.close();
 
-      // 4. Mettre à jour le statut et l'URL du PDF
+      // Attendre le chargement des images
+      await new Promise<void>((resolve) => {
+        if (printWindow.document.readyState === 'complete') {
+          resolve();
+        } else {
+          printWindow.addEventListener('load', () => resolve());
+        }
+      });
+
+      // Déclencher l'impression (l'utilisateur peut sauvegarder en PDF)
+      printWindow.print();
+
+      // 3. Mettre à jour le statut (sans URL de PDF pour l'instant)
       const { error: updateError } = await supabase
         .from('student_report_cards')
         .update({
           status: 'generated',
-          pdf_url: publicUrl,
-          edited_data: data as any, // Sauvegarder les données éditées
+          edited_data: data as any,
         })
         .eq('id', reportCardId);
 
       if (updateError) throw updateError;
 
-      return { pdfBlob, pdfUrl: publicUrl };
+      return { pdfUrl: null };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['report-cards'] });
-      toast.success('PDF généré avec succès');
+      toast.success('Bulletin généré - Utilisez Ctrl+P / Cmd+P pour imprimer ou sauvegarder en PDF');
     },
     onError: (error: Error) => {
       console.error('Error generating PDF:', error);
