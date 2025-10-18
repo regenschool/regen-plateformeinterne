@@ -429,15 +429,16 @@ export const NewSubjectDialog = ({
           </div>
 
           <div>
-            <Label>{t("grades.subjectName")} *</Label>
+            <Label>{t("grades.subjectName")} * (max 60 caractères)</Label>
             <Input
               value={subjectName}
-              onChange={(e) => setSubjectName(e.target.value)}
+              onChange={(e) => setSubjectName(e.target.value.slice(0, 60))}
               placeholder={t("grades.subjectPlaceholder")}
               required
+              maxLength={60}
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              {t("grades.subjectHelp")}
+            <p className="text-xs text-muted-foreground">
+              {subjectName.length}/60 caractères
             </p>
           </div>
 

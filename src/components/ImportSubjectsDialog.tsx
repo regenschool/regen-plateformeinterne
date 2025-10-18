@@ -273,10 +273,11 @@ export function ImportSubjectsDialog({ open, onClose, onImportComplete }: Import
                   <TableCell>
                     <Input
                       value={row.subject_name}
-                      onChange={(e) => handleCellChange(index, "subject_name", e.target.value)}
+                      onChange={(e) => handleCellChange(index, "subject_name", e.target.value.slice(0, 60))}
                       onPaste={(e) => handlePaste(e, index, "subject_name")}
-                      placeholder="Management"
+                      placeholder="Management (max 60 car.)"
                       className="h-8"
+                      maxLength={60}
                     />
                   </TableCell>
                   <TableCell>

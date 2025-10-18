@@ -250,25 +250,25 @@ export const ReportCardEditor = ({
                               </div>
                             )}
 
-                            {isElementVisible('grades_table', 'subject_appreciation') && 
+                             {isElementVisible('grades_table', 'subject_appreciation') && 
                              isElementEditable('grades_table', 'subject_appreciation') && (
                               <div className="space-y-2">
                                 <Label className="text-xs">
-                                  Appréciation - {(grade.appreciation || '').length}/200 caractères
+                                  Appréciation - {(grade.appreciation || '').length}/100 caractères
                                 </Label>
                                 <Textarea
                                   value={grade.appreciation || ''}
                                   onChange={(e) => {
                                     const text = e.target.value;
-                                    if (text.length <= 200) {
+                                    if (text.length <= 100) {
                                       updateGradeField(index, 'appreciation', text);
                                     }
                                   }}
-                                  placeholder="Une ou deux phrases maximum..."
+                                  placeholder="Une phrase concise..."
                                   rows={2}
-                                  maxLength={200}
+                                  maxLength={100}
                                 />
-                                {(grade.appreciation || '').length >= 200 && (
+                                {(grade.appreciation || '').length >= 100 && (
                                   <p className="text-xs text-amber-600">
                                     Limite atteinte
                                   </p>

@@ -85,7 +85,7 @@ export const GradeEntryDialog = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAbsent, setIsAbsent] = useState(false);
   
-  const MAX_APPRECIATION_LENGTH = 200; // Limite pour une ou deux phrases
+  const MAX_APPRECIATION_LENGTH = 100; // Limite pour une phrase concise
 
   useEffect(() => {
     setOpen(!!openExternal);
@@ -333,14 +333,16 @@ export const GradeEntryDialog = ({
           )}
 
           <div>
-            <Label>Nom de l'épreuve *</Label>
+            <Label>Nom de l'épreuve * (max 50 caractères)</Label>
             <Input
               value={assessmentName}
-              onChange={(e) => setAssessmentName(e.target.value)}
+              onChange={(e) => setAssessmentName(e.target.value.slice(0, 50))}
               placeholder="Ex: Contrôle continu 1, Examen final..."
               disabled={selectedAssessment !== "" && selectedAssessment !== "__new__"}
               required
+              maxLength={50}
             />
+            <p className="text-xs text-muted-foreground">{assessmentName.length}/50 caractères</p>
           </div>
           <div>
             <Label>Type d'épreuve *</Label>
@@ -443,13 +445,13 @@ export const GradeEntryDialog = ({
                   setAppreciation(text);
                 }
               }}
-              placeholder="Une ou deux phrases maximum..."
-              className="min-h-[80px]"
+              placeholder="Une phrase concise..."
+              rows={2}
               maxLength={MAX_APPRECIATION_LENGTH}
             />
             {appreciation.length >= MAX_APPRECIATION_LENGTH && (
-              <p className="text-xs text-amber-600 mt-1">
-                Limite atteinte - gardez l'appréciation concise
+              <p className="text-xs text-amber-600">
+                Limite atteinte ({MAX_APPRECIATION_LENGTH}/{MAX_APPRECIATION_LENGTH})
               </p>
             )}
           </div>

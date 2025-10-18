@@ -212,13 +212,15 @@ export const BulkGradeImport = ({ students, classname, subject, subjectMetadata,
 
         <div className="space-y-6 mt-6">
           <div>
-            <Label>Nom de l'épreuve *</Label>
+            <Label>Nom de l'épreuve * (max 50 caractères)</Label>
             <Input
               value={assessmentName}
-              onChange={(e) => setAssessmentName(e.target.value)}
+              onChange={(e) => setAssessmentName(e.target.value.slice(0, 50))}
               placeholder="Ex: Contrôle continu 1, Examen final..."
               required
+              maxLength={50}
             />
+            <p className="text-xs text-muted-foreground">{assessmentName.length}/50 caractères</p>
           </div>
 
           <div>

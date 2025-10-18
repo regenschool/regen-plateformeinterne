@@ -140,13 +140,15 @@ export function AddSubjectDialog({ open, onClose, onSubjectAdded }: AddSubjectDi
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="subjectName">Nom de la matière *</Label>
+            <Label htmlFor="subjectName">Nom de la matière * (max 60 caractères)</Label>
             <Input
               id="subjectName"
               placeholder="Ex: Management"
               value={subjectName}
-              onChange={(e) => setSubjectName(e.target.value)}
+              onChange={(e) => setSubjectName(e.target.value.slice(0, 60))}
+              maxLength={60}
             />
+            <p className="text-xs text-muted-foreground">{subjectName.length}/60 caractères</p>
           </div>
 
           <div className="space-y-2">
