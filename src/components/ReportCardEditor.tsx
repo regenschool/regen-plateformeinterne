@@ -41,10 +41,13 @@ export const ReportCardEditor = ({
     }
   };
 
-  const getConfigValue = (sectionKey: string, elementKey: string, property: 'is_visible' | 'is_editable' = 'is_visible') => {
+  const getConfigValue = (sectionKey: string, elementKey: string, property: 'is_visible' | 'is_editable' | 'default_value' = 'is_visible') => {
     const config = editedData.template?.config || [];
     const item = config.find((c: any) => c.section_key === sectionKey && c.element_key === elementKey);
-    if (!item) return property === 'is_visible' ? true : false;
+    if (!item) {
+      if (property === 'default_value') return undefined;
+      return property === 'is_visible' ? true : false;
+    }
     return item[property];
   };
 
@@ -52,6 +55,30 @@ export const ReportCardEditor = ({
     const newGrades = [...editedData.grades];
     newGrades[index] = { ...newGrades[index], [field]: value };
     setEditedData({ ...editedData, grades: newGrades });
+  };
+
+  const updateConfigValue = (sectionKey: string, elementKey: string, value: any) => {
+    const newConfig = [...(editedData.template?.config || [])];
+    const itemIndex = newConfig.findIndex((c: any) => 
+      c.section_key === sectionKey && c.element_key === elementKey
+    );
+    
+    if (itemIndex >= 0) {
+      newConfig[itemIndex] = { ...newConfig[itemIndex], default_value: value };
+    } else {
+      newConfig.push({
+        section_key: sectionKey,
+        element_key: elementKey,
+        is_visible: true,
+        is_editable: true,
+        default_value: value,
+      });
+    }
+    
+    setEditedData({ 
+      ...editedData, 
+      template: { ...editedData.template, config: newConfig }
+    });
   };
 
   const updateField = (path: string, value: any) => {
@@ -124,8 +151,8 @@ export const ReportCardEditor = ({
                           <div className="space-y-2">
                             <Label>Titre du bulletin</Label>
                             <Input
-                              value={editedData.title || 'Bulletin de Notes'}
-                              onChange={(e) => updateField('title', e.target.value)}
+                              value={getConfigValue('header', 'title', 'default_value') || 'Bulletin de Notes'}
+                              onChange={(e) => updateConfigValue('header', 'title', e.target.value)}
                             />
                           </div>
                         )}
@@ -133,8 +160,8 @@ export const ReportCardEditor = ({
                           <div className="space-y-2">
                             <Label>Nom de l'école</Label>
                             <Input
-                              value={editedData.schoolName || ''}
-                              onChange={(e) => updateField('schoolName', e.target.value)}
+                              value={getConfigValue('header', 'school_name', 'default_value') || ''}
+                              onChange={(e) => updateConfigValue('header', 'school_name', e.target.value)}
                             />
                           </div>
                         )}
