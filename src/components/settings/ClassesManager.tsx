@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useClassesReferential, useLevels } from "@/hooks/useReferentials";
+import { useClassesReferential, useLevels, usePrograms } from "@/hooks/useReferentials";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 export const ClassesManager = () => {
   const { data: classes, isLoading } = useClassesReferential(false);
   const { data: levels, isLoading: levelsLoading } = useLevels(true);
+  const { data: programs, isLoading: programsLoading } = usePrograms(true);
   const queryClient = useQueryClient();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -31,6 +32,7 @@ export const ClassesManager = () => {
   // Form states
   const [name, setName] = useState("");
   const [level, setLevel] = useState("");
+  const [programId, setProgramId] = useState("");
   const [capacity, setCapacity] = useState<number | undefined>();
   const [isActive, setIsActive] = useState(true);
 
@@ -108,6 +110,7 @@ export const ClassesManager = () => {
   const resetForm = () => {
     setName("");
     setLevel("");
+    setProgramId("");
     setCapacity(undefined);
     setIsActive(true);
     setIsAdding(false);
@@ -127,6 +130,7 @@ export const ClassesManager = () => {
     addMutation.mutate({
       name,
       level: level || null,
+      program_id: programId || null,
       capacity: capacity || null,
       is_active: isActive,
     });
@@ -136,6 +140,7 @@ export const ClassesManager = () => {
     setEditingId(classItem.id);
     setName(classItem.name);
     setLevel(classItem.level || "");
+    setProgramId(classItem.program_id || "");
     setCapacity(classItem.capacity);
     setIsActive(classItem.is_active);
   };
@@ -153,6 +158,7 @@ export const ClassesManager = () => {
       data: {
         name,
         level: level || null,
+        program_id: programId || null,
         capacity: capacity || null,
         is_active: isActive,
       },
@@ -188,7 +194,7 @@ export const ClassesManager = () => {
     }
   };
 
-  if (isLoading || levelsLoading) {
+  if (isLoading || levelsLoading || programsLoading) {
     return <div className="text-center py-4">Chargement...</div>;
   }
 
@@ -216,7 +222,7 @@ export const ClassesManager = () => {
       {isAdding && (
         <div className="border rounded-lg p-4 space-y-4 bg-muted/50">
           <h3 className="font-semibold">Nouvelle classe</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <Label>Nom de la classe *</Label>
               <Input
@@ -236,6 +242,21 @@ export const ClassesManager = () => {
                   {levels?.map((level) => (
                     <SelectItem key={level.id} value={level.name}>
                       {level.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Programme</Label>
+              <Select value={programId} onValueChange={setProgramId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner" />
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-popover">
+                  {programs?.map((program) => (
+                    <SelectItem key={program.id} value={program.id}>
+                      {program.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -281,6 +302,7 @@ export const ClassesManager = () => {
             </TableHead>
             <TableHead>Nom</TableHead>
             <TableHead>Niveau</TableHead>
+            <TableHead>Programme</TableHead>
             <TableHead>Capacité</TableHead>
             <TableHead>Active</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -317,6 +339,20 @@ export const ClassesManager = () => {
                           {levels?.map((level) => (
                             <SelectItem key={level.id} value={level.name}>
                               {level.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <Select value={programId || ""} onValueChange={setProgramId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Programme" />
+                        </SelectTrigger>
+                        <SelectContent className="z-50 bg-popover">
+                          {programs?.map((program) => (
+                            <SelectItem key={program.id} value={program.id}>
+                              {program.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -363,6 +399,9 @@ export const ClassesManager = () => {
                     </TableCell>
                     <TableCell className="font-medium">{classItem.name}</TableCell>
                     <TableCell>{classItem.level || "-"}</TableCell>
+                    <TableCell>
+                      {programs?.find(p => p.id === classItem.program_id)?.name || "-"}
+                    </TableCell>
                     <TableCell>{classItem.capacity || "-"}</TableCell>
                     <TableCell>
                       <Switch 

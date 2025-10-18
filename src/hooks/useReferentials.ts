@@ -16,6 +16,7 @@ export type Class = {
   id: string;
   name: string;
   level: string | null;
+  program_id: string | null;
   capacity: number | null;
   is_active: boolean;
   created_at: string;
