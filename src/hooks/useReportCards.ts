@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { updateConfigValue } from '@/lib/templateConfigUtils';
 
 interface GenerateReportCardParams {
   studentId: string;
@@ -134,7 +135,7 @@ export const useGenerateReportCard = () => {
         console.warn('No default template found');
       }
 
-      let templateConfig = [];
+      let templateConfig: any[] = [];
       if (template) {
         const { data: configData } = await supabase
           .from('report_card_template_config')
@@ -142,6 +143,32 @@ export const useGenerateReportCard = () => {
           .eq('template_id', template.id);
         
         templateConfig = configData || [];
+        
+        // ✅ ROBUSTESSE 10/10 : Initialiser les appréciations dans config si elles n'existent pas
+        const hasSchoolAppreciation = templateConfig.some(
+          c => c.section_key === 'appreciation' && c.element_key === 'school_appreciation_text'
+        );
+        const hasCompanyAppreciation = templateConfig.some(
+          c => c.section_key === 'appreciation' && c.element_key === 'company_appreciation_text'
+        );
+        
+        if (!hasSchoolAppreciation) {
+          templateConfig = updateConfigValue(
+            templateConfig,
+            'appreciation',
+            'school_appreciation_text',
+            '' // Vide par défaut, sera rempli en édition
+          );
+        }
+        
+        if (!hasCompanyAppreciation) {
+          templateConfig = updateConfigValue(
+            templateConfig,
+            'appreciation',
+            'company_appreciation_text',
+            '' // Vide par défaut, sera rempli en édition
+          );
+        }
       }
 
       // 4. Calculer les moyennes par matière

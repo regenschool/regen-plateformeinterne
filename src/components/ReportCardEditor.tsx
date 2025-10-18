@@ -4,11 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Save, FileDown } from 'lucide-react';
 import { useSaveDraft, useGenerateFinalPDF } from '@/hooks/useReportCardActions';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { 
+  getConfigValue, 
+  isVisible as checkVisible, 
+  isEditable as checkEditable,
+  getDefaultValue,
+  updateConfigValue as updateConfig
+} from '@/lib/templateConfigUtils';
+import { toast } from '@/hooks/use-toast';
 
 interface ReportCardEditorProps {
   reportCardId: string;
@@ -34,21 +41,20 @@ export const ReportCardEditor = ({
   };
 
   const handleGeneratePdf = async () => {
-    const result = await generatePDF.mutateAsync({ reportCardId, data: editedData });
-    if (result.pdfUrl && onClose) {
-      window.open(result.pdfUrl, '_blank');
-      onClose();
+    try {
+      const result = await generatePDF.mutateAsync({ reportCardId, data: editedData });
+      if (result.pdfUrl && onClose) {
+        window.open(result.pdfUrl, '_blank');
+        onClose();
+      }
+    } catch (error) {
+      console.error('Erreur génération PDF:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer le PDF. Vérifiez la configuration.",
+        variant: "destructive"
+      });
     }
-  };
-
-  const getConfigValue = (sectionKey: string, elementKey: string, property: 'is_visible' | 'is_editable' | 'default_value' = 'is_visible') => {
-    const config = editedData.template?.config || [];
-    const item = config.find((c: any) => c.section_key === sectionKey && c.element_key === elementKey);
-    if (!item) {
-      if (property === 'default_value') return undefined;
-      return property === 'is_visible' ? true : false;
-    }
-    return item[property];
   };
 
   const updateGradeField = (index: number, field: string, value: any) => {
@@ -57,23 +63,9 @@ export const ReportCardEditor = ({
     setEditedData({ ...editedData, grades: newGrades });
   };
 
-  const updateConfigValue = (sectionKey: string, elementKey: string, value: any) => {
-    const newConfig = [...(editedData.template?.config || [])];
-    const itemIndex = newConfig.findIndex((c: any) => 
-      c.section_key === sectionKey && c.element_key === elementKey
-    );
-    
-    if (itemIndex >= 0) {
-      newConfig[itemIndex] = { ...newConfig[itemIndex], default_value: value };
-    } else {
-      newConfig.push({
-        section_key: sectionKey,
-        element_key: elementKey,
-        is_visible: true,
-        is_editable: true,
-        default_value: value,
-      });
-    }
+  const handleUpdateConfigValue = (sectionKey: string, elementKey: string, value: any) => {
+    const currentConfig = editedData.template?.config || [];
+    const newConfig = updateConfig(currentConfig, sectionKey, elementKey, value);
     
     setEditedData({ 
       ...editedData, 
@@ -81,24 +73,11 @@ export const ReportCardEditor = ({
     });
   };
 
-  const updateField = (path: string, value: any) => {
-    const keys = path.split('.');
-    const updated = { ...editedData };
-    let current: any = updated;
-    
-    for (let i = 0; i < keys.length - 1; i++) {
-      current = current[keys[i]];
-    }
-    current[keys[keys.length - 1]] = value;
-    
-    setEditedData(updated);
-  };
-
   const isElementVisible = (section: string, element: string) => 
-    getConfigValue(section, element, 'is_visible');
+    checkVisible(editedData.template?.config, section, element);
   
   const isElementEditable = (section: string, element: string) => 
-    getConfigValue(section, element, 'is_editable');
+    checkEditable(editedData.template?.config, section, element);
 
   return (
     <div className="space-y-6">
@@ -151,8 +130,8 @@ export const ReportCardEditor = ({
                           <div className="space-y-2">
                             <Label>Titre du bulletin</Label>
                             <Input
-                              value={getConfigValue('header', 'title', 'default_value') || 'Bulletin de Notes'}
-                              onChange={(e) => updateConfigValue('header', 'title', e.target.value)}
+                              value={getDefaultValue(editedData.template?.config, 'header', 'title', 'Bulletin de Notes')}
+                              onChange={(e) => handleUpdateConfigValue('header', 'title', e.target.value)}
                             />
                           </div>
                         )}
@@ -160,8 +139,8 @@ export const ReportCardEditor = ({
                           <div className="space-y-2">
                             <Label>Nom de l'école</Label>
                             <Input
-                              value={getConfigValue('header', 'school_name', 'default_value') || ''}
-                              onChange={(e) => updateConfigValue('header', 'school_name', e.target.value)}
+                              value={getDefaultValue(editedData.template?.config, 'header', 'school_name', '')}
+                              onChange={(e) => handleUpdateConfigValue('header', 'school_name', e.target.value)}
                             />
                           </div>
                         )}
@@ -245,8 +224,8 @@ export const ReportCardEditor = ({
                         <div className="space-y-2">
                           <Label>Appréciation de l'établissement</Label>
                           <Textarea
-                            value={editedData.generalAppreciation || ''}
-                            onChange={(e) => updateField('generalAppreciation', e.target.value)}
+                            value={getDefaultValue(editedData.template?.config, 'appreciation', 'school_appreciation_text', '')}
+                            onChange={(e) => handleUpdateConfigValue('appreciation', 'school_appreciation_text', e.target.value)}
                             placeholder="Appréciation générale du semestre..."
                             rows={4}
                           />
@@ -258,8 +237,8 @@ export const ReportCardEditor = ({
                         <div className="space-y-2">
                           <Label>Appréciation du tuteur en entreprise</Label>
                           <Textarea
-                            value={editedData.companyAppreciation || ''}
-                            onChange={(e) => updateField('companyAppreciation', e.target.value)}
+                            value={getDefaultValue(editedData.template?.config, 'appreciation', 'company_appreciation_text', '')}
+                            onChange={(e) => handleUpdateConfigValue('appreciation', 'company_appreciation_text', e.target.value)}
                             placeholder="Appréciation du tuteur..."
                             rows={4}
                           />
@@ -283,8 +262,8 @@ export const ReportCardEditor = ({
                           <div className="space-y-2">
                             <Label>Titre du signataire</Label>
                             <Input
-                              value={getConfigValue('footer', 'signatory_title', 'default_value') || 'Le Directeur des Études'}
-                              onChange={(e) => updateConfigValue('footer', 'signatory_title', e.target.value)}
+                              value={getDefaultValue(editedData.template?.config, 'footer', 'signatory_title', 'Le Directeur des Études')}
+                              onChange={(e) => handleUpdateConfigValue('footer', 'signatory_title', e.target.value)}
                             />
                           </div>
                         )}

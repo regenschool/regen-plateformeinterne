@@ -3,6 +3,53 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ============ UTILITAIRES CENTRALISÉS (synchronisé avec src/lib/templateConfigUtils.ts) ============
+
+interface TemplateConfig {
+  section_key: string;
+  element_key: string;
+  is_visible: boolean;
+  is_editable: boolean;
+  default_value?: string;
+  style_options?: {
+    format?: 'fraction' | 'percentage' | 'points';
+    [key: string]: any;
+  };
+}
+
+const getConfigValue = (
+  config: TemplateConfig[],
+  sectionKey: string,
+  elementKey: string,
+  property: 'is_visible' | 'default_value' | 'style_options' = 'is_visible'
+): any => {
+  const item = config.find(c => c.section_key === sectionKey && c.element_key === elementKey);
+  if (!item) return property === 'is_visible' ? true : undefined;
+  return item[property];
+};
+
+const isVisible = (config: TemplateConfig[], section: string, element: string) => 
+  getConfigValue(config, section, element, 'is_visible') !== false;
+
+const getDefaultValue = (config: TemplateConfig[], section: string, element: string, fallback: string = '') => 
+  getConfigValue(config, section, element, 'default_value') || fallback;
+
+const formatGrade = (grade: number, maxGrade: number, format?: string): string => {
+  const normalized = (grade / maxGrade) * 20;
+  
+  switch (format) {
+    case 'percentage':
+      return `${((grade / maxGrade) * 100).toFixed(1)}%`;
+    case 'points':
+      return normalized.toFixed(2);
+    case 'fraction':
+    default:
+      return `${normalized.toFixed(2)}/20`;
+  }
+};
+
+// ============ FIN UTILITAIRES ============
+
 interface ReportCardData {
   student: {
     firstName: string;
@@ -51,52 +98,7 @@ interface ReportCardData {
     student: number;
     class: number;
   };
-  generalAppreciation?: string;
-  companyAppreciation?: string;
 }
-
-interface TemplateConfig {
-  section_key: string;
-  element_key: string;
-  is_visible: boolean;
-  is_editable: boolean;
-  default_value?: string;
-  style_options?: {
-    format?: 'fraction' | 'percentage' | 'points';
-    [key: string]: any;
-  };
-}
-
-const getConfigValue = (
-  config: TemplateConfig[],
-  sectionKey: string,
-  elementKey: string,
-  property: 'is_visible' | 'default_value' | 'style_options' = 'is_visible'
-): any => {
-  const item = config.find(c => c.section_key === sectionKey && c.element_key === elementKey);
-  if (!item) return property === 'is_visible' ? true : undefined;
-  return item[property];
-};
-
-const isVisible = (config: TemplateConfig[], section: string, element: string) => 
-  getConfigValue(config, section, element, 'is_visible') !== false;
-
-const getDefault = (config: TemplateConfig[], section: string, element: string, fallback: string = '') => 
-  getConfigValue(config, section, element, 'default_value') || fallback;
-
-const formatGrade = (grade: number, maxGrade: number, format?: string): string => {
-  const normalized = (grade / maxGrade) * 20;
-  
-  switch (format) {
-    case 'percentage':
-      return `${((grade / maxGrade) * 100).toFixed(1)}%`;
-    case 'points':
-      return normalized.toFixed(2);
-    case 'fraction':
-    default:
-      return `${normalized.toFixed(2)}/20`;
-  }
-};
 
 const generateHTMLTemplate = (data: ReportCardData): string => {
   const config = data.template?.config || [];
@@ -123,14 +125,18 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
     || data.template?.header_color
     || '#1e40af';
   const gradeFormat = getConfigValue(config, 'grades_table', 'student_subject_average', 'style_options')?.format || 'fraction';
-  const logoUrl = getDefault(config, 'header', 'logo') || data.template?.logo_url;
-  const signatureUrl = getDefault(config, 'footer', 'signature') || data.template?.signature_url;
-  const title = getDefault(config, 'header', 'title', 'Bulletin de Notes');
-  const schoolName = getDefault(config, 'header', 'school_name', 'École');
-  const signatoryTitle = getDefault(config, 'footer', 'signatory_title', 'Le Directeur des Études');
-  const footerText = (getConfigValue(config, 'footer', 'school_name_footer', 'default_value') as string | undefined)
+  const logoUrl = getDefaultValue(config, 'header', 'logo') || data.template?.logo_url;
+  const signatureUrl = getDefaultValue(config, 'footer', 'signature') || data.template?.signature_url;
+  const title = getDefaultValue(config, 'header', 'title', 'Bulletin de Notes');
+  const schoolName = getDefaultValue(config, 'header', 'school_name', 'École');
+  const signatoryTitle = getDefaultValue(config, 'footer', 'signatory_title', 'Le Directeur des Études');
+  const footerText = getDefaultValue(config, 'footer', 'school_name_footer') 
     || data.template?.footer_text
     || 'Document généré automatiquement';
+  
+  // ✅ NOUVEAU : Récupérer les appréciations depuis config (migration du système)
+  const schoolAppreciation = getDefaultValue(config, 'appreciation', 'school_appreciation_text', '');
+  const companyAppreciation = getDefaultValue(config, 'appreciation', 'company_appreciation_text', '');
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -483,17 +489,17 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
       <div class="class-average-detail">Moyenne de classe : ${formatGrade(data.averages.class, 20, gradeFormat)}</div>` : ''}
     </div>` : ''}
 
-    ${isVisible(config, 'appreciation', 'school_appreciation') && data.generalAppreciation ? `
+    ${isVisible(config, 'appreciation', 'school_appreciation') && schoolAppreciation ? `
     <div class="section-separator"></div>
     <div class="general-appreciation">
       <div class="appreciation-title">Appréciation de l'établissement</div>
-      <div>${data.generalAppreciation}</div>
+      <div>${schoolAppreciation}</div>
     </div>` : ''}
 
-    ${isVisible(config, 'appreciation', 'company_appreciation') && data.companyAppreciation ? `
+    ${isVisible(config, 'appreciation', 'company_appreciation') && companyAppreciation ? `
     <div class="general-appreciation">
       <div class="appreciation-title">Appréciation du tuteur en entreprise</div>
-      <div>${data.companyAppreciation}</div>
+      <div>${companyAppreciation}</div>
     </div>` : ''}
 
     ${isVisible(config, 'footer', 'signature') && signatureUrl ? `
