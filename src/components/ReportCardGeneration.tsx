@@ -15,6 +15,9 @@ import { useNavigate } from 'react-router-dom';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { ReportCardPreview } from '@/components/settings/ReportCardPreview';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Eye } from 'lucide-react';
 
 interface SubjectWeight {
   subject_id: string;
@@ -120,6 +123,22 @@ export const ReportCardGeneration = () => {
   const { data: existingReportCards } = useReportCards({
     schoolYear: selectedSchoolYear,
     semester: selectedSemester,
+  });
+
+  // Récupérer le template par défaut pour l'aperçu
+  const { data: defaultTemplate } = useQuery({
+    queryKey: ['default-report-card-template'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('report_card_templates')
+        .select('*')
+        .eq('is_default', true)
+        .eq('is_active', true)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
   });
 
   // Sauvegarder les pondérations
@@ -385,23 +404,41 @@ export const ReportCardGeneration = () => {
                     {students.length} élève{students.length > 1 ? 's' : ''} dans cette classe
                   </p>
                 </div>
-                <Button
-                  onClick={() => generateAllReportCards.mutate()}
-                  disabled={generateAllReportCards.isPending || subjectWeights.length === 0}
-                  size="lg"
-                >
-                  {generateAllReportCards.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Génération en cours...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="mr-2 h-4 w-4" />
-                      Générer tous les bulletins
-                    </>
+                <div className="flex gap-2">
+                  {defaultTemplate && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="lg">
+                          <Eye className="mr-2 h-4 w-4" />
+                          Aperçu du modèle
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>Aperçu du bulletin - {defaultTemplate.name}</DialogTitle>
+                        </DialogHeader>
+                        <ReportCardPreview template={defaultTemplate} />
+                      </DialogContent>
+                    </Dialog>
                   )}
-                </Button>
+                  <Button
+                    onClick={() => generateAllReportCards.mutate()}
+                    disabled={generateAllReportCards.isPending || subjectWeights.length === 0}
+                    size="lg"
+                  >
+                    {generateAllReportCards.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Génération en cours...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Générer tous les bulletins
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
 
               {subjectWeights.length === 0 && (
