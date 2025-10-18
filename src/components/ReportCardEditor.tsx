@@ -42,11 +42,11 @@ export const ReportCardEditor = ({
 
   const handleGeneratePdf = async () => {
     try {
-      await generatePDF.mutateAsync({ reportCardId, data: editedData });
-      // La fenêtre d'impression s'ouvre automatiquement
-      if (onClose) {
-        setTimeout(onClose, 1000); // Fermer après 1 sec
+      const result = await generatePDF.mutateAsync({ reportCardId, data: editedData });
+      if (result.pdfUrl) {
+        window.open(result.pdfUrl, '_blank');
       }
+      if (onClose) onClose();
     } catch (error) {
       console.error('Erreur génération PDF:', error);
       toast({

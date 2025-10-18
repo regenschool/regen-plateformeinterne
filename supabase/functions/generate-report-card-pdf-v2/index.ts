@@ -492,17 +492,20 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
           <td class="subject-name">
             ${stat.subject}
             ${isVisible(config, 'grades_table', 'subject_category') && stat.category ? `<span class="category-badge">${stat.category}</span>` : ''}
-            ${isVisible(config, 'grades_table', 'individual_grades') && stat.grades?.length > 1 ? `
-              <div class="grades-detail">
-                <div class="grades-detail-title">Détail des évaluations :</div>
-                ${stat.grades.map((g: any) => `
-                  <div class="grade-detail-row">
-                    <span class="grade-detail-name">${g.assessment_name || g.assessment_type}</span>
-                    <span class="grade-detail-value">${formatGrade(g.grade, g.max_grade, gradeFormat)}</span>
-                  </div>
-                `).join('')}
-              </div>
-            ` : ''}
+            ${(() => {
+              const indiv = stat.grades && stat.grades[0] && (stat.grades[0] as any).individualGrades ? (stat.grades[0] as any).individualGrades : [];
+              return isVisible(config, 'grades_table', 'individual_grades') && indiv.length > 0 ? `
+                <div class="grades-detail">
+                  <div class="grades-detail-title">Détail des évaluations :</div>
+                  ${indiv.map((g: any) => `
+                    <div class="grade-detail-row">
+                      <span class="grade-detail-name">${g.assessment_name || g.assessment_type}</span>
+                      <span class="grade-detail-value">${formatGrade(g.grade, g.max_grade, gradeFormat)}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : '';
+            })()}
           </td>
           ${isVisible(config, 'grades_table', 'student_subject_average') ? `<td class="grade-value">${formatGrade(stat.avg, 20, gradeFormat)}</td>` : ''}
           ${isVisible(config, 'grades_table', 'class_subject_average') ? `<td style="text-align:center;font-size:8pt">${stat.minGrade > 0 ? formatGrade((stat.minGrade + stat.maxGrade) / 2, 20, gradeFormat) : '-'}</td>` : ''}

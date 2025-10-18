@@ -89,9 +89,9 @@ export class PuppeteerGenerator implements PDFGenerator {
     document.body.appendChild(tempDiv);
 
     try {
-      // Capturer le HTML comme image
+      // Capturer le HTML comme image (échelle réduite pour limiter la taille)
       const canvas = await html2canvas.default(tempDiv, {
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
@@ -104,11 +104,12 @@ export class PuppeteerGenerator implements PDFGenerator {
         format: 'a4',
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      // Utiliser JPEG compressé pour réduire le poids
+      const imgData = canvas.toDataURL('image/jpeg', 0.82);
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       
       return pdf.output('blob');
     } finally {
