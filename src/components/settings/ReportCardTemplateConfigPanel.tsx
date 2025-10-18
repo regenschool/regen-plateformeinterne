@@ -161,22 +161,25 @@ export const ReportCardTemplateConfigPanel = ({
                         const elementConfig = config[key];
 
                         return (
-                          <div key={element.element_key} className="border rounded-lg p-4 space-y-3">
-                            <div className="flex items-start justify-between">
-                              <div className="space-y-1 flex-1">
-                                <Label className="font-medium">{element.label}</Label>
-                                <p className="text-xs text-muted-foreground">
-                                  Type: {element.element_type}
-                                  {element.is_editable_in_draft && ' • Éditable dans les brouillons'}
-                                </p>
-                              </div>
+                          <div key={element.element_key} className="border rounded-lg p-4 space-y-4 bg-card">
+                            {/* En-tête de l'élément */}
+                            <div className="space-y-1">
+                              <Label className="font-medium text-base">{element.label}</Label>
+                              <p className="text-xs text-muted-foreground">
+                                {element.element_type === 'text' && 'Texte'}
+                                {element.element_type === 'image' && 'Image'}
+                                {element.element_type === 'number' && 'Nombre'}
+                                {element.element_type === 'variable' && 'Variable'}
+                                {element.is_editable_in_draft && ' • Modifiable dans les brouillons'}
+                              </p>
                             </div>
 
-                            <div className="grid gap-3 md:grid-cols-2">
+                            {/* Contrôles Afficher / Éditable */}
+                            <div className="flex flex-col gap-3">
                               {/* Visible */}
-                              <div className="flex items-center justify-between p-2 rounded border">
-                                <Label htmlFor={`${key}_visible`} className="text-sm">
-                                  Afficher
+                              <div className="flex items-center justify-between px-3 py-2.5 rounded-md border bg-background">
+                                <Label htmlFor={`${key}_visible`} className="text-sm font-medium cursor-pointer">
+                                  Afficher dans le bulletin
                                 </Label>
                                 <Switch
                                   id={`${key}_visible`}
@@ -189,9 +192,9 @@ export const ReportCardTemplateConfigPanel = ({
 
                               {/* Éditable (seulement si l'élément le permet) */}
                               {element.is_editable_in_draft && (
-                                <div className="flex items-center justify-between p-2 rounded border">
-                                  <Label htmlFor={`${key}_editable`} className="text-sm">
-                                    Éditable
+                                <div className="flex items-center justify-between px-3 py-2.5 rounded-md border bg-background">
+                                  <Label htmlFor={`${key}_editable`} className="text-sm font-medium cursor-pointer">
+                                    Modifiable dans les brouillons
                                   </Label>
                                   <Switch
                                     id={`${key}_editable`}

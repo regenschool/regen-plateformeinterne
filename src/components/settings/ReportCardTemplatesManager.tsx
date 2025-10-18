@@ -180,7 +180,7 @@ export const ReportCardTemplatesManager = () => {
         </Dialog>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[350px_1fr]">
         {/* Sidebar - Liste des templates */}
         <Card>
           <CardHeader>
@@ -200,77 +200,79 @@ export const ReportCardTemplatesManager = () => {
                         : "border-border hover:border-primary/50 hover:bg-accent/50"
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{template.name}</p>
-                        <div className="flex gap-2 mt-2">
-                          {template.is_default && (
-                            <Badge variant="secondary" className="text-xs">
-                              Par défaut
-                            </Badge>
-                          )}
-                          {template.is_active && (
-                            <Badge variant="outline" className="text-xs">
-                              Actif
-                            </Badge>
-                          )}
-                          {template.use_custom_html && (
-                            <Badge variant="outline" className="text-xs">
-                              <Code className="h-3 w-3 mr-1" />
-                              HTML
-                            </Badge>
-                          )}
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm leading-tight">{template.name}</p>
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTemplate(template);
+                              setShowPreview(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Êtes-vous sûr de vouloir supprimer le modèle "{template.name}" ? 
+                                  Cette action supprimera également tous les bulletins générés avec ce modèle.
+                                  Cette action est irréversible.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => {
+                                    deleteTemplate.mutate(template.id);
+                                    if (selectedTemplate?.id === template.id) {
+                                      setSelectedTemplate(null);
+                                    }
+                                  }}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Supprimer
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedTemplate(template);
-                            setShowPreview(true);
-                          }}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Êtes-vous sûr de vouloir supprimer le modèle "{template.name}" ? 
-                                Cette action supprimera également tous les bulletins générés avec ce modèle.
-                                Cette action est irréversible.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Annuler</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => {
-                                  deleteTemplate.mutate(template.id);
-                                  if (selectedTemplate?.id === template.id) {
-                                    setSelectedTemplate(null);
-                                  }
-                                }}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Supprimer
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                      <div className="flex flex-wrap gap-1.5">
+                        {template.is_default && (
+                          <Badge variant="secondary" className="text-xs">
+                            Par défaut
+                          </Badge>
+                        )}
+                        {template.is_active && (
+                          <Badge variant="outline" className="text-xs">
+                            Actif
+                          </Badge>
+                        )}
+                        {template.use_custom_html && (
+                          <Badge variant="outline" className="text-xs">
+                            <Code className="h-3 w-3 mr-1" />
+                            HTML
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </div>
