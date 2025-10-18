@@ -575,61 +575,75 @@ const Profile = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold text-foreground">
-          {isAdmin ? "Profil Administrateur" : "Mon Profil Enseignant"}
-        </h2>
-        <p className="text-muted-foreground">
-          {isAdmin ? "Gérez les profils, matières et documents de l'école" : "Gérez vos informations, matières et factures"}
-        </p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-muted/30 via-background to-muted/20">
+      <div className="container mx-auto py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+        {/* Hero Header */}
+        <div className="mb-8 animate-fade-in">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2.5 bg-primary/10 rounded-xl">
+              <User className="h-7 w-7 text-primary" />
+            </div>
+            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+              {isAdmin ? "Profil" : "Mon Profil"}
+            </h2>
+          </div>
+          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl">
+            {isAdmin ? "Gérez vos informations personnelles" : "Gérez vos informations, matières et documents"}
+          </p>
+        </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        {!isAdmin ? (
-          <TabsList className="w-full flex flex-wrap gap-2 h-auto md:h-10 md:flex-nowrap">
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              <span className="text-xs sm:text-sm">Profil</span>
-            </TabsTrigger>
-            <TabsTrigger value="subjects" className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4" />
-              <span className="text-xs sm:text-sm">Matières</span>
-            </TabsTrigger>
-            <TabsTrigger value="documents" className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              <span className="text-xs sm:text-sm">Documents</span>
-            </TabsTrigger>
-            <TabsTrigger value="onboarding" className="flex items-center gap-2">
-              <Clipboard className="w-4 h-4" />
-              <span className="text-xs sm:text-sm">Onboarding</span>
-            </TabsTrigger>
-            <TabsTrigger value="invoices" className="flex items-center gap-2">
-              <Receipt className="w-4 h-4" />
-              <span className="text-xs sm:text-sm">Factures</span>
-            </TabsTrigger>
-          </TabsList>
-        ) : (
-          <TabsList className="w-full">
-            <TabsTrigger value="profile">
-              <User className="w-4 h-4 mr-2" />
-              Paramètres
-            </TabsTrigger>
-          </TabsList>
-        )}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          {!isAdmin ? (
+            <TabsList className="w-full flex flex-wrap gap-2 h-auto md:h-12 md:flex-nowrap bg-muted/60 p-2 backdrop-blur-sm border border-border/40">
+              <TabsTrigger value="profile" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg px-4">
+                <User className="w-4 h-4" />
+                <span className="text-xs sm:text-sm font-medium">Profil</span>
+              </TabsTrigger>
+              <TabsTrigger value="subjects" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg px-4">
+                <BookOpen className="w-4 h-4" />
+                <span className="text-xs sm:text-sm font-medium">Matières</span>
+              </TabsTrigger>
+              <TabsTrigger value="documents" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg px-4">
+                <FileText className="w-4 h-4" />
+                <span className="text-xs sm:text-sm font-medium">Documents</span>
+              </TabsTrigger>
+              <TabsTrigger value="onboarding" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg px-4">
+                <Clipboard className="w-4 h-4" />
+                <span className="text-xs sm:text-sm font-medium">Checklist</span>
+              </TabsTrigger>
+              <TabsTrigger value="invoices" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg px-4">
+                <Receipt className="w-4 h-4" />
+                <span className="text-xs sm:text-sm font-medium">Factures</span>
+              </TabsTrigger>
+            </TabsList>
+          ) : (
+            <TabsList className="w-full bg-muted/60 backdrop-blur-sm border border-border/40">
+              <TabsTrigger value="profile" className="data-[state=active]:bg-background data-[state=active]:shadow-md">
+                <User className="w-4 h-4 mr-2" />
+                Mes Informations
+              </TabsTrigger>
+            </TabsList>
+          )}
 
-        <TabsContent value="profile" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {isAdmin ? "Informations du Compte" : "Informations Personnelles"}
-              </CardTitle>
-              {!isAdmin && (
-                <CardDescription>
-                  Mettez à jour vos informations de profil
-                </CardDescription>
-              )}
-            </CardHeader>
+          <TabsContent value="profile" className="space-y-6 animate-fade-in">
+            <Card className="border-border/40 shadow-lg bg-card/95 backdrop-blur-sm">
+              <CardHeader className="space-y-3 pb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <User className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl font-bold tracking-tight">
+                      {isAdmin ? "Vos Informations" : "Informations Personnelles"}
+                    </CardTitle>
+                    {!isAdmin && (
+                      <CardDescription className="text-base mt-1">
+                        Complétez et mettez à jour vos coordonnées
+                      </CardDescription>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
             <CardContent className="space-y-4">
               {profile && (
                 <>
@@ -682,9 +696,9 @@ const Profile = () => {
                         </div>
                       </div>
 
-                      <Button onClick={saveProfile} disabled={saving}>
+                      <Button onClick={saveProfile} disabled={saving} size="lg" className="shadow-md hover:shadow-lg transition-shadow">
                         <Save className="w-4 h-4 mr-2" />
-                        {saving ? "Enregistrement..." : "Enregistrer"}
+                        {saving ? "Enregistrement..." : "Enregistrer les modifications"}
                       </Button>
                     </>
                   ) : (
@@ -753,9 +767,9 @@ const Profile = () => {
                         />
                       </div>
 
-                      <Button onClick={saveProfile} disabled={saving}>
+                      <Button onClick={saveProfile} disabled={saving} size="lg" className="shadow-md hover:shadow-lg transition-shadow">
                         <Save className="w-4 h-4 mr-2" />
-                        {saving ? "Enregistrement..." : "Enregistrer"}
+                        {saving ? "Enregistrement..." : "Enregistrer les modifications"}
                       </Button>
                     </>
                   )}
@@ -1088,19 +1102,20 @@ const Profile = () => {
           </Card>
           </TabsContent>
         )}
-      </Tabs>
+        </Tabs>
 
-      <ImportSubjectsDialog
-        open={showImportDialog}
-        onClose={() => setShowImportDialog(false)}
-        onImportComplete={fetchSubjects}
-      />
+        <ImportSubjectsDialog
+          open={showImportDialog}
+          onClose={() => setShowImportDialog(false)}
+          onImportComplete={fetchSubjects}
+        />
 
-      <AddSubjectDialog
-        open={showAddSubjectDialog}
-        onClose={() => setShowAddSubjectDialog(false)}
-        onSubjectAdded={fetchSubjects}
-      />
+        <AddSubjectDialog
+          open={showAddSubjectDialog}
+          onClose={() => setShowAddSubjectDialog(false)}
+          onSubjectAdded={fetchSubjects}
+        />
+      </div>
     </div>
   );
 };

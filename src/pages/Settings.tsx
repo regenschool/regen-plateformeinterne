@@ -66,30 +66,37 @@ export default function Settings() {
   const activeTabData = allTabs.find(tab => tab.value === activeTab);
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <div className="container mx-auto py-4 sm:py-8 px-4">
-        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <SettingsIcon className="h-6 sm:h-8 w-6 sm:w-8 text-primary" />
-              <h1 className="text-3xl sm:text-4xl font-bold">{t("settings.title")}</h1>
+    <div className="min-h-screen bg-gradient-to-br from-muted/30 via-background to-muted/20">
+      <div className="container mx-auto py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+        {/* Hero Header */}
+        <div className="mb-8 sm:mb-12 animate-fade-in">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-primary/10 rounded-xl">
+                  <SettingsIcon className="h-7 w-7 text-primary" />
+                </div>
+                <h1 className="text-4xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                  Administration
+                </h1>
+              </div>
+              <p className="text-base sm:text-lg text-muted-foreground max-w-2xl">
+                Configurez et gérez votre établissement en toute simplicité
+              </p>
             </div>
-            <p className="text-sm sm:text-base text-muted-foreground">
-              {t("settings.subtitle")}
-            </p>
+            <SyncReferentialsButton />
           </div>
-          <SyncReferentialsButton />
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Navigation latérale - cachée sur mobile */}
-          <Card className="hidden lg:block w-72 h-fit sticky top-20">
-            <CardContent className="p-4">
-              <nav className="space-y-4">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+          {/* Navigation latérale premium */}
+          <Card className="hidden lg:block w-80 h-fit sticky top-20 border-border/40 shadow-lg bg-card/95 backdrop-blur-sm animate-fade-in">
+            <CardContent className="p-6">
+              <nav className="space-y-6">
                 {tabGroups.map((group, idx) => (
-                  <div key={group.title}>
+                  <div key={group.title} className="animate-fade-in" style={{ animationDelay: `${idx * 50}ms` }}>
                     {idx > 0 && <Separator className="my-4" />}
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">
+                    <p className="text-xs font-bold text-muted-foreground/80 uppercase tracking-widest mb-3 px-1">
                       {group.title}
                     </p>
                     <div className="space-y-1">
@@ -101,13 +108,17 @@ export default function Settings() {
                           <button
                             key={tab.value}
                             onClick={() => setActiveTab(tab.value)}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                            className={`group w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                               isActive 
-                                ? 'bg-primary text-primary-foreground shadow-sm' 
-                                : 'hover:bg-muted'
+                                ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20 scale-[1.02]' 
+                                : 'hover:bg-muted/60 hover:scale-[1.01]'
                             }`}
                           >
-                            <Icon className="h-4 w-4 shrink-0" />
+                            <div className={`p-1.5 rounded-lg transition-colors ${
+                              isActive ? 'bg-primary-foreground/10' : 'bg-muted group-hover:bg-muted-foreground/10'
+                            }`}>
+                              <Icon className="h-4 w-4 shrink-0" />
+                            </div>
                             <span className="text-sm font-medium truncate">{tab.label}</span>
                           </button>
                         );
@@ -144,20 +155,28 @@ export default function Settings() {
             </div>
           </div>
 
-          {/* Contenu */}
-          <div className="flex-1 max-w-full lg:max-w-4xl">
+          {/* Contenu principal */}
+          <div className="flex-1 max-w-full lg:max-w-5xl animate-fade-in">
             {activeTabData && (
-              <Card>
-                {activeTabData.desc && (
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                      <activeTabData.icon className="h-5 w-5" />
-                      {activeTabData.label}
-                    </CardTitle>
-                    <CardDescription className="text-sm">{activeTabData.desc}</CardDescription>
-                  </CardHeader>
-                )}
-                <CardContent className={activeTabData.desc ? "overflow-x-auto" : "pt-6 overflow-x-auto"}>
+              <Card className="border-border/40 shadow-lg bg-card/95 backdrop-blur-sm">
+                <CardHeader className="pb-6 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <activeTabData.icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <CardTitle className="text-2xl font-bold tracking-tight">
+                        {activeTabData.label}
+                      </CardTitle>
+                      {activeTabData.desc && (
+                        <CardDescription className="text-base mt-1.5">
+                          {activeTabData.desc}
+                        </CardDescription>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-2 overflow-x-auto">
                   <activeTabData.component />
                 </CardContent>
               </Card>
