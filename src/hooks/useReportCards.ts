@@ -94,16 +94,10 @@ export const useGenerateReportCard = () => {
 
       if (studentError) throw studentError;
 
-      // 2. Récupérer les notes avec catégories de matières
+      // 2. Récupérer les notes
       const { data: grades, error: gradesError } = await supabase
         .from('grades')
-        .select(`
-          *,
-          subjects!inner(
-            category_id,
-            subject_categories(name)
-          )
-        `)
+        .select('*')
         .eq('student_id', studentId)
         .eq('school_year', schoolYear)
         .eq('semester', semester);
@@ -145,13 +139,7 @@ export const useGenerateReportCard = () => {
       // 5. Calculer les stats de classe
       const { data: classGrades } = await supabase
         .from('grades')
-        .select(`
-          *,
-          subjects!inner(
-            category_id,
-            subject_categories(name)
-          )
-        `)
+        .select('*')
         .eq('class_name', className)
         .eq('school_year', schoolYear)
         .eq('semester', semester);
