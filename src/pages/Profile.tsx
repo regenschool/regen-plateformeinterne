@@ -628,13 +628,13 @@ const Profile = () => {
           <TabsContent value="profile" className="space-y-6">
             <Card className="border-border/40 shadow-sm">
               <CardHeader className="pb-6">
-                <CardTitle className="text-2xl font-semibold">
-                  {isAdmin ? "Informations" : "Coordonnées"}
-                </CardTitle>
                 {!isAdmin && (
-                  <CardDescription className="text-base">
-                    Complétez vos informations personnelles
-                  </CardDescription>
+                  <>
+                    <CardTitle className="text-2xl font-semibold">Coordonnées</CardTitle>
+                    <CardDescription className="text-base">
+                      Complétez vos informations personnelles
+                    </CardDescription>
+                  </>
                 )}
               </CardHeader>
             <CardContent className="space-y-4">
