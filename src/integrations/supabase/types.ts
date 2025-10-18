@@ -55,6 +55,96 @@ export type Database = {
           },
         ]
       }
+      assessments: {
+        Row: {
+          academic_period_fk_id: string | null
+          assessment_custom_label: string | null
+          assessment_name: string
+          assessment_type: Database["public"]["Enums"]["assessment_type"]
+          class_fk_id: string | null
+          class_name: string
+          created_at: string
+          graded_students: number
+          id: string
+          is_complete: boolean | null
+          is_visible_to_students: boolean
+          max_grade: number
+          school_year: string
+          semester: string
+          subject: string
+          teacher_id: string
+          teacher_name: string | null
+          total_students: number
+          updated_at: string
+          visibility_changed_at: string | null
+          visibility_changed_by: string | null
+          weighting: number
+        }
+        Insert: {
+          academic_period_fk_id?: string | null
+          assessment_custom_label?: string | null
+          assessment_name: string
+          assessment_type: Database["public"]["Enums"]["assessment_type"]
+          class_fk_id?: string | null
+          class_name: string
+          created_at?: string
+          graded_students?: number
+          id?: string
+          is_complete?: boolean | null
+          is_visible_to_students?: boolean
+          max_grade?: number
+          school_year: string
+          semester: string
+          subject: string
+          teacher_id: string
+          teacher_name?: string | null
+          total_students?: number
+          updated_at?: string
+          visibility_changed_at?: string | null
+          visibility_changed_by?: string | null
+          weighting?: number
+        }
+        Update: {
+          academic_period_fk_id?: string | null
+          assessment_custom_label?: string | null
+          assessment_name?: string
+          assessment_type?: Database["public"]["Enums"]["assessment_type"]
+          class_fk_id?: string | null
+          class_name?: string
+          created_at?: string
+          graded_students?: number
+          id?: string
+          is_complete?: boolean | null
+          is_visible_to_students?: boolean
+          max_grade?: number
+          school_year?: string
+          semester?: string
+          subject?: string
+          teacher_id?: string
+          teacher_name?: string | null
+          total_students?: number
+          updated_at?: string
+          visibility_changed_at?: string | null
+          visibility_changed_by?: string | null
+          weighting?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessments_academic_period_fk_id_fkey"
+            columns: ["academic_period_fk_id"]
+            isOneToOne: false
+            referencedRelation: "academic_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assessments_class_fk_id_fkey"
+            columns: ["class_fk_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -1925,6 +2015,62 @@ export type Database = {
       }
     }
     Views: {
+      student_visible_grades: {
+        Row: {
+          academic_period_fk_id: string | null
+          appreciation: string | null
+          assessment_custom_label: string | null
+          assessment_name: string | null
+          assessment_type: Database["public"]["Enums"]["assessment_type"] | null
+          class_fk_id: string | null
+          class_name: string | null
+          created_at: string | null
+          grade: number | null
+          id: string | null
+          is_absent: boolean | null
+          is_complete: boolean | null
+          is_visible_to_students: boolean | null
+          max_grade: number | null
+          school_year: string | null
+          semester: string | null
+          student_id: string | null
+          subject: string | null
+          teacher_id: string | null
+          teacher_name: string | null
+          updated_at: string | null
+          weighting: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grades_academic_period_fk_id_fkey"
+            columns: ["academic_period_fk_id"]
+            isOneToOne: false
+            referencedRelation: "academic_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_class_fk_id_fkey"
+            columns: ["class_fk_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_students_enriched"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_grades_enriched: {
         Row: {
           academic_period_fk_id: string | null
@@ -2051,6 +2197,62 @@ export type Database = {
           },
           {
             foreignKeyName: "student_enrollments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_students_enriched"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_student_grades_with_visibility: {
+        Row: {
+          academic_period_fk_id: string | null
+          appreciation: string | null
+          assessment_custom_label: string | null
+          assessment_name: string | null
+          assessment_type: Database["public"]["Enums"]["assessment_type"] | null
+          class_fk_id: string | null
+          class_name: string | null
+          created_at: string | null
+          grade: number | null
+          id: string | null
+          is_absent: boolean | null
+          is_complete: boolean | null
+          is_visible_to_students: boolean | null
+          max_grade: number | null
+          school_year: string | null
+          semester: string | null
+          student_id: string | null
+          subject: string | null
+          teacher_id: string | null
+          teacher_name: string | null
+          updated_at: string | null
+          weighting: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grades_academic_period_fk_id_fkey"
+            columns: ["academic_period_fk_id"]
+            isOneToOne: false
+            referencedRelation: "academic_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_class_fk_id_fkey"
+            columns: ["class_fk_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_students_enriched"
@@ -2198,6 +2400,10 @@ export type Database = {
       }
       link_user_to_student: {
         Args: { p_student_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      refresh_student_visible_grades: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
     }
