@@ -162,32 +162,83 @@ export const ReportCardEditor = ({
                         <Card key={index} className="p-4">
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                              <p className="font-medium">{grade.subject}</p>
-                              {grade.subject_category && (
-                                <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                                  {grade.subject_category}
-                                </span>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium">{grade.subject}</p>
+                                {isElementVisible('grades_table', 'subject_category') && grade.subject_category && (
+                                  <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                                    {grade.subject_category}
+                                  </span>
+                                )}
+                              </div>
+                              {isElementVisible('grades_table', 'subject_weighting') && grade.weighting && (
+                                <span className="text-xs font-medium">Coef. {grade.weighting}</span>
                               )}
                             </div>
 
-                            {isElementVisible('grades_table', 'student_subject_average') && 
-                             isElementEditable('grades_table', 'student_subject_average') && (
-                              <div className="space-y-2">
-                                <Label className="text-xs">Moyenne</Label>
-                                <div className="flex items-center gap-2">
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    max="20"
-                                    step="0.01"
-                                    value={grade.grade}
-                                    onChange={(e) => 
-                                      updateGradeField(index, 'grade', parseFloat(e.target.value) || 0)
-                                    }
-                                    className="w-24"
-                                  />
-                                  <span className="text-sm text-muted-foreground">/20</span>
+                            {isElementVisible('grades_table', 'teacher_name') && grade.teacher_name && (
+                              <p className="text-xs text-muted-foreground">
+                                Enseignant : {grade.teacher_name}
+                              </p>
+                            )}
+
+                            {isElementVisible('grades_table', 'individual_grades') && grade.individualGrades && grade.individualGrades.length > 1 && (
+                              <div className="mt-2 p-2 bg-muted/50 rounded border">
+                                <Label className="text-xs font-semibold mb-2 block">Détail des évaluations</Label>
+                                <div className="space-y-1">
+                                  {grade.individualGrades.map((g: any, i: number) => (
+                                    <div key={i} className="flex justify-between items-center text-xs">
+                                      <span className="text-muted-foreground">
+                                        {g.assessment_name || g.assessment_type}
+                                      </span>
+                                      <span className="font-medium">
+                                        {((g.grade / g.max_grade) * 20).toFixed(2)}/20
+                                      </span>
+                                    </div>
+                                  ))}
                                 </div>
+                              </div>
+                            )}
+
+                            <div className="grid grid-cols-2 gap-3">
+                              {isElementVisible('grades_table', 'student_subject_average') && 
+                               isElementEditable('grades_table', 'student_subject_average') && (
+                                <div className="space-y-2">
+                                  <Label className="text-xs">Moyenne élève</Label>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      max="20"
+                                      step="0.01"
+                                      value={grade.grade}
+                                      onChange={(e) => 
+                                        updateGradeField(index, 'grade', parseFloat(e.target.value) || 0)
+                                      }
+                                      className="w-24"
+                                    />
+                                    <span className="text-sm text-muted-foreground">/20</span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {isElementVisible('grades_table', 'class_subject_average') && grade.classAverage && (
+                                <div className="space-y-2">
+                                  <Label className="text-xs">Moy. classe</Label>
+                                  <p className="text-sm font-medium">{grade.classAverage.toFixed(2)}/20</p>
+                                </div>
+                              )}
+                            </div>
+
+                            {(isElementVisible('grades_table', 'class_min_average') || 
+                              isElementVisible('grades_table', 'class_max_average')) && 
+                             (grade.minAverage || grade.maxAverage) && (
+                              <div className="flex gap-4 text-xs">
+                                {isElementVisible('grades_table', 'class_min_average') && grade.minAverage && (
+                                  <span className="text-red-600">Min: {grade.minAverage.toFixed(2)}/20</span>
+                                )}
+                                {isElementVisible('grades_table', 'class_max_average') && grade.maxAverage && (
+                                  <span className="text-green-600">Max: {grade.maxAverage.toFixed(2)}/20</span>
+                                )}
                               </div>
                             )}
 
