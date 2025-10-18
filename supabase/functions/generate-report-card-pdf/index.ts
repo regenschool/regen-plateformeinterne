@@ -82,7 +82,7 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
     return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${data.template.cssTemplate || ''}</style></head><body>${html}</body></html>`;
   }
 
-  const template = data.template || {};
+  const template = (data.template || {}) as Partial<NonNullable<typeof data.template>>;
   const headerColor = template.header_color || template.headerColor || '#1e40af';
   const programName = template.program_name || 'Programme de Formation';
   const gradesBySubject = new Map<string, typeof data.grades>();
