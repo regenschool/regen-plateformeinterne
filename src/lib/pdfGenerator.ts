@@ -34,6 +34,8 @@ export interface ReportCardData {
     name: string;
     logo_url?: string;
     signature_url?: string;
+    header_color?: string;
+    footer_text?: string;
     config: Array<{
       section_key: string;
       element_key: string;

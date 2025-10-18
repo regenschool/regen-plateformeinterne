@@ -44,6 +44,8 @@ interface ReportCardData {
     config: TemplateConfig[];
     logo_url?: string;
     signature_url?: string;
+    header_color?: string;
+    footer_text?: string;
   };
   averages?: {
     student: number;
@@ -117,14 +119,18 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
   });
 
   // Valeurs de configuration - Récupérer TOUS les champs depuis config
-  const headerColor = data.template?.config?.find(c => c.section_key === 'style' && c.element_key === 'header_color')?.default_value || '#1e40af';
+  const headerColor = (data.template?.config?.find(c => c.section_key === 'style' && c.element_key === 'header_color')?.default_value as string)
+    || data.template?.header_color
+    || '#1e40af';
   const gradeFormat = getConfigValue(config, 'grades_table', 'student_subject_average', 'style_options')?.format || 'fraction';
   const logoUrl = getDefault(config, 'header', 'logo') || data.template?.logo_url;
   const signatureUrl = getDefault(config, 'footer', 'signature') || data.template?.signature_url;
   const title = getDefault(config, 'header', 'title', 'Bulletin de Notes');
   const schoolName = getDefault(config, 'header', 'school_name', 'École');
   const signatoryTitle = getDefault(config, 'footer', 'signatory_title', 'Le Directeur des Études');
-  const footerText = getDefault(config, 'footer', 'school_name_footer', 'Document généré automatiquement');
+  const footerText = (getConfigValue(config, 'footer', 'school_name_footer', 'default_value') as string | undefined)
+    || data.template?.footer_text
+    || 'Document généré automatiquement';
 
   return `<!DOCTYPE html>
 <html lang="fr">

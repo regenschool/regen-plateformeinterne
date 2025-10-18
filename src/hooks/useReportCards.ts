@@ -219,7 +219,16 @@ export const useGenerateReportCard = () => {
         };
       });
 
-      const programName = (student as any).classes?.programs?.name || 'Programme de Formation';
+      // 6. Résoudre le nom du programme (depuis la classe liée ou via le nom de classe)
+      let programName: string | undefined = (student as any).classes?.programs?.name || undefined;
+      if (!programName && className) {
+        const { data: cls } = await supabase
+          .from('classes')
+          .select('name, programs:program_id (name)')
+          .eq('name', className)
+          .single();
+        programName = (cls as any)?.programs?.name || undefined;
+      }
 
       // 7. Construire les données pour le PDF
       const reportCardData = {
@@ -234,7 +243,7 @@ export const useGenerateReportCard = () => {
         academic: {
           schoolYear,
           semester,
-          programName,
+          programName: programName || 'Programme de Formation',
         },
         grades: enrichedSubjectAverages.map(s => ({
           subject: s.subject,
@@ -254,6 +263,8 @@ export const useGenerateReportCard = () => {
           name: template.name,
           logo_url: template.logo_url,
           signature_url: template.signature_url,
+          header_color: template.header_color,
+          footer_text: template.footer_text,
           config: templateConfig,
         } : undefined,
         averages: {
