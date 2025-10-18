@@ -102,6 +102,7 @@ export type Database = {
           is_active: boolean | null
           level: string | null
           name: string
+          program_id: string | null
           updated_at: string
         }
         Insert: {
@@ -111,6 +112,7 @@ export type Database = {
           is_active?: boolean | null
           level?: string | null
           name: string
+          program_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -120,9 +122,18 @@ export type Database = {
           is_active?: boolean | null
           level?: string | null
           name?: string
+          program_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "classes_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dev_role_overrides: {
         Row: {
@@ -404,6 +415,33 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      programs: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       public_quiz_links: {
         Row: {
@@ -697,6 +735,7 @@ export type Database = {
           created_at: string
           id: string
           level_id: string | null
+          program_id: string | null
           school_year_id: string
           student_id: string
           updated_at: string
@@ -710,6 +749,7 @@ export type Database = {
           created_at?: string
           id?: string
           level_id?: string | null
+          program_id?: string | null
           school_year_id: string
           student_id: string
           updated_at?: string
@@ -723,6 +763,7 @@ export type Database = {
           created_at?: string
           id?: string
           level_id?: string | null
+          program_id?: string | null
           school_year_id?: string
           student_id?: string
           updated_at?: string
@@ -747,6 +788,13 @@ export type Database = {
             columns: ["level_id"]
             isOneToOne: false
             referencedRelation: "levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_enrollments_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
             referencedColumns: ["id"]
           },
           {

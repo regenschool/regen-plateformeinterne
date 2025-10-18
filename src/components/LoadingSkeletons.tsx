@@ -61,3 +61,9 @@ export const PageHeaderSkeleton = () => (
     <Skeleton className="h-4 w-96" />
   </div>
 );
+
+export const LoadingSkeletons = () => (
+  <div className="space-y-4">
+    <TableSkeleton rows={5} />
+  </div>
+);

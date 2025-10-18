@@ -6,6 +6,7 @@ import { SchoolYearsManager } from "@/components/settings/SchoolYearsManager";
 import { ClassesManager } from "@/components/settings/ClassesManager";
 import { AcademicPeriodsManager } from "@/components/settings/AcademicPeriodsManager";
 import { LevelsManager } from "@/components/settings/LevelsManager";
+import { ProgramsManager } from "@/components/settings/ProgramsManager";
 import { UsersManager } from "@/components/settings/UsersManager";
 import { SubjectsManager } from "@/components/settings/SubjectsManager";
 import { SyncReferentialsButton } from "@/components/settings/SyncReferentialsButton";
@@ -38,6 +39,7 @@ export default function Settings() {
         { value: "school-years", label: t("settings.schoolYears"), icon: Calendar, component: SchoolYearsManager, desc: t("settings.schoolYearsDesc") },
         { value: "classes", label: t("settings.classes"), icon: GraduationCap, component: ClassesManager, desc: t("settings.classesDesc") },
         { value: "levels", label: t("settings.levels"), icon: Award, component: LevelsManager, desc: t("settings.levelsDesc") },
+        { value: "programs", label: "Programmes", icon: Award, component: ProgramsManager, desc: "Référentiel des programmes de formation" },
         { value: "periods", label: "Semestres", icon: BookOpen, component: AcademicPeriodsManager, desc: t("settings.periodsDesc") },
         { value: "subjects", label: t("settings.subjects"), icon: BookOpen, component: SubjectsManager, desc: null },
         { value: "subject-categories", label: "Catégories de matières", icon: FolderTree, component: SubjectCategoriesManager, desc: "Référentiels pour organiser les matières" },

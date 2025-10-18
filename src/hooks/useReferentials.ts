@@ -41,6 +41,15 @@ export type Level = {
   updated_at: string;
 };
 
+export type Program = {
+  id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 // Hook pour récupérer les années scolaires
 export const useSchoolYears = (activeOnly = false) => {
   return useQuery({
@@ -137,6 +146,29 @@ export const useLevels = (activeOnly: boolean = false) => {
   });
 };
 
+// Hook to fetch programs
+export const usePrograms = (activeOnly: boolean = false) => {
+  return useQuery({
+    queryKey: activeOnly ? ['programs', 'active'] : ['programs'],
+    queryFn: async () => {
+      let query = supabase
+        .from('programs')
+        .select('*')
+        .order('name', { ascending: true });
+      
+      if (activeOnly) {
+        query = query.eq('is_active', true);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      return data as Program[];
+    },
+    staleTime: 30 * 60 * 1000,
+  });
+};
+
 // Hook pour récupérer l'année scolaire active
 export const useActiveSchoolYear = () => {
   return useQuery({
@@ -174,5 +206,8 @@ export const useActivePeriods = () => {
 };
 
 // Export mutations from useReferentialMutations
-export { useClassMutations as useAddClass } from './useReferentialMutations';
+export { 
+  useClassMutations as useAddClass,
+  useProgramMutations 
+} from './useReferentialMutations';
 

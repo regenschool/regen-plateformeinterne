@@ -187,6 +187,63 @@ export const useLevelMutations = () => {
   return { add, update, remove };
 };
 
+// Hook pour gérer les mutations sur les programmes
+export const useProgramMutations = () => {
+  const queryClient = useQueryClient();
+
+  const add = useMutation({
+    mutationFn: async (program: { name: string; description?: string; is_active?: boolean }) => {
+      const { data, error } = await supabase
+        .from('programs')
+        .insert(program)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+      toast.success('Programme ajouté avec succès');
+    },
+  });
+
+  const update = useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; description?: string; is_active?: boolean }) => {
+      const { data, error } = await supabase
+        .from('programs')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+      toast.success('Programme mis à jour avec succès');
+    },
+  });
+
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('programs')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+      toast.success('Programme supprimé avec succès');
+    },
+  });
+
+  return { add, update, remove };
+};
+
 // Fonction helper pour synchroniser automatiquement les classes
 export const syncClassToReferential = async (className: string) => {
   if (!className || !className.trim()) return;
