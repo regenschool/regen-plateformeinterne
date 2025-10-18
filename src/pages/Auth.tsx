@@ -101,7 +101,7 @@ const Auth = () => {
             // Vérifier d'abord si l'utilisateur a un rôle admin
             const { data: hasAdminRole, error: adminError } = await supabase.rpc("has_role", {
               _user_id: session.user.id,
-              _role: "admin" as any,
+              _role: "admin",
             });
 
             if (adminError) throw adminError;
@@ -115,7 +115,7 @@ const Auth = () => {
             // Sinon vérifier le rôle teacher
             const { data: hasTeacherRole, error: teacherError } = await supabase.rpc("has_role", {
               _user_id: session.user.id,
-              _role: "teacher" as any,
+              _role: "teacher",
             });
 
             if (teacherError) throw teacherError;
@@ -185,7 +185,7 @@ const Auth = () => {
       const roleValue = selectedRole === "admin" ? "admin" : "teacher";
       const { data: hasRole, error: roleError } = await supabase.rpc("has_role", {
         _user_id: data.user.id,
-        _role: roleValue as any,
+        _role: roleValue,
       });
 
       if (roleError) throw roleError;

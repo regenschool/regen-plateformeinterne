@@ -6,8 +6,9 @@ on:
 
 jobs:
   deploy:
-    name: Build & Deploy
+    name: Build & Deploy to Production
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
       - uses: actions/checkout@v4
@@ -21,11 +22,28 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build
+      - name: Run type check
+        run: npx tsc --noEmit
+
+      - name: Run linter
+        run: npx eslint . --max-warnings=0
+        continue-on-error: true
+
+      - name: Build production
         run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          NODE_ENV: production
 
       - name: Deploy Success
-        run: echo "✅ Build successful - Lovable handles deployment automatically"
+        run: |
+          echo "✅ Build successful - Lovable handles deployment automatically"
+          echo "📦 Build artifacts ready for deployment"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-build
+          path: dist/
+          retention-days: 7

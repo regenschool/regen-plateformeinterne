@@ -128,7 +128,7 @@ moderator@regen-school.com,Moderator User,moderator,+33 6 98 76 54 32`;
           // 2. Ajouter le rôle
           const { error: roleError } = await supabase
             .from("user_roles")
-            .insert([{ user_id: authData.user.id, role: user.role as any }]);
+            .insert([{ user_id: authData.user.id, role: user.role }]);
 
           if (roleError && roleError.code !== '23505') {
             throw roleError;

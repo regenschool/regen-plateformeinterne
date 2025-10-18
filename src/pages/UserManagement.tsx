@@ -106,7 +106,7 @@ const UserManagement = () => {
           .from("user_roles")
           .insert([{
             user_id: data.user.id,
-            role: newUserRole as any
+            role: newUserRole
           }]);
 
         if (roleError) throw roleError;
@@ -139,7 +139,7 @@ const UserManagement = () => {
         // Update existing role
         const { error } = await supabase
           .from("user_roles")
-          .update({ role: newRole as any })
+          .update({ role: newRole })
           .eq("user_id", userId);
 
         if (error) throw error;
@@ -149,7 +149,7 @@ const UserManagement = () => {
           .from("user_roles")
           .insert([{
             user_id: userId,
-            role: newRole as any
+            role: newRole
           }]);
 
         if (error) throw error;
