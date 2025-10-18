@@ -117,7 +117,7 @@ export default function UserProfileDialog({ userId, userEmail, onClose, onUpdate
           .from("user_roles")
           .delete()
           .eq("user_id", userId)
-          .eq("role", role);
+          .eq("role", role as any);
 
         if (error) throw error;
 
@@ -130,7 +130,7 @@ export default function UserProfileDialog({ userId, userEmail, onClose, onUpdate
       } else {
         const { error } = await supabase
           .from("user_roles")
-          .insert({ user_id: userId, role: role });
+          .insert({ user_id: userId, role: role as any });
 
         if (error) throw error;
 

@@ -56,6 +56,14 @@ export default function Quality() {
     if (isAdmin) {
       fetchStats();
       loadWebVitals();
+      
+      // Recharger les métriques toutes les 30 secondes
+      const interval = setInterval(() => {
+        fetchStats();
+        loadWebVitals();
+      }, 30000);
+
+      return () => clearInterval(interval);
     }
   }, [isAdmin]);
 
@@ -129,47 +137,92 @@ export default function Quality() {
   };
 
   const loadWebVitals = () => {
-    // Simuler des Web Vitals (en production, ils seront réels via reportWebVitals)
-    // Pour l'instant, on affiche des valeurs indicatives
+    // Charger les vrais Web Vitals depuis reportWebVitals
+    // Ils sont mis à jour en temps réel par l'app
     const stored = localStorage.getItem('web-vitals');
     if (stored) {
-      setWebVitals(JSON.parse(stored));
+      try {
+        const parsed = JSON.parse(stored);
+        setWebVitals({
+          lcp: parsed.lcp || 0,
+          cls: parsed.cls || 0,
+          inp: parsed.inp || 0
+        });
+      } catch (e) {
+        // Valeurs par défaut si parsing échoue
+        setWebVitals({ lcp: 0, cls: 0, inp: 0 });
+      }
     } else {
-      setWebVitals({ lcp: 1.8, cls: 0.05, inp: 80 });
+      // Pas encore de données - valeurs nulles
+      setWebVitals({ lcp: 0, cls: 0, inp: 0 });
     }
   };
 
   const getHealthMetrics = (): HealthMetric[] => {
-    return [
-      {
+    const metrics: HealthMetric[] = [];
+
+    // 1. Performance LCP (si disponible)
+    if (webVitals.lcp > 0) {
+      metrics.push({
         name: 'Performance (LCP)',
         value: webVitals.lcp,
         max: 4,
         status: webVitals.lcp < 2.5 ? 'good' : webVitals.lcp < 4 ? 'warning' : 'critical',
         description: 'Temps de chargement principal (doit être < 2.5s)',
-      },
-      {
+      });
+    }
+
+    // 2. Stabilité Visuelle CLS (si disponible)
+    if (webVitals.cls >= 0) {
+      metrics.push({
         name: 'Stabilité Visuelle (CLS)',
         value: webVitals.cls,
         max: 0.25,
         status: webVitals.cls < 0.1 ? 'good' : webVitals.cls < 0.25 ? 'warning' : 'critical',
         description: 'Décalages visuels (doit être < 0.1)',
-      },
-      {
+      });
+    }
+
+    // 3. Réactivité INP (si disponible)
+    if (webVitals.inp > 0) {
+      metrics.push({
         name: 'Réactivité (INP)',
         value: webVitals.inp,
         max: 500,
         status: webVitals.inp < 200 ? 'good' : webVitals.inp < 500 ? 'warning' : 'critical',
         description: 'Temps de réponse aux interactions (doit être < 200ms)',
-      },
-      {
-        name: 'Base de Données',
-        value: (stats.totalStudents + stats.totalGrades) / 10000, // Indicateur arbitraire
-        max: 100,
-        status: stats.totalStudents + stats.totalGrades < 5000 ? 'good' : 'warning',
-        description: `${stats.totalStudents} étudiants, ${stats.totalGrades} notes`,
-      },
-    ];
+      });
+    }
+
+    // 4. Volume de données (toujours disponible)
+    const dataVolume = stats.totalStudents + stats.totalGrades;
+    metrics.push({
+      name: 'Volume de Données',
+      value: dataVolume,
+      max: 10000,
+      status: dataVolume < 5000 ? 'good' : dataVolume < 8000 ? 'warning' : 'critical',
+      description: `${stats.totalStudents} étudiants, ${stats.totalGrades} notes`,
+    });
+
+    // 5. Utilisateurs actifs (toujours disponible)
+    metrics.push({
+      name: 'Utilisateurs Actifs',
+      value: stats.totalUsers,
+      max: 100,
+      status: stats.totalUsers > 0 ? 'good' : 'warning',
+      description: `${stats.totalUsers} comptes utilisateurs`,
+    });
+
+    // 6. Stockage (toujours disponible)
+    metrics.push({
+      name: 'Stockage Utilisé',
+      value: stats.storageUsedMB,
+      max: 1000,
+      status: stats.storageUsedMB < 500 ? 'good' : stats.storageUsedMB < 800 ? 'warning' : 'critical',
+      description: `${stats.storageUsedMB} MB sur disque`,
+    });
+
+    return metrics;
   };
 
   const getStatusColor = (status: 'good' | 'warning' | 'critical') => {
@@ -286,13 +339,29 @@ export default function Quality() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <Activity className="h-8 w-8 text-primary" />
-          <h1 className="text-4xl font-bold">Qualité & Performance</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Activity className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-4xl font-bold">Qualité & Performance</h1>
+              <p className="text-muted-foreground mt-1">
+                Surveillez la santé de votre application en temps réel
+              </p>
+            </div>
+          </div>
+          <Button 
+            onClick={() => {
+              fetchStats();
+              loadWebVitals();
+              toast.success('Métriques actualisées');
+            }}
+            variant="outline"
+            className="gap-2"
+          >
+            <Activity className="h-4 w-4" />
+            Actualiser
+          </Button>
         </div>
-        <p className="text-muted-foreground">
-          Surveillez la santé de votre application en temps réel
-        </p>
       </div>
 
       {/* Score Global */}
@@ -301,13 +370,23 @@ export default function Quality() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-2xl">État Global de l'Application</CardTitle>
-              <CardDescription>Score de santé basé sur les métriques clés</CardDescription>
+              <CardDescription>
+                Score de santé basé sur {healthMetrics.length} métriques clés
+                {webVitals.lcp === 0 && webVitals.cls === 0 && webVitals.inp === 0 && (
+                  <span className="block mt-1 text-xs text-yellow-600">
+                    ⚠️ Web Vitals en cours de collecte - naviguez dans l'app pour générer des données
+                  </span>
+                )}
+              </CardDescription>
             </div>
             <div className="text-right">
               <div className="text-5xl font-bold text-primary">{Math.round(overallHealth)}%</div>
               <Badge variant={overallHealth > 75 ? 'default' : overallHealth > 50 ? 'secondary' : 'destructive'} className="mt-2">
                 {overallHealth > 75 ? 'Excellent' : overallHealth > 50 ? 'Correct' : 'Attention'}
               </Badge>
+              <p className="text-xs text-muted-foreground mt-2">
+                {healthMetrics.filter(m => m.status === 'good').length}/{healthMetrics.length} OK
+              </p>
             </div>
           </div>
         </CardHeader>

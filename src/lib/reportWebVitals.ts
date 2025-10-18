@@ -25,7 +25,7 @@ export const sendToAnalytics = (metric: Metric) => {
   }
 };
 
-// Log les Core Web Vitals en développement
+// Log et stocke les Core Web Vitals
 export const logWebVitals = (metric: Metric) => {
   console.log(`[Web Vitals] ${metric.name}:`, {
     value: metric.value,
@@ -33,17 +33,42 @@ export const logWebVitals = (metric: Metric) => {
     delta: metric.delta,
     id: metric.id,
   });
+
+  // Stocker dans localStorage pour la page Quality
+  try {
+    const stored = localStorage.getItem('web-vitals');
+    const vitals = stored ? JSON.parse(stored) : {};
+    
+    // Mettre à jour la métrique
+    if (metric.name === 'LCP') {
+      vitals.lcp = metric.value / 1000; // Convertir en secondes
+    } else if (metric.name === 'CLS') {
+      vitals.cls = metric.value;
+    } else if (metric.name === 'INP') {
+      vitals.inp = metric.value;
+    } else if (metric.name === 'FCP') {
+      vitals.fcp = metric.value / 1000; // Convertir en secondes
+    } else if (metric.name === 'TTFB') {
+      vitals.ttfb = metric.value / 1000; // Convertir en secondes
+    }
+
+    vitals.lastUpdated = new Date().toISOString();
+    localStorage.setItem('web-vitals', JSON.stringify(vitals));
+  } catch (e) {
+    console.error('Erreur lors du stockage des Web Vitals:', e);
+  }
 };
 
 export default reportWebVitals;
 
 // Fonction pour initialiser le monitoring des Web Vitals
 export const initWebVitals = () => {
-  if (import.meta.env.PROD) {
-    // En production, envoyer vers analytics
+  // Toujours logger les Web Vitals (dev + prod)
+  // En dev pour debug, en prod pour monitoring
+  reportWebVitals(logWebVitals);
+  
+  // En production, également envoyer vers analytics si configuré
+  if (import.meta.env.PROD && import.meta.env.VITE_ANALYTICS_ENDPOINT) {
     reportWebVitals(sendToAnalytics);
-  } else {
-    // En développement, logger dans la console
-    reportWebVitals(logWebVitals);
   }
 };

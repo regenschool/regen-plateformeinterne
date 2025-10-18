@@ -204,7 +204,7 @@ export const useDeleteAssessmentGrades = () => {
         .eq('school_year', params.schoolYear)
         .eq('semester', params.semester)
         .eq('assessment_name', params.assessmentName)
-        .eq('assessment_type', params.assessmentType);
+        .eq('assessment_type', params.assessmentType as any);
       
       if (error) throw error;
     },

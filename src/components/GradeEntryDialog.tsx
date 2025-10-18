@@ -206,7 +206,7 @@ export const GradeEntryDialog = ({
       .eq('school_year', subjectMetadata?.schoolYear || '')
       .eq('semester', subjectMetadata?.semester || '')
       .eq('assessment_name', assessmentName.trim())
-      .eq('assessment_type', assessmentType)
+      .eq('assessment_type', assessmentType as any)
       .maybeSingle();
 
     let error;

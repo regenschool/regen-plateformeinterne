@@ -130,7 +130,7 @@ export const UsersManager = () => {
           .from("user_roles")
           .delete()
           .eq("user_id", userId)
-          .eq("role", role);
+          .eq("role", role as any);
 
         if (error) throw error;
 
@@ -144,7 +144,7 @@ export const UsersManager = () => {
         // Ajouter le rôle
         const { error } = await supabase
           .from("user_roles")
-          .insert([{ user_id: userId, role: role }]);
+          .insert([{ user_id: userId, role: role as any }]);
 
         if (error) throw error;
 
