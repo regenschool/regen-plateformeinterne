@@ -299,14 +299,6 @@ export const ReportCardTemplatesManager = () => {
                     <Eye className="h-4 w-4 mr-2" />
                     Aperçu
                   </Button>
-                  <Button onClick={handleSaveTemplate} disabled={updateTemplateMutation.isPending}>
-                    {updateTemplateMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <Save className="h-4 w-4 mr-2" />
-                    )}
-                    Enregistrer
-                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -339,10 +331,26 @@ export const ReportCardTemplatesManager = () => {
                 <TabsContent value="style" className="space-y-6">
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Couleurs</CardTitle>
-                      <CardDescription>
-                        Personnalisez la couleur principale du bulletin
-                      </CardDescription>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-base">Couleurs</CardTitle>
+                          <CardDescription>
+                            Personnalisez la couleur principale du bulletin
+                          </CardDescription>
+                        </div>
+                        <Button 
+                          onClick={handleSaveTemplate} 
+                          disabled={updateTemplateMutation.isPending}
+                          size="sm"
+                        >
+                          {updateTemplateMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <Save className="h-4 w-4 mr-2" />
+                          )}
+                          Enregistrer
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="space-y-2">
