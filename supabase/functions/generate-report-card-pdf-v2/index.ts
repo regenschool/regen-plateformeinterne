@@ -227,13 +227,10 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
       margin: 28px 0;
     }
     .section-title {
-      font-size: 12pt;
-      font-weight: 700;
-      color: ${headerColor};
-      margin: 20px 0 16px;
-      padding-left: 12px;
-      border-left: 3px solid ${headerColor};
-      letter-spacing: -0.3px;
+      display: none;
+      height: 0;
+      margin: 0;
+      padding: 0;
     }
     
     /* Table des notes élégante */
@@ -246,7 +243,7 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
       border: 1px solid #e5e7eb;
       border-radius: 8px;
       overflow: hidden;
-      table-layout: fixed;
+      table-layout: auto;
     }
     .grades-table th {
       background: linear-gradient(180deg, ${headerColor}12, ${headerColor}08);
@@ -424,14 +421,15 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
       color: #9ca3af;
     }
   /* Largeur de colonnes */
-  .grades-table .col-subject { width: 24%; }
+  .grades-table .col-subject { min-width: 22%; }
   .grades-table .col-num { width: 8%; text-align: center; }
   .grades-table .col-coef { width: 6%; text-align: center; }
   .grades-table .col-teacher { width: 12%; }
-  .grades-table .col-app { width: 42%; }
-  .compact .grades-table .col-app { width: 46%; }
+  .grades-table .col-app { width: auto; }
 
-  /* Modes compacts */
+  /* Ligne moyenne générale */
+  .overall-row td { border-top: 2px solid ${headerColor}40; font-weight: 700; }
+  .overall-label { font-weight: 700; }
   .compact .header { padding: 14px; }
   .compact .title { font-size: 20pt; margin-bottom: 4px; }
   .compact .school-name { font-size: 12pt; }
@@ -546,18 +544,24 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
           ${isVisible(config, 'grades_table', 'teacher_name') ? `<td style="font-size:8pt">${stat.teacherName || '-'}</td>` : ''}
           ${isVisible(config, 'grades_table', 'subject_appreciation') ? `<td class="appreciation-cell">${stat.grades[0]?.appreciation || '-'}</td>` : ''}
         </tr>`).join('')}
-      </tbody>
-    </table>` : ''}
+       </tbody>
+       ${isVisible(config, 'average', 'student_average') && data.averages ? `
+       <tfoot>
+         <tr class="overall-row">
+           <td class="subject-name overall-label">Moyenne Générale</td>
+           ${isVisible(config, 'grades_table', 'student_subject_average') ? `<td class="grade-value overall">${formatGrade(data.averages.student, 20, gradeFormat)}</td>` : ''}
+           ${isVisible(config, 'grades_table', 'class_subject_average') ? '<td></td>' : ''}
+           ${isVisible(config, 'grades_table', 'class_min_average') ? '<td></td>' : ''}
+           ${isVisible(config, 'grades_table', 'class_max_average') ? '<td></td>' : ''}
+           ${isVisible(config, 'grades_table', 'subject_weighting') ? '<td></td>' : ''}
+           ${isVisible(config, 'grades_table', 'teacher_name') ? '<td></td>' : ''}
+           ${isVisible(config, 'grades_table', 'subject_appreciation') ? '<td></td>' : ''}
+         </tr>
+       </tfoot>` : ''}
+     </table>` : ''}
 
     <div class="section-separator"></div>
 
-    ${isVisible(config, 'average', 'student_average') && data.averages ? `
-    <div class="overall-average">
-      <div class="overall-label">Moyenne Générale</div>
-      <div class="overall-value">${formatGrade(data.averages.student, 20, gradeFormat)}</div>
-      ${isVisible(config, 'average', 'class_average') && data.averages.class ? `
-      <div class="class-average-detail">Moyenne de classe : ${formatGrade(data.averages.class, 20, gradeFormat)}</div>` : ''}
-    </div>` : ''}
 
     ${isVisible(config, 'appreciation', 'school_appreciation') && schoolAppreciation ? `
     <div class="section-separator"></div>

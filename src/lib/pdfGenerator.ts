@@ -120,10 +120,17 @@ export class PuppeteerGenerator implements PDFGenerator {
 
       // Utiliser JPEG compressé pour réduire le poids
       const imgData = canvas.toDataURL('image/jpeg', 0.85);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
 
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+      const imgW = canvas.width;
+      const imgH = canvas.height;
+      const scale = Math.min(pageWidth / imgW, pageHeight / imgH);
+      const drawW = imgW * scale;
+      const drawH = imgH * scale;
+      const offsetX = (pageWidth - drawW) / 2;
+
+      pdf.addImage(imgData, 'JPEG', offsetX, 0, drawW, drawH, undefined, 'FAST');
       
       const blob = pdf.output('blob');
       console.log('✅ PDF généré, taille:', (blob.size / 1024).toFixed(2), 'KB');
