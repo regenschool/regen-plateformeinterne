@@ -34,6 +34,8 @@ interface ReportCardData {
   template?: {
     name: string;
     config: TemplateConfig[];
+    logo_url?: string;
+    signature_url?: string;
   };
   averages?: {
     student: number;
@@ -65,6 +67,12 @@ const getConfigValue = (
   if (!item) return property === 'is_visible' ? true : undefined;
   return item[property];
 };
+
+const isVisible = (config: TemplateConfig[], section: string, element: string) => 
+  getConfigValue(config, section, element, 'is_visible') !== false;
+
+const getDefault = (config: TemplateConfig[], section: string, element: string, fallback: string = '') => 
+  getConfigValue(config, section, element, 'default_value') || fallback;
 
 const formatGrade = (grade: number, maxGrade: number, format?: string): string => {
   const normalized = (grade / maxGrade) * 20;
@@ -100,16 +108,8 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
     return { subject, category, grades, avg, minGrade, maxGrade, teacherName };
   });
 
-  // Valeurs par défaut des éléments de config
-  const headerColor = getConfigValue(config, 'style', 'header_color', 'default_value') || '#1e40af';
-  const title = getConfigValue(config, 'header', 'title', 'default_value') || 'Bulletin de Notes';
-  const schoolName = getConfigValue(config, 'header', 'school_name', 'default_value') || '';
-  const logo = getConfigValue(config, 'header', 'logo', 'default_value');
-  const signature = getConfigValue(config, 'footer', 'signature', 'default_value');
-  const signatoryTitle = getConfigValue(config, 'footer', 'signatory_title', 'default_value') || 'Le Directeur des Études';
-  const footerText = getConfigValue(config, 'footer', 'school_name_footer', 'default_value') || '';
-
-  // Format des notes
+  // Valeurs de configuration
+  const headerColor = getDefault(config, 'style', 'header_color', '#1e40af');
   const gradeFormat = getConfigValue(config, 'grades_table', 'student_subject_average', 'style_options')?.format || 'fraction';
 
   return `<!DOCTYPE html>
@@ -359,52 +359,51 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
 </head>
 <body>
   <div class="report-container">
-    ${getConfigValue(config, 'header', 'title', 'is_visible') !== false ? `
+    ${isVisible(config, 'header', 'title') ? `
     <div class="header">
-      ${getConfigValue(config, 'header', 'logo', 'is_visible') !== false && logo ? `
-      <img src="${logo}" alt="Logo" class="logo">` : ''}
-      <div class="title">${title}</div>
-      ${getConfigValue(config, 'header', 'school_name', 'is_visible') !== false && schoolName ? `
-      <div class="school-name">${schoolName}</div>` : ''}
+      ${isVisible(config, 'header', 'logo') && data.template?.logo_url ? `
+      <img src="${data.template.logo_url}" alt="Logo" class="logo">` : ''}
+      <div class="title">${getDefault(config, 'header', 'title', 'Bulletin de Notes')}</div>
+      ${isVisible(config, 'header', 'school_name') && getDefault(config, 'header', 'school_name') ? `
+      <div class="school-name">${getDefault(config, 'header', 'school_name')}</div>` : ''}
       <div class="academic-info">
-        ${getConfigValue(config, 'header', 'school_year', 'is_visible') !== false ? data.academic.schoolYear : ''}
-        ${getConfigValue(config, 'header', 'semester', 'is_visible') !== false ? ` • ${data.academic.semester}` : ''}
+        ${isVisible(config, 'academic_info', 'school_year') ? data.academic.schoolYear : ''}
+        ${isVisible(config, 'academic_info', 'semester') ? ` • ${data.academic.semester}` : ''}
+        ${isVisible(config, 'academic_info', 'program_name') && data.academic.programName ? ` • ${data.academic.programName}` : ''}
       </div>
     </div>` : ''}
 
     <div class="section-separator"></div>
 
-    ${getConfigValue(config, 'student_info', 'first_name', 'is_visible') !== false ? `
+    ${isVisible(config, 'student_info', 'name') ? `
     <div class="student-section">
       <div class="student-grid">
-        ${getConfigValue(config, 'student_info', 'first_name', 'is_visible') !== false ? `
-        <div><span class="student-label">Prénom :</span> <span class="student-value">${data.student.firstName}</span></div>` : ''}
-        ${getConfigValue(config, 'student_info', 'last_name', 'is_visible') !== false ? `
-        <div><span class="student-label">Nom :</span> <span class="student-value">${data.student.lastName}</span></div>` : ''}
-        ${getConfigValue(config, 'student_info', 'age', 'is_visible') !== false && data.student.age ? `
+        ${isVisible(config, 'student_info', 'name') ? `
+        <div><span class="student-label">Nom complet :</span> <span class="student-value">${data.student.firstName} ${data.student.lastName}</span></div>` : ''}
+        ${isVisible(config, 'student_info', 'birth_date') && data.student.birthDate ? `
+        <div><span class="student-label">Date de naissance :</span> <span class="student-value">${new Date(data.student.birthDate).toLocaleDateString('fr-FR')}</span></div>` : ''}
+        ${isVisible(config, 'student_info', 'age') && data.student.age ? `
         <div><span class="student-label">Âge :</span> <span class="student-value">${data.student.age} ans</span></div>` : ''}
-        ${getConfigValue(config, 'student_info', 'class_name', 'is_visible') !== false ? `
+        ${isVisible(config, 'student_info', 'class_name') ? `
         <div><span class="student-label">Classe :</span> <span class="student-value">${data.student.className}</span></div>` : ''}
-        ${getConfigValue(config, 'student_info', 'program_name', 'is_visible') !== false && data.academic.programName ? `
-        <div><span class="student-label">Programme :</span> <span class="student-value">${data.academic.programName}</span></div>` : ''}
       </div>
     </div>` : ''}
 
     <div class="section-separator"></div>
 
-    ${getConfigValue(config, 'grades_table', 'subject_name', 'is_visible') !== false ? `
+    ${isVisible(config, 'grades_table', 'table') ? `
     <div class="section-title">Résultats par Matière</div>
     <table class="grades-table">
       <thead>
         <tr>
-          ${getConfigValue(config, 'grades_table', 'subject_name', 'is_visible') !== false ? '<th>Matière</th>' : ''}
-          ${getConfigValue(config, 'grades_table', 'student_subject_average', 'is_visible') !== false ? '<th style="text-align:center">Moyenne</th>' : ''}
-          ${getConfigValue(config, 'grades_table', 'class_subject_average', 'is_visible') !== false ? '<th style="text-align:center">Moy. Classe</th>' : ''}
-          ${getConfigValue(config, 'grades_table', 'class_min_average', 'is_visible') !== false ? '<th style="text-align:center">Min</th>' : ''}
-          ${getConfigValue(config, 'grades_table', 'class_max_average', 'is_visible') !== false ? '<th style="text-align:center">Max</th>' : ''}
-          ${getConfigValue(config, 'grades_table', 'subject_weighting', 'is_visible') !== false ? '<th style="text-align:center">Coef.</th>' : ''}
-          ${getConfigValue(config, 'grades_table', 'teacher_name', 'is_visible') !== false ? '<th>Enseignant</th>' : ''}
-          ${getConfigValue(config, 'grades_table', 'subject_appreciation', 'is_visible') !== false ? '<th>Appréciation</th>' : ''}
+          <th>Matière</th>
+          ${isVisible(config, 'grades_table', 'student_subject_average') ? '<th style="text-align:center">Moyenne</th>' : ''}
+          ${isVisible(config, 'grades_table', 'class_subject_average') ? '<th style="text-align:center">Moy. Classe</th>' : ''}
+          ${isVisible(config, 'grades_table', 'class_min_average') ? '<th style="text-align:center">Min</th>' : ''}
+          ${isVisible(config, 'grades_table', 'class_max_average') ? '<th style="text-align:center">Max</th>' : ''}
+          ${isVisible(config, 'grades_table', 'subject_weighting') ? '<th style="text-align:center">Coef.</th>' : ''}
+          ${isVisible(config, 'grades_table', 'teacher_name') ? '<th>Enseignant</th>' : ''}
+          ${isVisible(config, 'grades_table', 'subject_appreciation') ? '<th>Appréciation</th>' : ''}
         </tr>
       </thead>
       <tbody>
@@ -412,53 +411,53 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
         <tr class="subject-row">
           <td class="subject-name">
             ${stat.subject}
-            ${getConfigValue(config, 'grades_table', 'subject_category', 'is_visible') !== false && stat.category ? `<span class="category-badge">${stat.category}</span>` : ''}
+            ${isVisible(config, 'grades_table', 'subject_category') && stat.category ? `<span class="category-badge">${stat.category}</span>` : ''}
           </td>
-          ${getConfigValue(config, 'grades_table', 'student_subject_average', 'is_visible') !== false ? `<td class="grade-value">${formatGrade(stat.avg, 20, gradeFormat)}</td>` : ''}
-          ${getConfigValue(config, 'grades_table', 'class_subject_average', 'is_visible') !== false ? `<td style="text-align:center;font-size:8pt">${stat.minGrade > 0 ? formatGrade((stat.minGrade + stat.maxGrade) / 2, 20, gradeFormat) : '-'}</td>` : ''}
-          ${getConfigValue(config, 'grades_table', 'class_min_average', 'is_visible') !== false ? `<td style="text-align:center;font-size:8pt;color:#dc2626">${stat.minGrade > 0 ? formatGrade(stat.minGrade, 20, gradeFormat) : '-'}</td>` : ''}
-          ${getConfigValue(config, 'grades_table', 'class_max_average', 'is_visible') !== false ? `<td style="text-align:center;font-size:8pt;color:#16a34a">${stat.maxGrade > 0 ? formatGrade(stat.maxGrade, 20, gradeFormat) : '-'}</td>` : ''}
-          ${getConfigValue(config, 'grades_table', 'subject_weighting', 'is_visible') !== false ? `<td style="text-align:center">${stat.grades[0]?.weighting || 1}</td>` : ''}
-          ${getConfigValue(config, 'grades_table', 'teacher_name', 'is_visible') !== false ? `<td style="font-size:8pt">${stat.teacherName || '-'}</td>` : ''}
-          ${getConfigValue(config, 'grades_table', 'subject_appreciation', 'is_visible') !== false ? `<td class="appreciation-cell">${stat.grades[0]?.appreciation || '-'}</td>` : ''}
+          ${isVisible(config, 'grades_table', 'student_subject_average') ? `<td class="grade-value">${formatGrade(stat.avg, 20, gradeFormat)}</td>` : ''}
+          ${isVisible(config, 'grades_table', 'class_subject_average') ? `<td style="text-align:center;font-size:8pt">${stat.minGrade > 0 ? formatGrade((stat.minGrade + stat.maxGrade) / 2, 20, gradeFormat) : '-'}</td>` : ''}
+          ${isVisible(config, 'grades_table', 'class_min_average') ? `<td style="text-align:center;font-size:8pt;color:#dc2626">${stat.minGrade > 0 ? formatGrade(stat.minGrade, 20, gradeFormat) : '-'}</td>` : ''}
+          ${isVisible(config, 'grades_table', 'class_max_average') ? `<td style="text-align:center;font-size:8pt;color:#16a34a">${stat.maxGrade > 0 ? formatGrade(stat.maxGrade, 20, gradeFormat) : '-'}</td>` : ''}
+          ${isVisible(config, 'grades_table', 'subject_weighting') ? `<td style="text-align:center">${stat.grades[0]?.weighting || 1}</td>` : ''}
+          ${isVisible(config, 'grades_table', 'teacher_name') ? `<td style="font-size:8pt">${stat.teacherName || '-'}</td>` : ''}
+          ${isVisible(config, 'grades_table', 'subject_appreciation') ? `<td class="appreciation-cell">${stat.grades[0]?.appreciation || '-'}</td>` : ''}
         </tr>`).join('')}
       </tbody>
     </table>` : ''}
 
     <div class="section-separator"></div>
 
-    ${getConfigValue(config, 'grades_table', 'student_general_average', 'is_visible') !== false && data.averages ? `
+    ${isVisible(config, 'average', 'student_average') && data.averages ? `
     <div class="overall-average">
       <div class="overall-label">Moyenne Générale</div>
       <div class="overall-value">${formatGrade(data.averages.student, 20, gradeFormat)}</div>
-      ${getConfigValue(config, 'grades_table', 'class_subject_average', 'is_visible') !== false && data.averages.class ? `
+      ${isVisible(config, 'average', 'class_average') && data.averages.class ? `
       <div class="class-average-detail">Moyenne de classe : ${formatGrade(data.averages.class, 20, gradeFormat)}</div>` : ''}
     </div>` : ''}
 
-    ${getConfigValue(config, 'grades_table', 'school_appreciation', 'is_visible') !== false && data.generalAppreciation ? `
+    ${isVisible(config, 'appreciation', 'school_appreciation') && data.generalAppreciation ? `
     <div class="section-separator"></div>
     <div class="general-appreciation">
       <div class="appreciation-title">Appréciation de l'établissement</div>
       <div>${data.generalAppreciation}</div>
     </div>` : ''}
 
-    ${getConfigValue(config, 'grades_table', 'company_appreciation', 'is_visible') !== false && data.companyAppreciation ? `
+    ${isVisible(config, 'appreciation', 'company_appreciation') && data.companyAppreciation ? `
     <div class="general-appreciation">
       <div class="appreciation-title">Appréciation du tuteur en entreprise</div>
       <div>${data.companyAppreciation}</div>
     </div>` : ''}
 
-    ${getConfigValue(config, 'footer', 'signature', 'is_visible') !== false && signature ? `
+    ${isVisible(config, 'footer', 'signature') && data.template?.signature_url ? `
     <div class="signature-section">
       <div class="signature-block">
-        <div class="signature-label">${signatoryTitle}</div>
-        <img src="${signature}" alt="Signature" class="signature-img">
+        <div class="signature-label">${getDefault(config, 'footer', 'signatory_title', 'Le Directeur des Études')}</div>
+        <img src="${data.template.signature_url}" alt="Signature" class="signature-img">
         <div class="signature-line"></div>
       </div>
     </div>` : ''}
 
-    ${getConfigValue(config, 'footer', 'school_name_footer', 'is_visible') !== false && footerText ? `
-    <div class="footer">${footerText}</div>` : ''}
+    ${isVisible(config, 'footer', 'school_name_footer') && getDefault(config, 'footer', 'school_name_footer') ? `
+    <div class="footer">${getDefault(config, 'footer', 'school_name_footer')}</div>` : ''}
   </div>
 </body>
 </html>`;

@@ -213,8 +213,8 @@ export const ReportCardEditor = ({
                   </AccordionTrigger>
                   <AccordionContent>
                     <CardContent className="space-y-4 pt-4">
-                      {isElementVisible('grades_table', 'school_appreciation') && 
-                       isElementEditable('grades_table', 'school_appreciation') && (
+                      {isElementVisible('appreciation', 'school_appreciation') && 
+                       isElementEditable('appreciation', 'school_appreciation') && (
                         <div className="space-y-2">
                           <Label>Appréciation de l'établissement</Label>
                           <Textarea
@@ -226,8 +226,8 @@ export const ReportCardEditor = ({
                         </div>
                       )}
 
-                      {isElementVisible('grades_table', 'company_appreciation') && 
-                       isElementEditable('grades_table', 'company_appreciation') && (
+                      {isElementVisible('appreciation', 'company_appreciation') && 
+                       isElementEditable('appreciation', 'company_appreciation') && (
                         <div className="space-y-2">
                           <Label>Appréciation du tuteur en entreprise</Label>
                           <Textarea
