@@ -587,31 +587,30 @@ const Profile = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         {!isAdmin ? (
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-            <TabsTrigger value="profile" className="flex items-center gap-1 sm:gap-2">
+          <TabsList className="w-full flex flex-wrap gap-2 h-auto md:h-10 md:flex-nowrap">
+            <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="w-4 h-4" />
               <span className="text-xs sm:text-sm">Profil</span>
             </TabsTrigger>
-            <TabsTrigger value="subjects" className="flex items-center gap-1 sm:gap-2">
+            <TabsTrigger value="subjects" className="flex items-center gap-2">
               <BookOpen className="w-4 h-4" />
               <span className="text-xs sm:text-sm">Matières</span>
             </TabsTrigger>
-            <TabsTrigger value="documents" className="flex items-center gap-1 sm:gap-2">
+            <TabsTrigger value="documents" className="flex items-center gap-2">
               <FileText className="w-4 h-4" />
               <span className="text-xs sm:text-sm">Documents</span>
             </TabsTrigger>
-            <TabsTrigger value="onboarding" className="flex items-center gap-1 sm:gap-2">
+            <TabsTrigger value="onboarding" className="flex items-center gap-2">
               <Clipboard className="w-4 h-4" />
-              <span className="text-xs sm:text-sm hidden sm:inline">Onboarding</span>
-              <span className="text-xs sm:hidden">Check</span>
+              <span className="text-xs sm:text-sm">Onboarding</span>
             </TabsTrigger>
-            <TabsTrigger value="invoices" className="flex items-center gap-1 sm:gap-2">
+            <TabsTrigger value="invoices" className="flex items-center gap-2">
               <Receipt className="w-4 h-4" />
               <span className="text-xs sm:text-sm">Factures</span>
             </TabsTrigger>
           </TabsList>
         ) : (
-          <TabsList className="grid w-full grid-cols-1">
+          <TabsList className="w-full">
             <TabsTrigger value="profile">
               <User className="w-4 h-4 mr-2" />
               Paramètres
