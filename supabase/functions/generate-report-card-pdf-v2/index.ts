@@ -116,11 +116,15 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
     return { subject, category, grades, avg, minGrade, maxGrade, teacherName };
   });
 
-  // Valeurs de configuration
-  const headerColor = getDefault(config, 'style', 'header_color', '#1e40af');
+  // Valeurs de configuration - Récupérer TOUS les champs depuis config
+  const headerColor = data.template?.config?.find(c => c.section_key === 'style' && c.element_key === 'header_color')?.default_value || '#1e40af';
   const gradeFormat = getConfigValue(config, 'grades_table', 'student_subject_average', 'style_options')?.format || 'fraction';
   const logoUrl = getDefault(config, 'header', 'logo') || data.template?.logo_url;
   const signatureUrl = getDefault(config, 'footer', 'signature') || data.template?.signature_url;
+  const title = getDefault(config, 'header', 'title', 'Bulletin de Notes');
+  const schoolName = getDefault(config, 'header', 'school_name', 'École');
+  const signatoryTitle = getDefault(config, 'footer', 'signatory_title', 'Le Directeur des Études');
+  const footerText = getDefault(config, 'footer', 'school_name_footer', 'Document généré automatiquement');
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -373,9 +377,9 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
     <div class="header">
       ${isVisible(config, 'header', 'logo') && logoUrl ? `
       <img src="${logoUrl}" alt="Logo" class="logo">` : ''}
-      <div class="title">${getDefault(config, 'header', 'title', 'Bulletin de Notes')}</div>
+      <div class="title">${title}</div>
       ${isVisible(config, 'header', 'school_name') ? `
-      <div class="school-name">${getDefault(config, 'header', 'school_name', 'École')}</div>` : ''}
+      <div class="school-name">${schoolName}</div>` : ''}
       ${isVisible(config, 'header', 'school_year') || isVisible(config, 'header', 'semester') || isVisible(config, 'header', 'program_name') ? `
       <div class="academic-info">
         ${isVisible(config, 'header', 'school_year') ? data.academic.schoolYear : ''}
@@ -481,14 +485,14 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
     ${isVisible(config, 'footer', 'signature') && signatureUrl ? `
     <div class="signature-section">
       <div class="signature-block">
-        <div class="signature-label">${getDefault(config, 'footer', 'signatory_title', 'Le Directeur des Études')}</div>
+        <div class="signature-label">${signatoryTitle}</div>
         <img src="${signatureUrl}" alt="Signature" class="signature-img">
         <div class="signature-line"></div>
       </div>
     </div>` : ''}
 
-    ${isVisible(config, 'footer', 'school_name_footer') && getDefault(config, 'footer', 'school_name_footer') ? `
-    <div class="footer">${getDefault(config, 'footer', 'school_name_footer')}</div>` : ''}
+    ${isVisible(config, 'footer', 'school_name_footer') ? `
+    <div class="footer">${footerText}</div>` : ''}
   </div>
 </body>
 </html>`;
