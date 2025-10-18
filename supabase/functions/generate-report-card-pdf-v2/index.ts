@@ -30,6 +30,14 @@ interface ReportCardData {
     maxAverage?: number;
     assessment_name?: string;
     teacher_name?: string;
+    individualGrades?: Array<{
+      assessment_name?: string;
+      assessment_type: string;
+      grade: number;
+      max_grade: number;
+      weighting: number;
+      appreciation?: string;
+    }>;
   }>;
   template?: {
     name: string;
@@ -412,6 +420,17 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
           <td class="subject-name">
             ${stat.subject}
             ${isVisible(config, 'grades_table', 'subject_category') && stat.category ? `<span class="category-badge">${stat.category}</span>` : ''}
+            ${isVisible(config, 'grades_table', 'individual_grades') && stat.grades?.length > 1 ? `
+              <div style="margin-top: 8px; padding: 8px; background: #f9fafb; border-radius: 4px; border-left: 2px solid ${headerColor};">
+                <div style="font-size: 7.5pt; color: #6b7280; margin-bottom: 4px; font-weight: 600;">Détail des évaluations :</div>
+                ${stat.grades.map((g: any) => `
+                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 3px 0; font-size: 7pt; border-bottom: 1px solid #e5e7eb;">
+                    <span style="color: #374151;">${g.assessment_name || g.assessment_type}</span>
+                    <span style="font-weight: 600; color: ${headerColor};">${((g.grade / g.max_grade) * 20).toFixed(2)}/20</span>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
           </td>
           ${isVisible(config, 'grades_table', 'student_subject_average') ? `<td class="grade-value">${formatGrade(stat.avg, 20, gradeFormat)}</td>` : ''}
           ${isVisible(config, 'grades_table', 'class_subject_average') ? `<td style="text-align:center;font-size:8pt">${stat.minGrade > 0 ? formatGrade((stat.minGrade + stat.maxGrade) / 2, 20, gradeFormat) : '-'}</td>` : ''}

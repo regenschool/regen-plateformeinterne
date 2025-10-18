@@ -144,11 +144,21 @@ export const ReportCardPreview = ({ template }: Props) => {
                   <tr key={idx}>
                     {getConfigValue('grades_table', 'subject_name', 'is_visible') && (
                       <td className="border p-2">
-                        {grade.subject}
-                        {getConfigValue('grades_table', 'subject_category', 'is_visible') && (
-                          <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                            {grade.category}
-                          </span>
+                        <div>
+                          {grade.subject}
+                          {getConfigValue('grades_table', 'subject_category', 'is_visible') && (
+                            <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                              {grade.category}
+                            </span>
+                          )}
+                        </div>
+                        {getConfigValue('grades_table', 'individual_grades', 'is_visible') && (
+                          <div className="mt-2 p-2 bg-gray-50 rounded text-xs space-y-1">
+                            <div className="font-semibold text-gray-600 mb-1">Détail des évaluations :</div>
+                            <div className="flex justify-between"><span>Contrôle 1</span><span className="font-bold" style={{ color: headerColor }}>{(grade.grade - 1).toFixed(2)}/20</span></div>
+                            <div className="flex justify-between"><span>Devoir Surveillé</span><span className="font-bold" style={{ color: headerColor }}>{(grade.grade + 0.5).toFixed(2)}/20</span></div>
+                            <div className="flex justify-between"><span>TP</span><span className="font-bold" style={{ color: headerColor }}>{(grade.grade + 1).toFixed(2)}/20</span></div>
+                          </div>
                         )}
                       </td>
                     )}

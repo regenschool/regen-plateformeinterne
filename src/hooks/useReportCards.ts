@@ -22,6 +22,14 @@ interface SubjectAverage {
   minAverage?: number;
   maxAverage?: number;
   teacher_name?: string;
+  individualGrades?: Array<{
+    assessment_name?: string;
+    assessment_type: string;
+    grade: number;
+    max_grade: number;
+    weighting: number;
+    appreciation?: string;
+  }>;
 }
 
 // Fonction pour grouper les notes par matière et calculer les moyennes
@@ -51,6 +59,15 @@ const calculateSubjectAverages = (grades: any[]): SubjectAverage[] => {
     const category = (subjectGrades[0] as any)?.subjects?.subject_categories?.name;
     const teacher_name = subjectGrades[0]?.teacher_name;
     
+    const individualGrades = subjectGrades.map(g => ({
+      assessment_name: g.assessment_name || g.assessment_type,
+      assessment_type: g.assessment_type,
+      grade: g.grade,
+      max_grade: g.max_grade,
+      weighting: g.weighting,
+      appreciation: g.appreciation,
+    }));
+    
     subjectAverages.push({
       subject,
       subject_category: category,
@@ -61,6 +78,7 @@ const calculateSubjectAverages = (grades: any[]): SubjectAverage[] => {
       appreciation,
       gradeCount: subjectGrades.length,
       teacher_name,
+      individualGrades,
     });
   });
   
@@ -230,10 +248,13 @@ export const useGenerateReportCard = () => {
           minAverage: s.minAverage,
           maxAverage: s.maxAverage,
           teacher_name: s.teacher_name,
+          individualGrades: s.individualGrades, // Ajout des notes détaillées
         })),
         template: template ? {
           name: template.name,
           config: templateConfig,
+          logo_url: template.logo_url,
+          signature_url: template.signature_url,
         } : undefined,
         averages: {
           student: studentAverage,

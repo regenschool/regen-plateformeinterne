@@ -137,7 +137,7 @@ export const ReportCardTemplateConfigPanel = ({
       </div>
 
       <ScrollArea className="h-[600px] pr-4">
-        <Accordion type="multiple" defaultValue={sections.map(s => s.section_key)} className="space-y-4">
+        <Accordion type="multiple" className="space-y-4">
           {sections.map(section => {
             const sectionElements = allElements.filter(e => e.section_key === section.section_key);
 
