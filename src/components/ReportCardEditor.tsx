@@ -176,14 +176,16 @@ export const ReportCardEditor = ({
                             </div>
 
                             {isElementVisible('grades_table', 'teacher_name') && grade.teacher_name && (
-                              <p className="text-xs text-muted-foreground">
-                                Enseignant : {grade.teacher_name}
-                              </p>
+                              <div className="text-xs text-muted-foreground bg-muted/30 px-2 py-1 rounded">
+                                <span className="font-medium">Enseignant :</span> {grade.teacher_name}
+                              </div>
                             )}
 
                             {isElementVisible('grades_table', 'individual_grades') && grade.individualGrades && grade.individualGrades.length > 1 && (
                               <div className="mt-2 p-2 bg-muted/50 rounded border">
-                                <Label className="text-xs font-semibold mb-2 block">Détail des évaluations</Label>
+                                <Label className="text-xs font-semibold mb-2 block">
+                                  Détail des évaluations (lecture seule)
+                                </Label>
                                 <div className="space-y-1">
                                   {grade.individualGrades.map((g: any, i: number) => (
                                     <div key={i} className="flex justify-between items-center text-xs">
@@ -223,8 +225,10 @@ export const ReportCardEditor = ({
 
                               {isElementVisible('grades_table', 'class_subject_average') && grade.classAverage && (
                                 <div className="space-y-2">
-                                  <Label className="text-xs">Moy. classe</Label>
-                                  <p className="text-sm font-medium">{grade.classAverage.toFixed(2)}/20</p>
+                                  <Label className="text-xs text-muted-foreground">Moy. classe</Label>
+                                  <p className="text-sm font-medium bg-muted/30 px-2 py-1 rounded">
+                                    {grade.classAverage.toFixed(2)}/20
+                                  </p>
                                 </div>
                               )}
                             </div>
@@ -232,12 +236,16 @@ export const ReportCardEditor = ({
                             {(isElementVisible('grades_table', 'class_min_average') || 
                               isElementVisible('grades_table', 'class_max_average')) && 
                              (grade.minAverage || grade.maxAverage) && (
-                              <div className="flex gap-4 text-xs">
+                              <div className="flex gap-2 text-xs bg-muted/30 px-2 py-1 rounded">
                                 {isElementVisible('grades_table', 'class_min_average') && grade.minAverage && (
-                                  <span className="text-red-600">Min: {grade.minAverage.toFixed(2)}/20</span>
+                                  <span className="text-red-600 font-medium">
+                                    Min: {grade.minAverage.toFixed(2)}/20
+                                  </span>
                                 )}
                                 {isElementVisible('grades_table', 'class_max_average') && grade.maxAverage && (
-                                  <span className="text-green-600">Max: {grade.maxAverage.toFixed(2)}/20</span>
+                                  <span className="text-green-600 font-medium">
+                                    Max: {grade.maxAverage.toFixed(2)}/20
+                                  </span>
                                 )}
                               </div>
                             )}
