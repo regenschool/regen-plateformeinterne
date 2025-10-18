@@ -1,0 +1,31 @@
+name: Setup Test User
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup-test-user:
+    name: Create Test User
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Create Test User
+        run: |
+          curl -X POST "${{ secrets.VITE_SUPABASE_URL }}/auth/v1/signup" \
+            -H "apikey: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "email": "${{ secrets.TEST_USER_EMAIL }}",
+              "password": "${{ secrets.TEST_USER_PASSWORD }}",
+              "email_confirm": true
+            }'
+            
+      - name: Setup Complete
+        run: echo "✅ Test user created successfully"

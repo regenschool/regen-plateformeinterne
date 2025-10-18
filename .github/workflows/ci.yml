@@ -32,7 +32,11 @@ jobs:
 
       - name: Run E2E tests
         run: npx playwright install --with-deps && npx playwright test
-        continue-on-error: true
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -74,7 +78,7 @@ jobs:
 
       - name: Run npm audit
         run: npm audit --audit-level=high
-        continue-on-error: true
+        continue-on-error: false
 
       - name: Check for known vulnerabilities
         run: |
