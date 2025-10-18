@@ -851,6 +851,118 @@ export type Database = {
         }
         Relationships: []
       }
+      student_document_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          is_required: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      student_documents: {
+        Row: {
+          category_id: string | null
+          created_at: string | null
+          description: string | null
+          expiry_date: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          notes: string | null
+          status: string | null
+          student_id: string
+          title: string
+          updated_at: string | null
+          upload_source: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          expiry_date?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+          student_id: string
+          title: string
+          updated_at?: string | null
+          upload_source?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          expiry_date?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          notes?: string | null
+          status?: string | null
+          student_id?: string
+          title?: string
+          updated_at?: string | null
+          upload_source?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_documents_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "student_document_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_documents_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_documents_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_students_enriched"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_enrollments: {
         Row: {
           academic_background: string | null
@@ -941,6 +1053,184 @@ export type Database = {
             foreignKeyName: "student_enrollments_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
+            referencedRelation: "v_students_enriched"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_onboarding_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      student_onboarding_checklist: {
+        Row: {
+          category_id: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          id: string
+          is_completed: boolean | null
+          item_name: string
+          notes: string | null
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          category_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_completed?: boolean | null
+          item_name: string
+          notes?: string | null
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          id?: string
+          is_completed?: boolean | null
+          item_name?: string
+          notes?: string | null
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_onboarding_checklist_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "student_onboarding_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_onboarding_checklist_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_onboarding_checklist_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "v_students_enriched"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_profiles: {
+        Row: {
+          allergies: string | null
+          birth_country: string | null
+          birth_place: string | null
+          blood_type: string | null
+          created_at: string
+          doctor_name: string | null
+          doctor_phone: string | null
+          emergency_contact_email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
+          id: string
+          insurance_company: string | null
+          insurance_expiry_date: string | null
+          insurance_policy_number: string | null
+          medical_conditions: string | null
+          medications: string | null
+          nationality: string | null
+          social_security_number: string | null
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          allergies?: string | null
+          birth_country?: string | null
+          birth_place?: string | null
+          blood_type?: string | null
+          created_at?: string
+          doctor_name?: string | null
+          doctor_phone?: string | null
+          emergency_contact_email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          id?: string
+          insurance_company?: string | null
+          insurance_expiry_date?: string | null
+          insurance_policy_number?: string | null
+          medical_conditions?: string | null
+          medications?: string | null
+          nationality?: string | null
+          social_security_number?: string | null
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          allergies?: string | null
+          birth_country?: string | null
+          birth_place?: string | null
+          blood_type?: string | null
+          created_at?: string
+          doctor_name?: string | null
+          doctor_phone?: string | null
+          emergency_contact_email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          id?: string
+          insurance_company?: string | null
+          insurance_expiry_date?: string | null
+          insurance_policy_number?: string | null
+          medical_conditions?: string | null
+          medications?: string | null
+          nationality?: string | null
+          social_security_number?: string | null
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_profiles_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_profiles_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
             referencedRelation: "v_students_enriched"
             referencedColumns: ["id"]
           },
