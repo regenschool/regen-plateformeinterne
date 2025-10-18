@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Sheet,
@@ -288,9 +289,11 @@ export const BulkGradeImport = ({ students, classname, subject, subjectMetadata,
                   <div key={student.id} className="flex items-center gap-3 p-2 border rounded-lg">
                     <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10">
                       {student.photo_url ? (
-                        <img
+                        <OptimizedImage
                           src={student.photo_url}
                           alt={`${student.first_name} ${student.last_name}`}
+                          width={48}
+                          height={48}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -350,7 +353,7 @@ export const BulkGradeImport = ({ students, classname, subject, subjectMetadata,
                         <div key={student.id} className="flex items-center gap-2 text-sm">
                           <div className="w-6 h-6 rounded-full overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10 flex-shrink-0">
                             {student.photo_url ? (
-                              <img src={student.photo_url} alt="" className="w-full h-full object-cover" />
+                              <OptimizedImage src={student.photo_url} alt="" width={24} height={24} className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-xs font-bold text-primary/30">
                                 {student.first_name[0]}{student.last_name[0]}

@@ -55,7 +55,7 @@ export const ReportCardPreview = ({ template }: Props) => {
               style={{ backgroundColor: template.header_color, color: "white" }}
             >
               {template.logo_url && (
-                <img src={template.logo_url} alt="Logo école" className="h-16 object-contain" />
+                <img src={template.logo_url} alt="Logo école" width="auto" height="64" className="h-16 object-contain" />
               )}
               <div className="text-center flex-1">
                 <h1 className="text-2xl font-bold">BULLETIN SCOLAIRE</h1>

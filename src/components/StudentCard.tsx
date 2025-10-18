@@ -230,11 +230,14 @@ export const StudentCard = ({
 
   return (
     <Card 
-      className={`overflow-hidden transition-all duration-300 ${
+      className={`overflow-hidden transition-all duration-300 will-change-transform ${
         isAdmin 
-          ? 'cursor-pointer hover:shadow-2xl hover:-translate-y-2 hover:scale-[1.02] group' 
-          : 'hover:shadow-lg hover:-translate-y-1'
+          ? 'cursor-pointer hover:shadow-2xl group' 
+          : 'hover:shadow-lg'
       }`}
+      style={isAdmin ? {
+        transform: 'translateZ(0)', // Force GPU acceleration
+      } : undefined}
       onClick={handleCardClick}
     >
       <CardHeader className="p-0 relative">

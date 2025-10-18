@@ -298,7 +298,7 @@ export const ReportCardEditor = ({
                     style={{ backgroundColor: editedData.template?.headerColor || '#1e40af', color: 'white' }}
                   >
                     {editedData.template?.show_logo && editedData.template?.logoUrl && (
-                      <img src={editedData.template.logoUrl} alt="Logo" className="h-16 object-contain" />
+                      <img src={editedData.template.logoUrl} alt="Logo" width="auto" height="64" className="h-16 object-contain" />
                     )}
                     <div className="text-center flex-1">
                       <h2 className="text-2xl font-bold">{editedData.title || 'BULLETIN SCOLAIRE'}</h2>

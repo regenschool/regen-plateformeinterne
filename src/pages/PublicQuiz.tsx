@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Sparkles, Check, X } from "lucide-react";
+import { OptimizedImage } from "@/components/OptimizedImage";
 
 type Student = {
   id: string;
@@ -310,9 +311,11 @@ const PublicQuiz = () => {
             <div className="text-center space-y-4">
               <div className="w-48 h-48 mx-auto rounded-full overflow-hidden bg-muted border-4 border-primary/20">
                 {currentStudent.photo_url ? (
-                  <img
+                  <OptimizedImage
                     src={currentStudent.photo_url}
                     alt="Student"
+                    width={192}
+                    height={192}
                     className="w-full h-full object-cover"
                   />
                 ) : (

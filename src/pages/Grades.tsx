@@ -13,6 +13,7 @@ import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useAdmin } from "@/contexts/AdminContext";
 import { toast } from "sonner";
 import { ClipboardList, Upload, TrendingUp, FileText, AlertTriangle, Trash2, ArrowLeft, ChevronLeft, ChevronRight, PlusCircle } from "lucide-react";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -1201,9 +1202,11 @@ export default function Grades() {
                     <CardHeader className="p-0">
                       <div className="relative w-full h-32 bg-gradient-to-br from-primary/10 to-accent/10">
                         {student.photo_url ? (
-                          <img
+                          <OptimizedImage
                             src={student.photo_url}
                             alt={`${student.first_name} ${student.last_name}`}
+                            width={400}
+                            height={128}
                             className="w-full h-full object-cover"
                           />
                         ) : (

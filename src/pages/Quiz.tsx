@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Sparkles, Check, X, ArrowLeft, Share2, Copy, Link as LinkIcon, Trash2 } from "lucide-react";
+import { OptimizedImage } from "@/components/OptimizedImage";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -532,9 +533,11 @@ const Quiz = () => {
           <div className="text-center space-y-4">
             <div className="w-48 h-48 mx-auto rounded-full overflow-hidden bg-muted border-4 border-primary/20">
               {currentStudent.photo_url ? (
-                <img
+                <OptimizedImage
                   src={currentStudent.photo_url}
                   alt="Student"
+                  width={192}
+                  height={192}
                   className="w-full h-full object-cover"
                 />
               ) : (
