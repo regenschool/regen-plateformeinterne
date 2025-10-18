@@ -88,9 +88,10 @@ export const UsersManager = () => {
         const createdAt = profile?.created_at || teacher?.created_at || new Date().toISOString();
         const fullName = teacher?.full_name || profile?.full_name || email.split("@")[0] || "";
 
-        // Récupérer le statut email_confirmed depuis auth.users
-        const { data: { user: authUser } } = await supabase.auth.admin.getUserById(id);
-        const emailConfirmed = authUser?.email_confirmed_at != null;
+        // Récupérer le statut email_confirmed depuis auth.users via RPC
+        const { data: emailConfirmed } = await supabase.rpc('is_email_confirmed', { 
+          _user_id: id 
+        });
         
         // Statut actif uniquement si l'email est confirmé (profil complété)
         const status: 'active' | 'pending' = emailConfirmed ? 'active' : 'pending';

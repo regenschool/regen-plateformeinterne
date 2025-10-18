@@ -1899,6 +1899,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_email_confirmed: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "teacher"
