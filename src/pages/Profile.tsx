@@ -577,18 +577,18 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-muted/30 via-background to-muted/20">
       <div className="container mx-auto py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
-        {/* Hero Header */}
-        <div className="mb-8 animate-fade-in">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="p-2.5 bg-primary/10 rounded-xl">
-              <User className="h-7 w-7 text-primary" />
+        {/* En-tête */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <User className="h-6 w-6 text-primary" />
             </div>
-            <h2 className="text-4xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+            <h2 className="text-3xl sm:text-4xl font-bold">
               {isAdmin ? "Profil" : "Mon Profil"}
             </h2>
           </div>
-          <p className="text-base sm:text-lg text-muted-foreground max-w-2xl">
-            {isAdmin ? "Gérez vos informations personnelles" : "Gérez vos informations, matières et documents"}
+          <p className="text-muted-foreground">
+            {isAdmin ? "Vos informations" : "Matières, documents et factures"}
           </p>
         </div>
 
@@ -609,7 +609,7 @@ const Profile = () => {
               </TabsTrigger>
               <TabsTrigger value="onboarding" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg px-4">
                 <Clipboard className="w-4 h-4" />
-                <span className="text-xs sm:text-sm font-medium">Checklist</span>
+                <span className="text-xs sm:text-sm font-medium">Onboarding</span>
               </TabsTrigger>
               <TabsTrigger value="invoices" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg px-4">
                 <Receipt className="w-4 h-4" />
@@ -620,29 +620,22 @@ const Profile = () => {
             <TabsList className="w-full bg-muted/60 backdrop-blur-sm border border-border/40">
               <TabsTrigger value="profile" className="data-[state=active]:bg-background data-[state=active]:shadow-md">
                 <User className="w-4 h-4 mr-2" />
-                Mes Informations
+                Informations
               </TabsTrigger>
             </TabsList>
           )}
 
-          <TabsContent value="profile" className="space-y-6 animate-fade-in">
-            <Card className="border-border/40 shadow-lg bg-card/95 backdrop-blur-sm">
-              <CardHeader className="space-y-3 pb-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <User className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-2xl font-bold tracking-tight">
-                      {isAdmin ? "Vos Informations" : "Informations Personnelles"}
-                    </CardTitle>
-                    {!isAdmin && (
-                      <CardDescription className="text-base mt-1">
-                        Complétez et mettez à jour vos coordonnées
-                      </CardDescription>
-                    )}
-                  </div>
-                </div>
+          <TabsContent value="profile" className="space-y-6">
+            <Card className="border-border/40 shadow-sm">
+              <CardHeader className="pb-6">
+                <CardTitle className="text-2xl font-semibold">
+                  {isAdmin ? "Informations" : "Coordonnées"}
+                </CardTitle>
+                {!isAdmin && (
+                  <CardDescription className="text-base">
+                    Complétez vos informations personnelles
+                  </CardDescription>
+                )}
               </CardHeader>
             <CardContent className="space-y-4">
               {profile && (
@@ -696,9 +689,9 @@ const Profile = () => {
                         </div>
                       </div>
 
-                      <Button onClick={saveProfile} disabled={saving} size="lg" className="shadow-md hover:shadow-lg transition-shadow">
+                      <Button onClick={saveProfile} disabled={saving} size="lg" className="shadow-sm">
                         <Save className="w-4 h-4 mr-2" />
-                        {saving ? "Enregistrement..." : "Enregistrer les modifications"}
+                        {saving ? "Enregistrement..." : "Enregistrer"}
                       </Button>
                     </>
                   ) : (
@@ -767,9 +760,9 @@ const Profile = () => {
                         />
                       </div>
 
-                      <Button onClick={saveProfile} disabled={saving} size="lg" className="shadow-md hover:shadow-lg transition-shadow">
+                      <Button onClick={saveProfile} disabled={saving} size="lg" className="shadow-sm">
                         <Save className="w-4 h-4 mr-2" />
-                        {saving ? "Enregistrement..." : "Enregistrer les modifications"}
+                        {saving ? "Enregistrement..." : "Enregistrer"}
                       </Button>
                     </>
                   )}
