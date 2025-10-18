@@ -302,7 +302,7 @@ const Directory = () => {
             {filteredEnrollments.length} / {enrollments.length} {filteredEnrollments.length === 1 ? t("directory.student") : t("directory.studentsCount")} · {t("directory.subtitle")}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 w-full md:w-auto">
           <Button 
             onClick={() => refetch()} 
             variant="outline" 
@@ -320,7 +320,8 @@ const Directory = () => {
                 className="text-destructive hover:text-destructive"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
-                Supprimer tout ({filteredEnrollments.length})
+                <span className="hidden sm:inline">Supprimer tout ({filteredEnrollments.length})</span>
+                <span className="sm:hidden">Suppr. ({filteredEnrollments.length})</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
@@ -350,15 +351,12 @@ const Directory = () => {
                   Désinscrire {filteredEnrollments.length} étudiant(s) de {schoolYears?.find(y => y.id === selectedSchoolYearId)?.label} ?
                 </AlertDialogTitle>
                 <AlertDialogDescription>
-                  Les {filteredEnrollments.length} étudiant(s) affiché(s) seront désinscrit(s) de cette année scolaire.
+                  Les {filteredEnrollments.length} étudiant(s) affiché(s) seront retirés de <strong>{schoolYears?.find(y => y.id === selectedSchoolYearId)?.label || "cette année scolaire"}</strong>, mais resteront dans la base de données pour les autres années.
                   {searchTerm || selectedClass !== "all" ? (
                     <span className="block mt-2 text-orange-600 font-medium">
-                      ⚠️ Attention : seuls les étudiants filtrés seront désinscrit(s) !
+                      ⚠️ Attention : seuls les étudiants filtrés seront désinscrits !
                     </span>
                   ) : null}
-                  <span className="block mt-2">
-                    Ils resteront visibles dans les autres années scolaires.
-                  </span>
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -405,7 +403,8 @@ const Directory = () => {
           
           <Button onClick={exportToCSV} variant="outline" size="default">
             <Download className="w-4 h-4 mr-2" />
-            {t("directory.exportCSV")}
+            <span className="hidden sm:inline">{t("directory.exportCSV")}</span>
+            <span className="sm:hidden">Export</span>
           </Button>
           <Suspense fallback={<Button variant="outline" disabled>Chargement...</Button>}>
             <ImportStudentsDialog 
