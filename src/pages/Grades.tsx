@@ -12,7 +12,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useAdmin } from "@/contexts/AdminContext";
 import { toast } from "sonner";
-import { ClipboardList, Upload, TrendingUp, FileText, AlertTriangle, Trash2, ArrowLeft, ChevronLeft, ChevronRight, PlusCircle } from "lucide-react";
+import { ClipboardList, Upload, TrendingUp, FileText, AlertTriangle, Trash2, ArrowLeft, ChevronLeft, ChevronRight, PlusCircle, BookOpen, Eye, EyeOff } from "lucide-react";
 import { OptimizedImage } from "@/components/OptimizedImage";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -933,8 +933,31 @@ export default function Grades() {
         </Card>
       )}
 
-      {selectedClass && selectedSubject && selectedSubject !== "__new__" && selectedSchoolYear && selectedSemester && (
+{selectedClass && selectedSubject && selectedSubject !== "__new__" && selectedSchoolYear && selectedSemester && (
         <div className="space-y-6">
+          {/* Header élégant de la matière */}
+          <Card className="border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <CardTitle className="text-2xl font-bold flex items-center gap-3">
+                    <BookOpen className="w-7 h-7 text-primary" />
+                    {selectedSubject}
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    {selectedClass} • {selectedSchoolYear} • {selectedSemester}
+                  </CardDescription>
+                </div>
+                {newSubjectMetadata && (
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Enseignant</p>
+                    <p className="font-medium">{newSubjectMetadata.teacherName}</p>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+          </Card>
+
           <>
             {newSubjectMetadata && (
               <Card className="bg-primary/5 border-primary/20">
@@ -1117,14 +1140,70 @@ export default function Grades() {
                           <p className="font-medium">{assessment.name}</p>
                           <p className="text-sm text-muted-foreground">
                             {assessment.studentsWithGrades}/{assessment.totalStudents} étudiants notés
+                            {assessment.studentsWithGrades >= assessment.totalStudents && (
+                              <span className="ml-2 text-green-600 font-medium">✓ Complète</span>
+                            )}
                           </p>
                         </div>
                         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                          {/* Toggle visibilité (uniquement si complète) */}
+                          {assessment.studentsWithGrades >= assessment.totalStudents && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                try {
+                                  // Récupérer l'assessment depuis la DB
+                                  const { data: assessmentData, error: fetchError } = await supabase
+                                    .from('assessments')
+                                    .select('*')
+                                    .eq('assessment_name', assessment.name)
+                                    .eq('subject', selectedSubject)
+                                    .eq('class_name', selectedClass)
+                                    .eq('school_year', selectedSchoolYear)
+                                    .eq('semester', selectedSemester)
+                                    .maybeSingle();
+                                  
+                                  if (fetchError) throw fetchError;
+                                  
+                                  if (assessmentData) {
+                                    // Toggle la visibilité
+                                    const { data: { user } } = await supabase.auth.getUser();
+                                    const { error: updateError } = await supabase
+                                      .from('assessments')
+                                      .update({
+                                        is_visible_to_students: !assessmentData.is_visible_to_students,
+                                        visibility_changed_at: new Date().toISOString(),
+                                        visibility_changed_by: user?.id,
+                                      })
+                                      .eq('id', assessmentData.id);
+                                    
+                                    if (updateError) throw updateError;
+                                    
+                                    toast.success(
+                                      !assessmentData.is_visible_to_students 
+                                        ? `✅ Notes visibles pour les étudiants` 
+                                        : `🔒 Notes masquées aux étudiants`
+                                    );
+                                    fetchGrades(); // Rafraîchir
+                                  }
+                                } catch (error: any) {
+                                  toast.error('Erreur : ' + error.message);
+                                }
+                              }}
+                              className="gap-2"
+                              title="Rendre visible aux étudiants"
+                            >
+                              <Eye className="w-4 h-4" />
+                              Publier
+                            </Button>
+                          )}
+                          
                           {assessment.studentsWithGrades < assessment.totalStudents && (
                             <Button
                               size="sm"
                               variant="outline"
-                         onClick={() => {
+                              onClick={() => {
                                 const sel = {
                                   name: assessment.name,
                                   type: assessment.type,
