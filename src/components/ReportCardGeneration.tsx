@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, FileText, Download, Trash2 } from 'lucide-react';
+import { Loader2, FileText, Download, Trash2, AlertTriangle } from 'lucide-react';
 import { useGenerateReportCard, useReportCards } from '@/hooks/useReportCards';
 import { useDeleteReportCard } from '@/hooks/useReportCardActions';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface SubjectWeight {
   subject_id: string;
@@ -192,6 +193,28 @@ export const ReportCardGeneration = () => {
     onError: (error: Error) => {
       toast.error('Erreur lors de la génération des bulletins');
       console.error(error);
+    },
+  });
+
+  // Mutation pour supprimer tous les bulletins d'un semestre/classe
+  const deleteBulkReportCards = useMutation({
+    mutationFn: async ({ filters }: { filters: { schoolYear?: string; semester?: string; className?: string } }) => {
+      let query = supabase.from('student_report_cards').delete();
+      
+      if (filters.schoolYear) query = query.eq('school_year', filters.schoolYear);
+      if (filters.semester) query = query.eq('semester', filters.semester);
+      if (filters.className) query = query.eq('class_name', filters.className);
+      
+      const { error } = await query;
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['report-cards'] });
+      toast.success('Bulletins supprimés avec succès');
+    },
+    onError: (error) => {
+      console.error('Erreur lors de la suppression:', error);
+      toast.error('Erreur lors de la suppression des bulletins');
     },
   });
 
@@ -468,7 +491,55 @@ export const ReportCardGeneration = () => {
           {/* Liste des bulletins générés */}
           {existingReportCards && existingReportCards.length > 0 && (
             <div className="space-y-4 pt-6 border-t">
-              <h3 className="text-lg font-semibold">Bulletins générés ({existingReportCards.length})</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Bulletins générés ({existingReportCards.length})</h3>
+                <div className="flex gap-2">
+                  {selectedClass && selectedSchoolYear && selectedSemester && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Supprimer tous ({existingReportCards.length})
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-destructive" />
+                            Confirmer la suppression en masse
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Vous êtes sur le point de supprimer <strong>{existingReportCards.length} bulletin(s)</strong> pour :
+                            <div className="mt-2 p-3 bg-muted rounded-md space-y-1">
+                              <div><strong>Année :</strong> {selectedSchoolYear}</div>
+                              <div><strong>Semestre :</strong> {selectedSemester}</div>
+                              <div><strong>Classe :</strong> {selectedClass}</div>
+                            </div>
+                            <div className="mt-3 text-destructive font-medium">
+                              Cette action est irréversible.
+                            </div>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annuler</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteBulkReportCards.mutate({
+                              filters: {
+                                schoolYear: selectedSchoolYear,
+                                semester: selectedSemester,
+                                className: selectedClass,
+                              }
+                            })}
+                            className="bg-destructive hover:bg-destructive/90"
+                          >
+                            Supprimer tous
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
