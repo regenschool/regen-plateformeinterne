@@ -375,23 +375,6 @@ export const ReportCardTemplatesManager = () => {
                         <Separator />
 
                         <div className="space-y-2">
-                          <Label htmlFor="program_name">Nom du programme</Label>
-                          <Input
-                            id="program_name"
-                            value={selectedTemplate.program_name || 'Programme de Formation'}
-                            onChange={(e) =>
-                              setSelectedTemplate({ ...selectedTemplate, program_name: e.target.value })
-                            }
-                            placeholder="Ex: Programme Grande École"
-                          />
-                          <p className="text-sm text-muted-foreground">
-                            Affiché dans l'en-tête du bulletin
-                          </p>
-                        </div>
-
-                        <Separator />
-
-                        <div className="space-y-2">
                           <Label htmlFor="logo_url">Logo de l'établissement (URL)</Label>
                           <Input
                             id="logo_url"
