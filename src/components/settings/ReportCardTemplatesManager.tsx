@@ -449,7 +449,7 @@ export const ReportCardTemplatesManager = () => {
           <DialogHeader>
             <DialogTitle>Aperçu: {selectedTemplate?.name}</DialogTitle>
           </DialogHeader>
-          {selectedTemplate && <ReportCardPreview template={selectedTemplate} />}
+          {selectedTemplate && <ReportCardPreview key={selectedTemplate.id} template={selectedTemplate} />}
         </DialogContent>
       </Dialog>
     </div>

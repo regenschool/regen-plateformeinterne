@@ -15,7 +15,7 @@ interface Props {
 }
 
 export const ReportCardPreview = ({ template }: Props) => {
-  const { data: config, isLoading } = useTemplateConfig(template.id);
+  const { data: config, isLoading, dataUpdatedAt } = useTemplateConfig(template.id);
 
   const getConfigValue = (sectionKey: string, elementKey: string, property: 'is_visible' | 'default_value' = 'is_visible'): any => {
     if (!config) return property === 'is_visible' ? true : undefined;
@@ -52,7 +52,7 @@ export const ReportCardPreview = ({ template }: Props) => {
   const classAverage = 13.1;
 
   return (
-    <ScrollArea className="h-[70vh]">
+    <ScrollArea className="h-[70vh]" key={`preview-${template.id}-${dataUpdatedAt}`}>
       <div className="bg-white p-8 rounded-lg shadow-sm max-w-3xl mx-auto">
         
         {/* En-tête */}
