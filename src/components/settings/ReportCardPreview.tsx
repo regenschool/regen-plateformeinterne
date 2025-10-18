@@ -1,23 +1,13 @@
-import { Card } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useTemplateConfig } from "@/hooks/useReportCardTemplateConfig";
+import { Loader2 } from "lucide-react";
 
 interface ReportCardTemplate {
-  show_header: boolean;
-  show_student_info: boolean;
-  show_academic_info: boolean;
-  show_grades_table: boolean;
-  show_average: boolean;
-  show_class_average: boolean;
-  show_appreciation: boolean;
-  show_absences: boolean;
-  show_signature: boolean;
-  header_color: string;
-  footer_text: string | null;
-  show_weighting: boolean;
-  show_max_grade: boolean;
-  show_assessment_type: boolean;
-  show_grade_detail: boolean;
-  show_subject_average: boolean;
-  logo_url: string | null;
+  id: string;
+  name: string;
+  header_color?: string;
+  logo_url?: string;
+  footer_text?: string;
 }
 
 interface Props {
@@ -25,276 +15,232 @@ interface Props {
 }
 
 export const ReportCardPreview = ({ template }: Props) => {
-  // Données d'exemple
-  const sampleStudent = {
-    firstName: "Jean",
-    lastName: "Dupont",
-    className: "M1A",
-    schoolYear: "2025-2026",
-    period: "Semestre 1",
+  const { data: config, isLoading } = useTemplateConfig(template.id);
+
+  const getConfigValue = (sectionKey: string, elementKey: string, property: 'is_visible' | 'default_value' = 'is_visible'): any => {
+    if (!config) return property === 'is_visible' ? true : undefined;
+    const item = config.find(c => c.section_key === sectionKey && c.element_key === elementKey);
+    if (!item) return property === 'is_visible' ? true : undefined;
+    return item[property];
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  const headerColor = template.header_color || '#1e40af';
+  const title = getConfigValue('header', 'title', 'default_value') || 'Bulletin de Notes';
+  const schoolName = getConfigValue('header', 'school_name', 'default_value') || 'École Exemple';
+  const logo = getConfigValue('header', 'logo', 'default_value') || template.logo_url;
+  const signature = getConfigValue('footer', 'signature', 'default_value');
+  const signatoryTitle = getConfigValue('footer', 'signatory_title', 'default_value') || 'Le Directeur';
+  const footerText = getConfigValue('footer', 'school_name_footer', 'default_value') || template.footer_text || 'Document généré automatiquement';
+
+  // Données d'exemple
   const sampleGrades = [
-    { subject: "Mathématiques", grade: 15, max: 20, weighting: 2, type: "Contrôle continu", appreciation: "Bon travail" },
-    { subject: "Français", grade: 14, max: 20, weighting: 1.5, type: "Devoir", appreciation: "Sérieux" },
-    { subject: "Histoire", grade: 16, max: 20, weighting: 1, type: "Contrôle", appreciation: "Très bien" },
+    { subject: 'Mathématiques', category: 'Sciences', grade: 15.5, coef: 3, appreciation: 'Très bon travail', teacher: 'M. Dupont', classAvg: 12.3, min: 8.5, max: 18.2 },
+    { subject: 'Français', category: 'Lettres', grade: 14.0, coef: 3, appreciation: 'Bonne progression', teacher: 'Mme Martin', classAvg: 13.1, min: 9.0, max: 17.5 },
+    { subject: 'Anglais', category: 'Langues', grade: 16.5, coef: 2, appreciation: 'Excellent niveau', teacher: 'Mrs Smith', classAvg: 14.2, min: 10.5, max: 18.0 },
+    { subject: 'Histoire-Géo', category: 'Sciences Humaines', grade: 13.0, coef: 2, appreciation: 'Travail satisfaisant', teacher: 'M. Bernard', classAvg: 12.8, min: 7.5, max: 16.5 },
   ];
 
-  const average = 15.2;
-  const classAverage = 13.8;
-  const absences = 2;
+  const studentAverage = 14.8;
+  const classAverage = 13.1;
 
   return (
-    <div className="w-full h-full overflow-auto bg-muted/30 p-4">
-      <div className="max-w-4xl mx-auto bg-white shadow-lg" style={{ 
-        minHeight: "842px",
-        fontFamily: "'Inter', sans-serif",
-        fontSize: "10pt",
-        lineHeight: "1.6",
-        color: "#1a1a1a",
-        padding: "40px 50px"
-      }}>
-        <div className="space-y-6">
-          {/* En-tête */}
-          {template.show_header && (
-            <div 
-              style={{ 
-                borderBottom: `1px solid ${template.header_color}`,
-                paddingBottom: "20px",
-                marginBottom: "30px",
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between"
-              }}
-            >
-              {template.logo_url && (
-                <img 
-                  src={template.logo_url} 
-                  alt="Logo école" 
-                  style={{ maxWidth: "80px", maxHeight: "80px", objectFit: "contain", marginBottom: "10px" }}
-                />
+    <ScrollArea className="h-[70vh]">
+      <div className="bg-white p-8 rounded-lg shadow-sm max-w-3xl mx-auto">
+        
+        {/* En-tête */}
+        {getConfigValue('header', 'title', 'is_visible') && (
+          <div 
+            className="mb-6 p-6 rounded-lg"
+            style={{ backgroundColor: headerColor, color: 'white' }}
+          >
+            <div className="flex items-center justify-between">
+              {getConfigValue('header', 'logo', 'is_visible') && logo && (
+                <img src={logo} alt="Logo" className="h-16 object-contain" />
               )}
-              <div style={{ flex: 1, textAlign: template.logo_url ? "center" : "left" }}>
-                <h1 style={{ 
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: "20pt",
-                  fontWeight: "700",
-                  color: template.header_color,
-                  marginBottom: "4px",
-                  letterSpacing: "0.5px"
-                }}>BULLETIN SCOLAIRE</h1>
-                <p style={{ fontSize: "9pt", color: "#666", fontWeight: "400", marginBottom: "2px" }}>
-                  {sampleStudent.schoolYear} - {sampleStudent.period}
-                </p>
+              <div className="flex-1 text-center">
+                <h1 className="text-3xl font-bold mb-2">{title}</h1>
+                {getConfigValue('header', 'school_name', 'is_visible') && (
+                  <p className="text-lg opacity-90">{schoolName}</p>
+                )}
+                {getConfigValue('header', 'school_year', 'is_visible') && (
+                  <p className="text-sm opacity-80 mt-2">2024-2025 - 1er Semestre</p>
+                )}
               </div>
-              {template.logo_url && <div style={{ width: "80px" }} />}
+              {getConfigValue('header', 'logo', 'is_visible') && logo && (
+                <div className="w-16" />
+              )}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Informations étudiant */}
-          {template.show_student_info && (
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "20px",
-              marginBottom: "25px",
-              padding: "15px 0",
-              borderTop: "1px solid #e5e7eb",
-              borderBottom: "1px solid #e5e7eb"
-            }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ 
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: "14pt",
-                  fontWeight: "600",
-                  color: "#1a1a1a",
-                  marginBottom: "4px"
-                }}>
-                  {sampleStudent.firstName} {sampleStudent.lastName}
-                </div>
-                <div style={{ fontSize: "9pt", color: "#666" }}>
-                  Classe: {sampleStudent.className} • Né(e) le: 15/03/2000
-                </div>
-              </div>
+        {/* Informations étudiant */}
+        {getConfigValue('student_info', 'first_name', 'is_visible') && (
+          <div className="bg-gray-50 p-4 rounded-lg mb-6">
+            <h2 className="font-semibold text-lg mb-3" style={{ color: headerColor }}>
+              Informations de l'élève
+            </h2>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              {getConfigValue('student_info', 'first_name', 'is_visible') && (
+                <div><strong>Prénom :</strong> Jean</div>
+              )}
+              {getConfigValue('student_info', 'last_name', 'is_visible') && (
+                <div><strong>Nom :</strong> DUPONT</div>
+              )}
+              {getConfigValue('student_info', 'class_name', 'is_visible') && (
+                <div><strong>Classe :</strong> 3ème A</div>
+              )}
+              {getConfigValue('student_info', 'age', 'is_visible') && (
+                <div><strong>Âge :</strong> 14 ans</div>
+              )}
+              {getConfigValue('student_info', 'program_name', 'is_visible') && (
+                <div><strong>Programme :</strong> Général</div>
+              )}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Informations académiques */}
-          {template.show_academic_info && (
-            <div style={{
-              background: "#f9fafb",
-              borderLeft: `2px solid ${template.header_color}`,
-              padding: "15px 20px",
-              marginBottom: "25px",
-              fontSize: "9pt"
-            }}>
-              <div style={{ display: "flex", marginBottom: "6px" }}>
-                <span style={{ fontWeight: "500", color: "#555", width: "140px" }}>Année scolaire :</span>
-                <span style={{ color: "#1a1a1a", fontWeight: "400" }}>{sampleStudent.schoolYear}</span>
-              </div>
-              <div style={{ display: "flex", marginBottom: "6px" }}>
-                <span style={{ fontWeight: "500", color: "#555", width: "140px" }}>Période :</span>
-                <span style={{ color: "#1a1a1a", fontWeight: "400" }}>{sampleStudent.period}</span>
-              </div>
-              <div style={{ display: "flex" }}>
-                <span style={{ fontWeight: "500", color: "#555", width: "140px" }}>Niveau :</span>
-                <span style={{ color: "#1a1a1a", fontWeight: "400" }}>{sampleStudent.className}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Tableau des notes */}
-          {template.show_grades_table && (
-            <div style={{ marginBottom: "25px" }}>
-              <h2 style={{ 
-                fontFamily: "'Playfair Display', serif",
-                fontSize: "12pt",
-                fontWeight: "600",
-                color: template.header_color,
-                marginBottom: "15px",
-                paddingBottom: "8px",
-                borderBottom: "1px solid #e5e7eb"
-              }}>Résultats par matière</h2>
-              {sampleGrades.map((grade, idx) => (
-                <div key={idx} style={{
-                  marginBottom: "20px",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "4px",
-                  overflow: "hidden"
-                }}>
-                  <div style={{
-                    background: `linear-gradient(to right, ${template.header_color}15, transparent)`,
-                    padding: "10px 15px",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    borderBottom: "1px solid #e5e7eb"
-                  }}>
-                    <div>
-                      <div style={{ fontWeight: "600", fontSize: "10pt", color: "#1a1a1a" }}>
-                        {grade.subject}
-                      </div>
-                      {template.show_weighting && (
-                        <div style={{ fontSize: "8pt", color: "#666" }}>
-                          Coefficient: {grade.weighting}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ 
-                      fontFamily: "'Playfair Display', serif",
-                      fontSize: "16pt",
-                      fontWeight: "600",
-                      color: template.header_color
-                    }}>
-                      {grade.grade}<span style={{ fontSize: "10pt", color: "#999" }}>/20</span>
-                    </div>
-                  </div>
-                  {template.show_grade_detail && (
-                    <div style={{ padding: "10px 15px", background: "white" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: "9pt" }}>
-                        <span style={{ color: "#555" }}>{template.show_assessment_type ? grade.type : 'Évaluation'}</span>
-                        <span style={{ fontWeight: "500", color: "#1a1a1a" }}>
-                          {grade.grade} / {template.show_max_grade ? grade.max : 20}
-                        </span>
-                      </div>
-                      {template.show_appreciation && grade.appreciation && (
-                        <div style={{ fontSize: "9pt", color: "#666", fontStyle: "italic", marginTop: "4px" }}>
-                          {grade.appreciation}
-                        </div>
-                      )}
-                    </div>
+        {/* Tableau des notes */}
+        {getConfigValue('grades_table', 'subject_name', 'is_visible') && (
+          <div className="mb-6">
+            <h2 className="font-semibold text-lg mb-3" style={{ color: headerColor }}>
+              Résultats par matière
+            </h2>
+            <table className="w-full border-collapse border text-sm">
+              <thead>
+                <tr className="bg-gray-100">
+                  {getConfigValue('grades_table', 'subject_name', 'is_visible') && (
+                    <th className="border p-2 text-left">Matière</th>
                   )}
-                </div>
-              ))}
-            </div>
-          )}
+                  {getConfigValue('grades_table', 'student_subject_average', 'is_visible') && (
+                    <th className="border p-2 text-center">Moyenne</th>
+                  )}
+                  {getConfigValue('grades_table', 'class_subject_average', 'is_visible') && (
+                    <th className="border p-2 text-center">Moy. Classe</th>
+                  )}
+                  {getConfigValue('grades_table', 'class_min_average', 'is_visible') && (
+                    <th className="border p-2 text-center">Min</th>
+                  )}
+                  {getConfigValue('grades_table', 'class_max_average', 'is_visible') && (
+                    <th className="border p-2 text-center">Max</th>
+                  )}
+                  {getConfigValue('grades_table', 'subject_weighting', 'is_visible') && (
+                    <th className="border p-2 text-center">Coef.</th>
+                  )}
+                  {getConfigValue('grades_table', 'teacher_name', 'is_visible') && (
+                    <th className="border p-2">Enseignant</th>
+                  )}
+                  {getConfigValue('grades_table', 'subject_appreciation', 'is_visible') && (
+                    <th className="border p-2">Appréciation</th>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {sampleGrades.map((grade, idx) => (
+                  <tr key={idx}>
+                    {getConfigValue('grades_table', 'subject_name', 'is_visible') && (
+                      <td className="border p-2">
+                        {grade.subject}
+                        {getConfigValue('grades_table', 'subject_category', 'is_visible') && (
+                          <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                            {grade.category}
+                          </span>
+                        )}
+                      </td>
+                    )}
+                    {getConfigValue('grades_table', 'student_subject_average', 'is_visible') && (
+                      <td className="border p-2 text-center font-bold" style={{ color: headerColor }}>
+                        {grade.grade.toFixed(2)}/20
+                      </td>
+                    )}
+                    {getConfigValue('grades_table', 'class_subject_average', 'is_visible') && (
+                      <td className="border p-2 text-center text-gray-600">{grade.classAvg.toFixed(2)}</td>
+                    )}
+                    {getConfigValue('grades_table', 'class_min_average', 'is_visible') && (
+                      <td className="border p-2 text-center text-xs text-red-600">{grade.min.toFixed(2)}</td>
+                    )}
+                    {getConfigValue('grades_table', 'class_max_average', 'is_visible') && (
+                      <td className="border p-2 text-center text-xs text-green-600">{grade.max.toFixed(2)}</td>
+                    )}
+                    {getConfigValue('grades_table', 'subject_weighting', 'is_visible') && (
+                      <td className="border p-2 text-center">{grade.coef}</td>
+                    )}
+                    {getConfigValue('grades_table', 'teacher_name', 'is_visible') && (
+                      <td className="border p-2 text-xs">{grade.teacher}</td>
+                    )}
+                    {getConfigValue('grades_table', 'subject_appreciation', 'is_visible') && (
+                      <td className="border p-2 italic text-gray-600 text-xs">{grade.appreciation}</td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-          {/* Moyennes */}
-          {template.show_average && (
-            <div style={{
-              background: `linear-gradient(135deg, ${template.header_color}10, ${template.header_color}05)`,
-              border: `1px solid ${template.header_color}30`,
-              borderRadius: "4px",
-              padding: "20px",
-              textAlign: "center",
-              marginBottom: "25px"
-            }}>
-              <div style={{ fontSize: "10pt", color: "#666", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "1px", fontWeight: "500" }}>
-                Moyenne générale
-              </div>
-              <div style={{ 
-                fontFamily: "'Playfair Display', serif",
-                fontSize: "32pt",
-                fontWeight: "700",
-                color: template.header_color,
-                lineHeight: "1"
-              }}>
-                {average.toFixed(2)}<span style={{ fontSize: "14pt", color: "#999" }}>/20</span>
-              </div>
-              {template.show_class_average && (
-                <div style={{ marginTop: "10px", fontSize: "9pt", color: "#666" }}>
-                  Moyenne de classe : {classAverage.toFixed(2)}/20
-                </div>
-              )}
-            </div>
-          )}
+        {/* Moyenne générale */}
+        {getConfigValue('grades_table', 'student_general_average', 'is_visible') && (
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-lg mb-6 text-center">
+            <p className="text-sm text-gray-600 mb-2">Moyenne générale</p>
+            <p className="text-4xl font-bold" style={{ color: headerColor }}>
+              {studentAverage.toFixed(2)}<span className="text-xl text-gray-500">/20</span>
+            </p>
+            {getConfigValue('grades_table', 'class_subject_average', 'is_visible') && (
+              <p className="text-sm text-gray-600 mt-2">
+                Moyenne de classe : {classAverage.toFixed(2)}/20
+              </p>
+            )}
+          </div>
+        )}
 
-          {/* Absences */}
-          {template.show_absences && (
-            <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: "15px", marginBottom: "25px" }}>
-              <div style={{ fontSize: "9pt" }}>
-                <span style={{ fontWeight: "500" }}>Absences :</span> {absences} demi-journées
-              </div>
-            </div>
-          )}
+        {/* Appréciations */}
+        {getConfigValue('grades_table', 'school_appreciation', 'is_visible') && (
+          <div className="bg-gray-50 p-4 rounded-lg mb-6">
+            <h3 className="font-semibold mb-2" style={{ color: headerColor }}>
+              Appréciation de l'établissement
+            </h3>
+            <p className="text-sm text-gray-700 italic">
+              Bon trimestre. L'élève montre de l'intérêt et de la motivation. Continuez vos efforts.
+            </p>
+          </div>
+        )}
 
-          {/* Appréciation générale */}
-          {template.show_appreciation && (
-            <div style={{
-              background: "#f9fafb",
-              borderLeft: `2px solid ${template.header_color}`,
-              padding: "15px 20px",
-              marginBottom: "25px",
-              fontSize: "9pt",
-              lineHeight: "1.6",
-              color: "#333"
-            }}>
-              <h3 style={{ fontWeight: "600", marginBottom: "8px", color: "#1a1a1a" }}>
-                Appréciation générale
-              </h3>
-              <div style={{ fontStyle: "italic" }}>
-                Bon trimestre dans l'ensemble. L'élève fait preuve de sérieux et d'implication dans son travail.
-              </div>
-            </div>
-          )}
+        {getConfigValue('grades_table', 'company_appreciation', 'is_visible') && (
+          <div className="bg-gray-50 p-4 rounded-lg mb-6">
+            <h3 className="font-semibold mb-2" style={{ color: headerColor }}>
+              Appréciation du tuteur en entreprise
+            </h3>
+            <p className="text-sm text-gray-700 italic">
+              Exemple d'appréciation du tuteur...
+            </p>
+          </div>
+        )}
 
-          {/* Signature */}
-          {template.show_signature && (
-            <div style={{ marginTop: "40px", display: "flex", justifyContent: "flex-end" }}>
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: "9pt", color: "#666", marginBottom: "15px" }}>
-                  Le Directeur des Études
-                </div>
-                <div style={{ width: "200px", borderTop: "1px solid #ccc", marginTop: "50px" }} />
-              </div>
+        {/* Signature */}
+        {getConfigValue('footer', 'signature', 'is_visible') && signature && (
+          <div className="flex justify-end mt-8">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-4">{signatoryTitle}</p>
+              <img src={signature} alt="Signature" className="max-w-[150px] max-h-[60px] object-contain mx-auto mb-2" />
+              <div className="w-48 border-t border-gray-400" />
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Pied de page */}
-          {template.footer_text && (
-            <div style={{ 
-              marginTop: "40px",
-              paddingTop: "15px",
-              borderTop: "1px solid #e5e7eb",
-              textAlign: "center",
-              fontSize: "8pt",
-              color: "#999"
-            }}>
-              {template.footer_text}
-            </div>
-          )}
-        </div>
+        {/* Pied de page */}
+        {getConfigValue('footer', 'school_name_footer', 'is_visible') && (
+          <div className="mt-8 pt-4 border-t text-center text-xs text-gray-500">
+            {footerText}
+          </div>
+        )}
       </div>
-    </div>
+    </ScrollArea>
   );
 };
