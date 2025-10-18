@@ -88,10 +88,12 @@ export const UsersManager = () => {
         const createdAt = profile?.created_at || teacher?.created_at || new Date().toISOString();
         const fullName = teacher?.full_name || profile?.full_name || email.split("@")[0] || "";
 
-        // Déterminer le statut : actif si au moins un rôle est assigné ET (profil existe OU est enseignant)
-        const hasRole = userRoles.length > 0;
-        const hasProfile = !!profile;
-        const status: 'active' | 'pending' = (hasRole && hasProfile) ? 'active' : 'pending';
+        // Récupérer le statut email_confirmed depuis auth.users
+        const { data: { user: authUser } } = await supabase.auth.admin.getUserById(id);
+        const emailConfirmed = authUser?.email_confirmed_at != null;
+        
+        // Statut actif uniquement si l'email est confirmé (profil complété)
+        const status: 'active' | 'pending' = emailConfirmed ? 'active' : 'pending';
 
         usersWithRoles.push({
           id,
@@ -214,10 +216,10 @@ export const UsersManager = () => {
     }
   };
 
-  const handleInviteUser = async (email: string, fullName: string, role: string) => {
+  const handleInviteUser = async (email: string, firstName: string, lastName: string, role: string) => {
     try {
       const { error } = await supabase.functions.invoke("invite-user", {
-        body: { email, fullName, role },
+        body: { email, firstName, lastName, role },
       });
 
       if (error) throw error;

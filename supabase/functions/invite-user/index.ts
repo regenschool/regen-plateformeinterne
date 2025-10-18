@@ -42,11 +42,13 @@ serve(async (req) => {
       throw new Error("Accès refusé - Admin uniquement");
     }
 
-    const { email, fullName, role } = await req.json();
+    const { email, firstName, lastName, role } = await req.json();
 
-    if (!email || !fullName || !role) {
-      throw new Error("Email, nom complet et rôle requis");
+    if (!email || !firstName || !lastName || !role) {
+      throw new Error("Email, prénom, nom et rôle requis");
     }
+
+    const fullName = `${firstName} ${lastName}`;
 
     // Créer l'utilisateur SANS confirmer l'email (permet de cliquer plusieurs fois sur le lien)
     const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
@@ -93,6 +95,8 @@ serve(async (req) => {
         user_id: newUser.user.id,
         email: email,
         full_name: fullName,
+        first_name: firstName,
+        last_name: lastName,
       });
 
     if (profileError) {

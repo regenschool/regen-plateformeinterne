@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { UserPlus } from "lucide-react";
 
 interface InviteUserDialogProps {
-  onInvite: (email: string, fullName: string, role: string) => Promise<void>;
+  onInvite: (email: string, firstName: string, lastName: string, role: string) => Promise<void>;
 }
 
 export default function InviteUserDialog({ onInvite }: InviteUserDialogProps) {
@@ -15,7 +15,8 @@ export default function InviteUserDialog({ onInvite }: InviteUserDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
-    fullName: "",
+    firstName: "",
+    lastName: "",
     role: "teacher",
   });
 
@@ -24,8 +25,8 @@ export default function InviteUserDialog({ onInvite }: InviteUserDialogProps) {
     setLoading(true);
 
     try {
-      await onInvite(formData.email, formData.fullName, formData.role);
-      setFormData({ email: "", fullName: "", role: "teacher" });
+      await onInvite(formData.email, formData.firstName, formData.lastName, formData.role);
+      setFormData({ email: "", firstName: "", lastName: "", role: "teacher" });
       setOpen(false);
     } catch (error) {
       console.error("Erreur invitation:", error);
@@ -61,15 +62,27 @@ export default function InviteUserDialog({ onInvite }: InviteUserDialogProps) {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Nom complet *</Label>
-            <Input
-              id="fullName"
-              type="text"
-              value={formData.fullName}
-              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-              required
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">Prénom *</Label>
+              <Input
+                id="firstName"
+                type="text"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Nom *</Label>
+              <Input
+                id="lastName"
+                type="text"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                required
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
