@@ -10,14 +10,16 @@ export interface ReportCardData {
     birthDate?: string;
     className: string;
     photoUrl?: string;
+    age?: number;
   };
   academic: {
     schoolYear: string;
     semester: string;
-    programName?: string; // Nom du programme de l'étudiant
+    programName?: string;
   };
   grades: Array<{
     subject: string;
+    subject_category?: string;
     grade: number;
     maxGrade: number;
     weighting: number;
@@ -26,47 +28,36 @@ export interface ReportCardData {
     classAverage?: number;
     minAverage?: number;
     maxAverage?: number;
+    teacher_name?: string;
   }>;
   template?: {
-    id?: string;
     name: string;
-    headerColor: string;
-    logoUrl?: string;
-    footerText?: string;
-    sections: string[];
-    htmlTemplate?: string;
-    cssTemplate?: string;
-    useCustomHtml?: boolean;
-    // Flags pour contrôler l'affichage
-    show_header?: boolean;
-    show_footer?: boolean;
-    show_student_info?: boolean;
-    show_academic_info?: boolean;
-    show_grades_table?: boolean;
-    show_average?: boolean;
-    show_class_average?: boolean;
-    show_appreciation?: boolean;
-    show_student_photo?: boolean;
-    show_logo?: boolean;
+    config: Array<{
+      section_key: string;
+      element_key: string;
+      is_visible: boolean;
+      is_editable: boolean;
+      default_value?: string;
+      style_options?: Record<string, any>;
+    }>;
   };
   averages?: {
     student: number;
     class: number;
   };
   generalAppreciation?: string;
-  title?: string;
-  headerText?: string;
+  companyAppreciation?: string;
 }
 
 export interface PDFGenerator {
   generateReportCard(data: ReportCardData): Promise<Blob>;
 }
 
-// Implémentation basée sur Edge Function qui retourne HTML + génération PDF côté client
+// Implémentation basée sur Edge Function V2 avec nouvelle architecture
 export class PuppeteerGenerator implements PDFGenerator {
   async generateReportCard(data: ReportCardData): Promise<Blob> {
     const { data: response, error } = await supabase.functions.invoke(
-      'generate-report-card-pdf',
+      'generate-report-card-pdf-v2',
       {
         body: { reportCardData: data },
       }
@@ -77,7 +68,6 @@ export class PuppeteerGenerator implements PDFGenerator {
       throw new Error('Échec de la génération du bulletin');
     }
 
-    // L'edge function retourne du HTML
     const { html } = response;
     
     // Lazy load des dépendances
