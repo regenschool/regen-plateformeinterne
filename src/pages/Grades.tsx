@@ -385,6 +385,12 @@ export default function Grades() {
   const calculateAssessments = (allGrades: Grade[]) => {
     const assessmentMap = new Map<string, Assessment>();
     
+    // Ne rien faire si les étudiants ne sont pas encore chargés
+    if (students.length === 0) {
+      setAssessments([]);
+      return;
+    }
+    
     allGrades.forEach(grade => {
       // Générer une clé unique pour l'épreuve
       const key = grade.assessment_name || 
@@ -1079,6 +1085,8 @@ export default function Grades() {
                             return;
                           }
                           setSelectedAssessment(sel);
+                          setStudentsToComplete(missing);
+                          setCurrentCompletionIndex(0);
                           setStudentToCompleteId(missing[0].id);
                         }}
                         onKeyDown={(e) => {
@@ -1102,6 +1110,8 @@ export default function Grades() {
                               return;
                             }
                             setSelectedAssessment(sel);
+                            setStudentsToComplete(missing);
+                            setCurrentCompletionIndex(0);
                             setStudentToCompleteId(missing[0].id);
                           }
                         }}
