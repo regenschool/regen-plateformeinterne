@@ -350,7 +350,10 @@ export const StudentCard = ({
 
         <div 
           className="flex items-start gap-1.5 text-xs group cursor-pointer hover:bg-accent/30 rounded px-1 -mx-1 py-0.5 transition-colors"
-          onClick={() => !isEditingAcademic && setIsEditingAcademic(true)}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!isEditingAcademic) setIsEditingAcademic(true);
+          }}
         >
           <GraduationCap className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
           {isEditingAcademic ? (
@@ -385,7 +388,10 @@ export const StudentCard = ({
 
         <div 
           className="flex items-start gap-1.5 text-xs group cursor-pointer hover:bg-accent/30 rounded px-1 -mx-1 py-0.5 transition-colors"
-          onClick={() => !isEditingCompany && setIsEditingCompany(true)}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!isEditingCompany) setIsEditingCompany(true);
+          }}
         >
           <Briefcase className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
           {isEditingCompany ? (
