@@ -1325,6 +1325,7 @@ export type Database = {
           special_needs: string | null
           teacher_id: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           academic_background?: string | null
@@ -1344,6 +1345,7 @@ export type Database = {
           special_needs?: string | null
           teacher_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           academic_background?: string | null
@@ -1363,6 +1365,7 @@ export type Database = {
           special_needs?: string | null
           teacher_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -2193,9 +2196,13 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      link_user_to_student: {
+        Args: { p_student_id: string; p_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
-      app_role: "admin" | "teacher"
+      app_role: "admin" | "teacher" | "student"
       assessment_type:
         | "participation_individuelle"
         | "oral_groupe"
@@ -2331,7 +2338,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "teacher"],
+      app_role: ["admin", "teacher", "student"],
       assessment_type: [
         "participation_individuelle",
         "oral_groupe",
