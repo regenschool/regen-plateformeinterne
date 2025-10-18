@@ -62,6 +62,9 @@ export const SyncReferentialsButton = () => {
           <AlertDialogTitle>Synchroniser les référentiels</AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="space-y-2">
+              <p className="font-medium">
+                Cet outil synchronise automatiquement vos référentiels (classes, années, périodes) à partir des données existantes.
+              </p>
               <p>
                 Cette action va analyser toutes les données existantes (étudiants, notes, matières)
                 et créer automatiquement les entrées manquantes dans les référentiels :

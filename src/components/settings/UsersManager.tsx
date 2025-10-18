@@ -88,9 +88,10 @@ export const UsersManager = () => {
         const createdAt = profile?.created_at || teacher?.created_at || new Date().toISOString();
         const fullName = teacher?.full_name || profile?.full_name || email.split("@")[0] || "";
 
-        // Déterminer le statut : actif si le profil est complété (phone ou address renseignés)
-        const hasCompletedProfile = !!(profile?.phone || profile?.address);
-        const status: 'active' | 'pending' = hasCompletedProfile ? 'active' : 'pending';
+        // Déterminer le statut : actif si au moins un rôle est assigné ET (profil existe OU est enseignant)
+        const hasRole = userRoles.length > 0;
+        const hasProfile = !!profile;
+        const status: 'active' | 'pending' = (hasRole && hasProfile) ? 'active' : 'pending';
 
         usersWithRoles.push({
           id,

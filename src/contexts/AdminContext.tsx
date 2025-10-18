@@ -30,6 +30,11 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user) {
         setUserId(session.user.id);
         checkAdminStatus(session.user.id);
+      } else {
+        // Reset au logout
+        setUserId(null);
+        setIsAdmin(false);
+        setHasAdminRole(false);
       }
     });
 
@@ -52,7 +57,15 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
 
     const hasRole = !!roleData;
     setHasAdminRole(hasRole);
-    setIsAdmin(hasRole || !!override?.is_admin);
+    
+    // Vérifier si un choix a été fait précédemment dans sessionStorage
+    const savedChoice = sessionStorage.getItem(`admin_mode_${userId}`);
+    if (savedChoice !== null) {
+      setIsAdmin(savedChoice === 'true');
+    } else {
+      // Par défaut, utiliser le rôle réel
+      setIsAdmin(hasRole || !!override?.is_admin);
+    }
   };
 
   const toggleAdmin = async (checked: boolean) => {
@@ -71,6 +84,9 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    // Sauvegarder le choix dans sessionStorage pour persistance
+    sessionStorage.setItem(`admin_mode_${userId}`, checked.toString());
+    
     setIsAdmin(checked);
     toast.success(checked ? "Mode administrateur activé" : "Mode enseignant activé");
   };

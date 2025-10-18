@@ -236,11 +236,25 @@ export function TeacherDocumentsSection({ userId }: TeacherDocumentsSectionProps
   };
 
   const handleUpload = () => {
-    if (!uploadForm.file || !selectedCategory) return;
+    if (!selectedCategory) return;
+    
+    // Pour les types text et date, on n'a pas besoin de fichier
+    const isFileType = !selectedTemplate || selectedTemplate.field_type === 'file';
+    if (isFileType && !uploadForm.file) return;
+    if (!isFileType && !uploadForm.title) return;
+
+    // Pour text/date, on crée un fichier texte fictif
+    let fileToUpload = uploadForm.file;
+    if (!isFileType && uploadForm.title) {
+      const blob = new Blob([uploadForm.title], { type: 'text/plain' });
+      fileToUpload = new File([blob], `${selectedTemplate?.field_name || 'data'}.txt`, { type: 'text/plain' });
+    }
+
+    if (!fileToUpload) return;
 
     uploadMutation.mutate({
-      file: uploadForm.file,
-      title: uploadForm.title || uploadForm.file.name,
+      file: fileToUpload,
+      title: uploadForm.title || fileToUpload.name,
       description: uploadForm.description,
       categoryId: selectedCategory.id,
     });
@@ -535,7 +549,12 @@ export function TeacherDocumentsSection({ userId }: TeacherDocumentsSectionProps
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Uploader un document</DialogTitle>
+            <DialogTitle>
+              {selectedTemplate?.field_type === 'file' ? 'Uploader un document' : 
+               selectedTemplate?.field_type === 'date' ? 'Renseigner une date' :
+               selectedTemplate?.field_type === 'text' ? 'Renseigner une information' :
+               'Ajouter un document'}
+            </DialogTitle>
             <DialogDescription>
               {selectedCategory?.name}
               {selectedTemplate && ` - ${selectedTemplate.field_label}`}
@@ -547,19 +566,58 @@ export function TeacherDocumentsSection({ userId }: TeacherDocumentsSectionProps
                 <p className="text-sm text-blue-900 dark:text-blue-100">{selectedTemplate.help_text}</p>
               </div>
             )}
-            <div>
-              <Label htmlFor="file">
-                Fichier *
-                {selectedTemplate?.is_required && (
-                  <span className="text-destructive ml-1">(obligatoire)</span>
-                )}
-              </Label>
-              <Input
-                id="file"
-                type="file"
-                onChange={(e) => setUploadForm({ ...uploadForm, file: e.target.files?.[0] || null })}
-              />
-            </div>
+            
+            {/* Affichage conditionnel selon le type de template */}
+            {(!selectedTemplate || selectedTemplate.field_type === 'file') && (
+              <div>
+                <Label htmlFor="file">
+                  Fichier *
+                  {selectedTemplate?.is_required && (
+                    <span className="text-destructive ml-1">(obligatoire)</span>
+                  )}
+                </Label>
+                <Input
+                  id="file"
+                  type="file"
+                  onChange={(e) => setUploadForm({ ...uploadForm, file: e.target.files?.[0] || null })}
+                />
+              </div>
+            )}
+            
+            {selectedTemplate?.field_type === 'date' && (
+              <div>
+                <Label htmlFor="date_value">
+                  Date *
+                  {selectedTemplate?.is_required && (
+                    <span className="text-destructive ml-1">(obligatoire)</span>
+                  )}
+                </Label>
+                <Input
+                  id="date_value"
+                  type="date"
+                  value={uploadForm.title}
+                  onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
+                />
+              </div>
+            )}
+            
+            {selectedTemplate?.field_type === 'text' && (
+              <div>
+                <Label htmlFor="text_value">
+                  Valeur *
+                  {selectedTemplate?.is_required && (
+                    <span className="text-destructive ml-1">(obligatoire)</span>
+                  )}
+                </Label>
+                <Textarea
+                  id="text_value"
+                  value={uploadForm.title}
+                  onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })}
+                  placeholder="Saisissez l'information demandée"
+                />
+              </div>
+            )}
+            
             {!selectedTemplate && (
               <>
                 <div>
@@ -587,8 +645,18 @@ export function TeacherDocumentsSection({ userId }: TeacherDocumentsSectionProps
             <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
               Annuler
             </Button>
-            <Button onClick={handleUpload} disabled={!uploadForm.file || uploading}>
-              {uploading ? "Upload en cours..." : "Uploader"}
+            <Button 
+              onClick={handleUpload} 
+              disabled={
+                uploading || 
+                (selectedTemplate?.field_type === 'file' && !uploadForm.file) ||
+                (selectedTemplate?.field_type === 'date' && !uploadForm.title) ||
+                (selectedTemplate?.field_type === 'text' && !uploadForm.title)
+              }
+            >
+              {uploading ? "Enregistrement..." : 
+               selectedTemplate?.field_type === 'file' ? "Uploader" : 
+               "Enregistrer"}
             </Button>
           </DialogFooter>
         </DialogContent>
