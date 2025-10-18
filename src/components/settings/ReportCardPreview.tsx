@@ -82,17 +82,17 @@ export const ReportCardPreview = ({ template }: Props) => {
         )}
 
         {/* Informations étudiant */}
-        {getConfigValue('student_info', 'first_name', 'is_visible') && (
+        {getConfigValue('student_info', 'name', 'is_visible') && (
           <div className="bg-gray-50 p-4 rounded-lg mb-6">
             <h2 className="font-semibold text-lg mb-3" style={{ color: headerColor }}>
               Informations de l'élève
             </h2>
             <div className="grid grid-cols-2 gap-3 text-sm">
-              {getConfigValue('student_info', 'first_name', 'is_visible') && (
-                <div><strong>Prénom :</strong> Jean</div>
+              {getConfigValue('student_info', 'name', 'is_visible') && (
+                <div><strong>Nom complet :</strong> Jean DUPONT</div>
               )}
-              {getConfigValue('student_info', 'last_name', 'is_visible') && (
-                <div><strong>Nom :</strong> DUPONT</div>
+              {getConfigValue('student_info', 'birth_date', 'is_visible') && (
+                <div><strong>Date de naissance :</strong> 15/03/2010</div>
               )}
               {getConfigValue('student_info', 'class_name', 'is_visible') && (
                 <div><strong>Classe :</strong> 3ème A</div>
@@ -100,15 +100,12 @@ export const ReportCardPreview = ({ template }: Props) => {
               {getConfigValue('student_info', 'age', 'is_visible') && (
                 <div><strong>Âge :</strong> 14 ans</div>
               )}
-              {getConfigValue('student_info', 'program_name', 'is_visible') && (
-                <div><strong>Programme :</strong> Général</div>
-              )}
             </div>
           </div>
         )}
 
         {/* Tableau des notes */}
-        {getConfigValue('grades_table', 'subject_name', 'is_visible') && (
+        {getConfigValue('grades_table', 'table', 'is_visible') && (
           <div className="mb-6">
             <h2 className="font-semibold text-lg mb-3" style={{ color: headerColor }}>
               Résultats par matière
@@ -186,13 +183,13 @@ export const ReportCardPreview = ({ template }: Props) => {
         )}
 
         {/* Moyenne générale */}
-        {getConfigValue('grades_table', 'student_general_average', 'is_visible') && (
+        {getConfigValue('average', 'student_average', 'is_visible') && (
           <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-lg mb-6 text-center">
             <p className="text-sm text-gray-600 mb-2">Moyenne générale</p>
             <p className="text-4xl font-bold" style={{ color: headerColor }}>
               {studentAverage.toFixed(2)}<span className="text-xl text-gray-500">/20</span>
             </p>
-            {getConfigValue('grades_table', 'class_subject_average', 'is_visible') && (
+            {getConfigValue('average', 'class_average', 'is_visible') && (
               <p className="text-sm text-gray-600 mt-2">
                 Moyenne de classe : {classAverage.toFixed(2)}/20
               </p>
@@ -201,7 +198,7 @@ export const ReportCardPreview = ({ template }: Props) => {
         )}
 
         {/* Appréciations */}
-        {getConfigValue('grades_table', 'school_appreciation', 'is_visible') && (
+        {getConfigValue('appreciation', 'school_appreciation', 'is_visible') && (
           <div className="bg-gray-50 p-4 rounded-lg mb-6">
             <h3 className="font-semibold mb-2" style={{ color: headerColor }}>
               Appréciation de l'établissement
@@ -212,24 +209,31 @@ export const ReportCardPreview = ({ template }: Props) => {
           </div>
         )}
 
-        {getConfigValue('grades_table', 'company_appreciation', 'is_visible') && (
+        {getConfigValue('appreciation', 'company_appreciation', 'is_visible') && (
           <div className="bg-gray-50 p-4 rounded-lg mb-6">
             <h3 className="font-semibold mb-2" style={{ color: headerColor }}>
               Appréciation du tuteur en entreprise
             </h3>
             <p className="text-sm text-gray-700 italic">
-              Exemple d'appréciation du tuteur...
+              Excellente intégration dans l'équipe. L'élève fait preuve d'autonomie et de professionnalisme.
             </p>
           </div>
         )}
 
         {/* Signature */}
-        {getConfigValue('footer', 'signature', 'is_visible') && signature && (
+        {getConfigValue('footer', 'signature', 'is_visible') && (
           <div className="flex justify-end mt-8">
             <div className="text-center">
               <p className="text-sm text-gray-600 mb-4">{signatoryTitle}</p>
-              <img src={signature} alt="Signature" className="max-w-[150px] max-h-[60px] object-contain mx-auto mb-2" />
-              <div className="w-48 border-t border-gray-400" />
+              {signature && (
+                <>
+                  <img src={signature} alt="Signature" className="max-w-[150px] max-h-[60px] object-contain mx-auto mb-2" />
+                  <div className="w-48 border-t border-gray-400" />
+                </>
+              )}
+              {!signature && (
+                <div className="w-48 h-16 border-t border-gray-400 mt-4" />
+              )}
             </div>
           </div>
         )}
