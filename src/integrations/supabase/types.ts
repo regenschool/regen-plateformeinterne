@@ -505,6 +505,7 @@ export type Database = {
           is_default: boolean | null
           logo_url: string | null
           name: string
+          program_name: string | null
           sections_order: Json | null
           show_absences: boolean | null
           show_academic_info: boolean | null
@@ -517,8 +518,11 @@ export type Database = {
           show_grade_detail: boolean | null
           show_grades_table: boolean | null
           show_header: boolean | null
+          show_individual_grades: boolean | null
           show_logo: boolean | null
           show_max_grade: boolean | null
+          show_min_max_grades: boolean | null
+          show_program_name: boolean | null
           show_signature: boolean | null
           show_student_age: boolean | null
           show_student_birth_date: boolean | null
@@ -527,6 +531,7 @@ export type Database = {
           show_subject_average: boolean | null
           show_subject_teacher: boolean | null
           show_weighting: boolean | null
+          signature_url: string | null
           student_fields: Json | null
           updated_at: string
           use_custom_html: boolean | null
@@ -543,6 +548,7 @@ export type Database = {
           is_default?: boolean | null
           logo_url?: string | null
           name: string
+          program_name?: string | null
           sections_order?: Json | null
           show_absences?: boolean | null
           show_academic_info?: boolean | null
@@ -555,8 +561,11 @@ export type Database = {
           show_grade_detail?: boolean | null
           show_grades_table?: boolean | null
           show_header?: boolean | null
+          show_individual_grades?: boolean | null
           show_logo?: boolean | null
           show_max_grade?: boolean | null
+          show_min_max_grades?: boolean | null
+          show_program_name?: boolean | null
           show_signature?: boolean | null
           show_student_age?: boolean | null
           show_student_birth_date?: boolean | null
@@ -565,6 +574,7 @@ export type Database = {
           show_subject_average?: boolean | null
           show_subject_teacher?: boolean | null
           show_weighting?: boolean | null
+          signature_url?: string | null
           student_fields?: Json | null
           updated_at?: string
           use_custom_html?: boolean | null
@@ -581,6 +591,7 @@ export type Database = {
           is_default?: boolean | null
           logo_url?: string | null
           name?: string
+          program_name?: string | null
           sections_order?: Json | null
           show_absences?: boolean | null
           show_academic_info?: boolean | null
@@ -593,8 +604,11 @@ export type Database = {
           show_grade_detail?: boolean | null
           show_grades_table?: boolean | null
           show_header?: boolean | null
+          show_individual_grades?: boolean | null
           show_logo?: boolean | null
           show_max_grade?: boolean | null
+          show_min_max_grades?: boolean | null
+          show_program_name?: boolean | null
           show_signature?: boolean | null
           show_student_age?: boolean | null
           show_student_birth_date?: boolean | null
@@ -603,6 +617,7 @@ export type Database = {
           show_subject_average?: boolean | null
           show_subject_teacher?: boolean | null
           show_weighting?: boolean | null
+          signature_url?: string | null
           student_fields?: Json | null
           updated_at?: string
           use_custom_html?: boolean | null

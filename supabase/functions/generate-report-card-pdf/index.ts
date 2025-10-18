@@ -25,12 +25,16 @@ interface ReportCardData {
     classAverage?: number;
     minAverage?: number;
     maxAverage?: number;
+    assessment_name?: string;
   }>;
   template?: {
     name: string;
     headerColor: string;
+    header_color?: string;
     logoUrl?: string;
+    logo_url?: string;
     footerText?: string;
+    footer_text?: string;
     sections: string[];
     htmlTemplate?: string;
     cssTemplate?: string;
@@ -44,7 +48,15 @@ interface ReportCardData {
     show_class_average?: boolean;
     show_appreciation?: boolean;
     show_student_photo?: boolean;
+    show_student_birth_date?: boolean;
     show_logo?: boolean;
+    show_signature?: boolean;
+    show_individual_grades?: boolean;
+    show_min_max_grades?: boolean;
+    show_program_name?: boolean;
+    show_general_appreciation?: boolean;
+    program_name?: string;
+    signature_url?: string;
   };
   averages?: {
     student: number;
@@ -56,300 +68,39 @@ interface ReportCardData {
 }
 
 const generateHTMLTemplate = (data: ReportCardData): string => {
-  const { student, academic, grades, template, averages } = data;
-  
-  // Si un template HTML personnalisé est fourni, l'utiliser
-  if (template?.useCustomHtml && template?.htmlTemplate) {
-    let html = template.htmlTemplate;
+  if (data.template?.useCustomHtml && data.template?.htmlTemplate) {
+    let html = data.template.htmlTemplate;
+    html = html.replace(/{{student\.firstName}}/g, data.student.firstName || '');
+    html = html.replace(/{{student\.lastName}}/g, data.student.lastName || '');
+    html = html.replace(/{{student\.birthDate}}/g, data.student.birthDate || '');
+    html = html.replace(/{{student\.className}}/g, data.student.className || '');
+    html = html.replace(/{{academic\.schoolYear}}/g, data.academic.schoolYear || '');
+    html = html.replace(/{{academic\.semester}}/g, data.academic.semester || '');
+    html = html.replace(/{{averages\.student}}/g, data.averages?.student?.toFixed(2) || '0');
+    html = html.replace(/{{averages\.class}}/g, data.averages?.class?.toFixed(2) || '0');
     
-    // Remplacer les variables
-    html = html.replace(/FIRST_NAME/g, student.firstName);
-    html = html.replace(/LAST_NAME/g, student.lastName);
-    html = html.replace(/CLASS_NAME/g, student.className);
-    html = html.replace(/BIRTH_DATE/g, student.birthDate || '');
-    html = html.replace(/SCHOOL_YEAR/g, academic.schoolYear);
-    html = html.replace(/SEMESTER/g, academic.semester);
-    
-    // Générer les lignes de notes (moyennes par matière)
-    const showClassAverage = template?.show_class_average !== false;
-    const gradesRows = grades.map(grade => `
-      <tr>
-        <td><strong>${grade.subject}</strong></td>
-        <td class="grade-cell">${grade.grade.toFixed(2)}/${grade.maxGrade}</td>
-        ${showClassAverage ? `
-          <td class="text-center text-muted">${grade.classAverage?.toFixed(2) || '-'}</td>
-          <td class="text-center text-xs text-danger">${grade.minAverage?.toFixed(2) || '-'}</td>
-          <td class="text-center text-xs text-success">${grade.maxAverage?.toFixed(2) || '-'}</td>
-        ` : ''}
-        <td class="text-center">${grade.weighting}</td>
-        <td class="appreciation">${grade.appreciation || '-'}</td>
-      </tr>
-    `).join('');
-    
-    html = html.replace(/<!-- GRADES_ROWS -->/g, gradesRows);
-    html = html.replace(/STUDENT_AVERAGE/g, averages?.student.toFixed(2) || '0');
-    html = html.replace(/CLASS_AVERAGE/g, averages?.class.toFixed(2) || '0');
-    
-    // Ajouter le CSS personnalisé dans le head si fourni
-    if (template.cssTemplate) {
-      html = html.replace('</head>', `<style>${template.cssTemplate}</style></head>`);
-    }
-    
-    return html;
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${data.template.cssTemplate || ''}</style></head><body>${html}</body></html>`;
   }
-  
-  // Sinon, utiliser le template par défaut
-  const headerColor = template?.headerColor || '#1e40af';
-  
-  return `
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Bulletin - ${student.firstName} ${student.lastName}</title>
-      <style>
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-        
-        body {
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-          background: white;
-          padding: 40px;
-          color: #333;
-        }
-        
-        .header {
-          background: ${headerColor};
-          color: white;
-          padding: 30px;
-          border-radius: 8px;
-          margin-bottom: 30px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        
-        .header h1 {
-          font-size: 28px;
-          margin-bottom: 5px;
-        }
-        
-        .header .subtitle {
-          font-size: 14px;
-          opacity: 0.9;
-        }
-        
-        .logo {
-          max-height: 60px;
-          max-width: 150px;
-        }
-        
-        .student-info {
-          background: #f8fafc;
-          padding: 20px;
-          border-radius: 8px;
-          margin-bottom: 30px;
-          display: grid;
-          grid-template-columns: auto 1fr;
-          gap: 20px;
-        }
-        
-        .student-photo {
-          width: 100px;
-          height: 100px;
-          border-radius: 50%;
-          object-fit: cover;
-          border: 3px solid ${headerColor};
-        }
-        
-        .student-details h2 {
-          color: ${headerColor};
-          margin-bottom: 10px;
-        }
-        
-        .student-details p {
-          margin: 5px 0;
-          color: #64748b;
-        }
-        
-        .grades-table {
-          width: 100%;
-          border-collapse: collapse;
-          margin: 20px 0;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        .grades-table thead {
-          background: ${headerColor};
-          color: white;
-        }
-        
-        .grades-table th {
-          padding: 15px;
-          text-align: left;
-          font-weight: 600;
-        }
-        
-        .grades-table td {
-          padding: 12px 15px;
-          border-bottom: 1px solid #e2e8f0;
-        }
-        
-        .grades-table tbody tr:hover {
-          background: #f8fafc;
-        }
-        
-        .grade-cell {
-          font-weight: bold;
-          color: ${headerColor};
-        }
-        
-        .appreciation {
-          font-style: italic;
-          color: #64748b;
-          font-size: 14px;
-        }
-        
-        .averages {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 20px;
-          margin: 30px 0;
-        }
-        
-        .average-card {
-          background: linear-gradient(135deg, ${headerColor} 0%, ${headerColor}dd 100%);
-          color: white;
-          padding: 25px;
-          border-radius: 8px;
-          text-align: center;
-        }
-        
-        .average-card h3 {
-          font-size: 16px;
-          margin-bottom: 10px;
-          opacity: 0.9;
-        }
-        
-        .average-card .value {
-          font-size: 36px;
-          font-weight: bold;
-        }
-        
-        .footer {
-          margin-top: 50px;
-          padding-top: 20px;
-          border-top: 2px solid #e2e8f0;
-          text-align: center;
-          color: #64748b;
-          font-size: 12px;
-        }
-        
-        @media print {
-          body {
-            padding: 20px;
-          }
-        }
-      </style>
-    </head>
-    <body>
-      ${template?.show_header !== false ? `
-        <div class="header">
-          <div>
-            <h1>${data.title || 'Bulletin Scolaire'}</h1>
-            <div class="subtitle">${academic.schoolYear} - ${academic.semester}</div>
-            ${data.headerText ? `<div class="subtitle" style="font-size: 12px; margin-top: 5px;">${data.headerText}</div>` : ''}
-          </div>
-          ${template?.show_logo !== false && template?.logoUrl ? `<img src="${template.logoUrl}" class="logo" alt="Logo" />` : ''}
-        </div>
-      ` : ''}
-      
-      ${template?.show_student_info !== false ? `
-        <div class="student-info">
-          ${template?.show_student_photo !== false && student.photoUrl ? `<img src="${student.photoUrl}" class="student-photo" alt="${student.firstName}" />` : ''}
-          <div class="student-details">
-            <h2>${student.firstName} ${student.lastName}</h2>
-            <p><strong>Classe:</strong> ${student.className}</p>
-            ${student.birthDate ? `<p><strong>Date de naissance:</strong> ${student.birthDate}</p>` : ''}
-          </div>
-        </div>
-      ` : ''}
-      
-      ${template?.show_grades_table !== false ? `
-        <table class="grades-table">
-          <thead>
-            <tr>
-              <th>Matière</th>
-              <th>Moyenne Élève</th>
-              ${template?.show_class_average ? `
-                <th>Moy. Classe</th>
-                <th>Min</th>
-                <th>Max</th>
-              ` : ''}
-              <th>Coefficient</th>
-              <th>Appréciation</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${grades.map(grade => `
-              <tr>
-                <td><strong>${grade.subject}</strong></td>
-                <td class="grade-cell">${grade.grade.toFixed(2)}/${grade.maxGrade}</td>
-                ${template?.show_class_average ? `
-                  <td class="text-center" style="color: #64748b;">${grade.classAverage?.toFixed(2) || '-'}</td>
-                  <td class="text-center text-xs" style="color: #dc2626;">${grade.minAverage?.toFixed(2) || '-'}</td>
-                  <td class="text-center text-xs" style="color: #16a34a;">${grade.maxAverage?.toFixed(2) || '-'}</td>
-                ` : ''}
-                <td class="text-center">${grade.weighting}</td>
-                <td class="appreciation">${grade.appreciation || '-'}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-          <tfoot>
-            <tr style="background: rgba(30, 64, 175, 0.05); font-weight: bold;">
-              <td colspan="${template?.show_class_average ? 5 : 1}" style="padding: 15px;">Moyenne générale</td>
-              <td colspan="2" style="text-align: center; color: ${headerColor}; font-size: 18px; padding: 15px;">
-                ${averages?.student.toFixed(2)}/20
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      ` : ''}
-      
-      ${template?.show_average && averages ? `
-        <div class="averages">
-          <div class="average-card">
-            <h3>Moyenne de l'élève</h3>
-            <div class="value">${averages.student.toFixed(2)}/20</div>
-          </div>
-          ${template?.show_class_average ? `
-            <div class="average-card">
-              <h3>Moyenne de la classe</h3>
-              <div class="value">${averages.class.toFixed(2)}/20</div>
-            </div>
-          ` : ''}
-        </div>
-      ` : ''}
-      
-      ${template?.show_appreciation !== false && data.generalAppreciation ? `
-        <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 30px 0;">
-          <h3 style="margin-bottom: 10px; color: ${headerColor};">Appréciation générale</h3>
-          <p style="font-style: italic; color: #64748b;">${data.generalAppreciation}</p>
-        </div>
-      ` : ''}
-      
-      ${template?.show_footer !== false && template?.footerText ? `
-        <div class="footer">
-          ${template.footerText}
-        </div>
-      ` : ''}
-    </body>
-    </html>
-  `;
+
+  const template = data.template || {};
+  const headerColor = template.header_color || template.headerColor || '#1e40af';
+  const programName = template.program_name || 'Programme de Formation';
+  const gradesBySubject = new Map<string, typeof data.grades>();
+  data.grades.forEach(grade => {
+    const existing = gradesBySubject.get(grade.subject) || [];
+    gradesBySubject.set(grade.subject, [...existing, grade]);
+  });
+
+  const subjectStats = Array.from(gradesBySubject.entries()).map(([subject, grades]) => {
+    const avg = grades.reduce((sum, g) => sum + (g.grade / g.maxGrade) * 20, 0) / grades.length;
+    const classAvgs = grades.map(g => g.classAverage || 0).filter(a => a > 0);
+    const minGrade = classAvgs.length > 0 ? Math.min(...classAvgs) : 0;
+    const maxGrade = classAvgs.length > 0 ? Math.max(...classAvgs) : 0;
+    return { subject, grades, avg, minGrade, maxGrade };
+  });
+
+  return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;font-size:10pt;line-height:1.6;color:#1a1a1a;background:white;padding:40px 50px}.report-container{max-width:700px;margin:0 auto}.header{border-bottom:1px solid ${headerColor};padding-bottom:20px;margin-bottom:30px;display:flex;align-items:flex-start;justify-content:space-between}.logo{max-width:80px;max-height:80px;object-fit:contain;margin-bottom:10px}.title{font-family:'Playfair Display',serif;font-size:20pt;font-weight:700;color:${headerColor};margin-bottom:4px;letter-spacing:0.5px}.subtitle{font-size:9pt;color:#666;font-weight:400;margin-bottom:2px}.academic-info{background:#f9fafb;border-left:2px solid ${headerColor};padding:15px 20px;margin-bottom:25px;font-size:9pt}.academic-info .row{display:flex;margin-bottom:6px}.academic-info .label{font-weight:500;color:#555;width:140px}.academic-info .value{color:#1a1a1a;font-weight:400}.student-info{display:flex;align-items:center;gap:20px;margin-bottom:25px;padding:15px 0;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb}.student-photo{width:60px;height:60px;border-radius:4px;object-fit:cover;border:1px solid #e5e7eb}.student-name{font-family:'Playfair Display',serif;font-size:14pt;font-weight:600;color:#1a1a1a;margin-bottom:4px}.student-meta{font-size:9pt;color:#666}.section-title{font-family:'Playfair Display',serif;font-size:12pt;font-weight:600;color:${headerColor};margin-bottom:15px;padding-bottom:8px;border-bottom:1px solid #e5e7eb}.subject-block{margin-bottom:20px;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden}.subject-header{background:linear-gradient(to right,${headerColor}15,transparent);padding:10px 15px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e5e7eb}.subject-name{font-weight:600;font-size:10pt;color:#1a1a1a}.subject-average{font-family:'Playfair Display',serif;font-size:16pt;font-weight:600;color:${headerColor}}.subject-stats{font-size:8pt;color:#666;display:flex;gap:15px}.grades-detail{padding:10px 15px;background:white}.grade-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6;font-size:9pt}.grade-row:last-child{border-bottom:none}.grade-label{color:#555;flex:1}.grade-value{font-weight:500;color:#1a1a1a;min-width:60px;text-align:right}.overall-average{background:linear-gradient(135deg,${headerColor}10,${headerColor}05);border:1px solid ${headerColor}30;border-radius:4px;padding:20px;text-align:center;margin-bottom:25px}.overall-label{font-size:10pt;color:#666;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;font-weight:500}.overall-value{font-family:'Playfair Display',serif;font-size:32pt;font-weight:700;color:${headerColor};line-height:1}.overall-max{font-size:14pt;color:#999}.appreciation{background:#f9fafb;border-left:2px solid ${headerColor};padding:15px 20px;margin-bottom:25px;font-size:9pt;line-height:1.6;color:#333}.appreciation-title{font-weight:600;margin-bottom:8px;color:#1a1a1a}.signature-section{margin-top:40px;display:flex;justify-content:flex-end}.signature-block{text-align:center}.signature-label{font-size:9pt;color:#666;margin-bottom:15px}.signature-img{max-width:150px;max-height:60px;object-fit:contain;margin-bottom:5px}.signature-line{width:200px;border-top:1px solid #ccc;margin-top:10px}.footer{margin-top:40px;padding-top:15px;border-top:1px solid #e5e7eb;text-align:center;font-size:8pt;color:#999}</style></head><body><div class="report-container">${template.show_header!==false?`<div class="header"><div class="header-left">${template.show_logo!==false&&(template.logo_url||template.logoUrl)?`<img src="${template.logo_url||template.logoUrl}" alt="Logo" class="logo">`:''}
+<div class="title">${data.title||'Bulletin de Notes'}</div>${template.show_program_name!==false?`<div class="subtitle">${programName}</div>`:''}</div></div>`:''}${template.show_academic_info!==false?`<div class="academic-info"><div class="row"><span class="label">Année scolaire :</span><span class="value">${data.academic.schoolYear}</span></div><div class="row"><span class="label">Période :</span><span class="value">${data.academic.semester}</span></div><div class="row"><span class="label">Niveau :</span><span class="value">${data.student.className}</span></div></div>`:''}${template.show_student_info!==false?`<div class="student-info">${template.show_student_photo!==false&&data.student.photoUrl?`<img src="${data.student.photoUrl}" alt="Photo" class="student-photo">`:''}<div class="student-details"><div class="student-name">${data.student.firstName} ${data.student.lastName}</div><div class="student-meta">${template.show_student_birth_date!==false&&data.student.birthDate?`Né(e) le ${new Date(data.student.birthDate).toLocaleDateString('fr-FR')}`:''}</div></div></div>`:''}${template.show_grades_table!==false?`<div class="grades-section"><div class="section-title">Résultats par matière</div>${subjectStats.map(stat=>`<div class="subject-block"><div class="subject-header"><div><div class="subject-name">${stat.subject}</div>${template.show_min_max_grades!==false?`<div class="subject-stats"><span>Min. classe: ${stat.minGrade.toFixed(2)}/20</span><span>Max. classe: ${stat.maxGrade.toFixed(2)}/20</span></div>`:''}</div><div class="subject-average">${stat.avg.toFixed(2)}<span style="font-size:10pt;color:#999;">/20</span></div></div>${template.show_individual_grades?`<div class="grades-detail">${stat.grades.map(grade=>`<div class="grade-row"><span class="grade-label">${grade.assessmentType}${grade.assessment_name?` - ${grade.assessment_name}`:''}</span><span class="grade-value">${grade.grade.toFixed(2)} / ${grade.maxGrade}</span></div>`).join('')}</div>`:''}</div>`).join('')}</div>`:''}${template.show_average!==false&&data.averages?`<div class="overall-average"><div class="overall-label">Moyenne générale</div><div class="overall-value">${data.averages.student.toFixed(2)}<span class="overall-max">/20</span></div>${template.show_class_average!==false&&data.averages.class?`<div style="margin-top:10px;font-size:9pt;color:#666;">Moyenne de classe : ${data.averages.class.toFixed(2)}/20</div>`:''}</div>`:''}${template.show_general_appreciation!==false&&data.generalAppreciation?`<div class="appreciation"><div class="appreciation-title">Appréciation générale</div><div>${data.generalAppreciation}</div></div>`:''}${template.show_signature!==false&&(template.signature_url)?`<div class="signature-section"><div class="signature-block"><div class="signature-label">Le Directeur des Études</div><img src="${template.signature_url}" alt="Signature" class="signature-img"><div class="signature-line"></div></div></div>`:''}${template.show_footer!==false?`<div class="footer">${template.footer_text||template.footerText||`Document généré le ${new Date().toLocaleDateString('fr-FR')}`}</div>`:''}</div></body></html>`;
 };
 
 Deno.serve(async (req) => {

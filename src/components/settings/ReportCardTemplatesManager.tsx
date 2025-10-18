@@ -50,6 +50,11 @@ interface ReportCardTemplate {
   show_subject_teacher?: boolean;
   show_general_appreciation?: boolean;
   grade_display_format?: string;
+  show_individual_grades?: boolean;
+  show_min_max_grades?: boolean;
+  show_program_name?: boolean;
+  program_name?: string;
+  signature_url?: string;
 }
 
 export const ReportCardTemplatesManager = () => {
@@ -533,6 +538,39 @@ export const ReportCardTemplatesManager = () => {
                             }
                           />
                         </div>
+
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <Label htmlFor="show_individual_grades">Notes individuelles par matière</Label>
+                          <Switch
+                            id="show_individual_grades"
+                            checked={selectedTemplate.show_individual_grades === true}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_individual_grades: checked })
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <Label htmlFor="show_min_max_grades">Min/Max par matière</Label>
+                          <Switch
+                            id="show_min_max_grades"
+                            checked={selectedTemplate.show_min_max_grades !== false}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_min_max_grades: checked })
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 rounded-lg border">
+                          <Label htmlFor="show_program_name">Afficher le nom du programme</Label>
+                          <Switch
+                            id="show_program_name"
+                            checked={selectedTemplate.show_program_name !== false}
+                            onCheckedChange={(checked) =>
+                              setSelectedTemplate({ ...selectedTemplate, show_program_name: checked })
+                            }
+                          />
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -572,6 +610,57 @@ export const ReportCardTemplatesManager = () => {
                           </div>
                           <p className="text-sm text-muted-foreground">
                             Utilisée pour l'en-tête et les accents
+                          </p>
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-2">
+                          <Label htmlFor="program_name">Nom du programme</Label>
+                          <Input
+                            id="program_name"
+                            value={selectedTemplate.program_name || 'Programme de Formation'}
+                            onChange={(e) =>
+                              setSelectedTemplate({ ...selectedTemplate, program_name: e.target.value })
+                            }
+                            placeholder="Ex: Programme Grande École"
+                          />
+                          <p className="text-sm text-muted-foreground">
+                            Affiché dans l'en-tête du bulletin
+                          </p>
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-2">
+                          <Label htmlFor="logo_url">Logo de l'établissement (URL)</Label>
+                          <Input
+                            id="logo_url"
+                            value={selectedTemplate.logo_url || ''}
+                            onChange={(e) =>
+                              setSelectedTemplate({ ...selectedTemplate, logo_url: e.target.value })
+                            }
+                            placeholder="https://..."
+                          />
+                          <p className="text-sm text-muted-foreground">
+                            Uploadez d'abord votre logo dans le stockage puis collez l'URL publique ici
+                          </p>
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-2">
+                          <Label htmlFor="signature_url">Signature (Directeur/Responsable)</Label>
+                          <Input
+                            id="signature_url"
+                            value={selectedTemplate.signature_url || ''}
+                            onChange={(e) =>
+                              setSelectedTemplate({ ...selectedTemplate, signature_url: e.target.value })
+                            }
+                            placeholder="https://..."
+                          />
+                          <p className="text-sm text-muted-foreground">
+                            Uploadez la signature dans le stockage puis collez l'URL publique ici
                           </p>
                         </div>
 
