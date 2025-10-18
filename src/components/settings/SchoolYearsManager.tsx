@@ -136,9 +136,9 @@ export const SchoolYearsManager = () => {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button onClick={() => setIsAdding(true)} disabled={isAdding}>
-          <Plus className="w-4 h-4 mr-2" />
-          Ajouter une année
+        <Button onClick={() => setIsAdding(true)} disabled={isAdding} size="sm">
+          <Plus className="h-4 w-4 mr-2" />
+          Ajouter
         </Button>
       </div>
 

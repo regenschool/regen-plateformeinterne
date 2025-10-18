@@ -296,22 +296,20 @@ export const UsersManager = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <ImportUsersDialog onImportComplete={fetchUsers} />
-          <InviteUserDialog onInvite={handleInviteUser} />
-        </div>
+      <div className="flex justify-end items-center gap-2">
+        <ImportUsersDialog onImportComplete={fetchUsers} />
+        <InviteUserDialog onInvite={handleInviteUser} />
       </div>
 
       {/* Table */}
       {loading ? (
-        <Card>
+        <Card className="border-border/40">
           <CardContent className="py-12">
-            <p className="text-center text-muted-foreground">Chargement...</p>
+            <p className="text-center text-sm text-muted-foreground">Chargement...</p>
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <Card className="border-border/40">
           <CardContent className="p-0">
             <Table>
               <TableHeader>

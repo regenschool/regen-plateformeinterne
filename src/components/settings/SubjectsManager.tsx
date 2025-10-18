@@ -108,34 +108,24 @@ export const SubjectsManager = () => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5" />
-            <div>
-              <CardTitle>Matières</CardTitle>
-              <CardDescription>
-                Gérer toutes les matières de l'école
-              </CardDescription>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={exportSubjectsToCSV}>
-              <Download className="h-4 w-4 mr-2" />
-              Exporter CSV
-            </Button>
-            <Button variant="outline" onClick={() => setShowImportDialog(true)}>
-              Importer CSV
-            </Button>
-            <Button onClick={() => setShowAddDialog(true)}>
-              Ajouter une matière
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Table>
+    <div className="space-y-4">
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={exportSubjectsToCSV} size="sm">
+          <Download className="h-4 w-4 mr-2" />
+          Exporter
+        </Button>
+        <Button variant="outline" onClick={() => setShowImportDialog(true)} size="sm">
+          Importer
+        </Button>
+        <Button onClick={() => setShowAddDialog(true)} size="sm">
+          <BookOpen className="h-4 w-4 mr-2" />
+          Ajouter
+        </Button>
+      </div>
+
+      <Card className="border-border/40">
+        <CardContent className="p-0">
+          <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Année Scolaire</TableHead>
@@ -190,7 +180,8 @@ export const SubjectsManager = () => {
             )}
           </TableBody>
         </Table>
-      </CardContent>
+        </CardContent>
+      </Card>
 
       <AddSubjectDialog 
         open={showAddDialog} 
@@ -203,6 +194,6 @@ export const SubjectsManager = () => {
         onClose={handleDialogClose}
         onImportComplete={handleDialogClose}
       />
-    </Card>
+    </div>
   );
 };

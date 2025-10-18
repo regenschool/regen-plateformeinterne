@@ -69,19 +69,19 @@ export default function Settings() {
     <div className="min-h-screen bg-gradient-to-br from-muted/30 via-background to-muted/20">
       <div className="container mx-auto py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
         {/* En-tête */}
-        <div className="mb-8 sm:mb-10">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-            <div className="space-y-2">
+        <div className="mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-xl">
-                  <SettingsIcon className="h-6 w-6 text-primary" />
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <SettingsIcon className="h-5 w-5 text-primary" />
                 </div>
-                <h1 className="text-3xl sm:text-4xl font-bold">
+                <h1 className="text-2xl font-bold">
                   Administration
                 </h1>
               </div>
-              <p className="text-muted-foreground">
-                Gérez votre établissement
+              <p className="text-sm text-muted-foreground">
+                Configuration de votre établissement
               </p>
             </div>
             <SyncReferentialsButton />
@@ -90,16 +90,16 @@ export default function Settings() {
 
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
           {/* Navigation latérale */}
-          <Card className="hidden lg:block w-80 h-fit sticky top-20 border-border/40 shadow-sm">
-            <CardContent className="p-6">
-              <nav className="space-y-6">
+          <Card className="hidden lg:block w-72 h-fit sticky top-20 border-border/40">
+            <CardContent className="p-4">
+              <nav className="space-y-4">
                 {tabGroups.map((group, idx) => (
                   <div key={group.title}>
-                    {idx > 0 && <Separator className="my-4" />}
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">
+                    {idx > 0 && <Separator className="my-3" />}
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 px-2">
                       {group.title}
                     </p>
-                    <div className="space-y-1">
+                    <div className="space-y-0.5">
                       {group.tabs.map((tab) => {
                         const Icon = tab.icon;
                         const isActive = activeTab === tab.value;
@@ -108,14 +108,14 @@ export default function Settings() {
                           <button
                             key={tab.value}
                             onClick={() => setActiveTab(tab.value)}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
                               isActive 
-                                ? 'bg-primary text-primary-foreground shadow-sm' 
-                                : 'hover:bg-muted/60'
+                                ? 'bg-primary text-primary-foreground font-medium' 
+                                : 'hover:bg-muted text-muted-foreground hover:text-foreground'
                             }`}
                           >
                             <Icon className="h-4 w-4 shrink-0" />
-                            <span className="text-sm font-medium truncate">{tab.label}</span>
+                            <span className="truncate">{tab.label}</span>
                           </button>
                         );
                       })}
@@ -154,19 +154,19 @@ export default function Settings() {
           {/* Contenu */}
           <div className="flex-1 max-w-full lg:max-w-5xl">
             {activeTabData && (
-              <Card className="border-border/40 shadow-sm">
-                <CardHeader className="pb-6">
-                  <CardTitle className="text-2xl font-semibold flex items-center gap-2">
+              <Card className="border-border/40">
+                <CardHeader>
+                  <div className="flex items-center gap-2">
                     <activeTabData.icon className="h-5 w-5 text-primary" />
-                    {activeTabData.label}
-                  </CardTitle>
+                    <CardTitle className="text-xl font-semibold">{activeTabData.label}</CardTitle>
+                  </div>
                   {activeTabData.desc && (
-                    <CardDescription className="text-base">
+                    <CardDescription className="text-sm mt-1.5">
                       {activeTabData.desc}
                     </CardDescription>
                   )}
                 </CardHeader>
-                <CardContent className="overflow-x-auto">
+                <CardContent>
                   <activeTabData.component />
                 </CardContent>
               </Card>

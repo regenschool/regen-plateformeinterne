@@ -218,51 +218,54 @@ export function OnboardingManager() {
         </p>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+      {/* Dashboard KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-border/40">
           <CardHeader className="pb-3">
-            <CardDescription className="flex items-center gap-2">
-              <ListTodo className="w-4 h-4" />
-              Total des tâches
-            </CardDescription>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <ListTodo className="h-4 w-4" />
+              <CardDescription className="text-xs font-medium uppercase tracking-wide">Total</CardDescription>
+            </div>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{totalTasks}</p>
+            <p className="text-2xl font-bold">{totalTasks}</p>
+            <p className="text-xs text-muted-foreground mt-1">tâches</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-border/40">
           <CardHeader className="pb-3">
-            <CardDescription className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" />
-              Tâches complétées
-            </CardDescription>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4" />
+              <CardDescription className="text-xs font-medium uppercase tracking-wide">Terminées</CardDescription>
+            </div>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{completedTasks}</p>
+            <p className="text-2xl font-bold">{completedTasks}</p>
+            <p className="text-xs text-muted-foreground mt-1">tâches</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-border/40">
           <CardHeader className="pb-3">
-            <CardDescription className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" />
-              Progression globale
-            </CardDescription>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <TrendingUp className="h-4 w-4" />
+              <CardDescription className="text-xs font-medium uppercase tracking-wide">Progression</CardDescription>
+            </div>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{globalProgress}%</p>
+            <p className="text-2xl font-bold">{globalProgress}%</p>
+            <p className="text-xs text-muted-foreground mt-1">complétés</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-border/40">
           <CardHeader className="pb-3">
-            <CardDescription className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Onboarding complet
-            </CardDescription>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Users className="h-4 w-4" />
+              <CardDescription className="text-xs font-medium uppercase tracking-wide">100%</CardDescription>
+            </div>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{teachersWithFullProgress}</p>
-            <p className="text-xs text-muted-foreground mt-1">enseignant(s)</p>
+            <p className="text-2xl font-bold">{teachersWithFullProgress}</p>
+            <p className="text-xs text-muted-foreground mt-1">enseignants</p>
           </CardContent>
         </Card>
       </div>
@@ -275,12 +278,12 @@ export function OnboardingManager() {
 
         <TabsContent value="by-teacher" className="space-y-4">
           {/* Filtres */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="w-5 h-5" />
-                Filtres
-              </CardTitle>
+          <Card className="border-border/40">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-base font-semibold">Filtres</CardTitle>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -333,18 +336,18 @@ export function OnboardingManager() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
+          <Card className="border-border/40">
+            <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Tâches par enseignant</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-lg font-semibold">Tâches par enseignant</CardTitle>
+                  <CardDescription className="text-sm mt-1">
                     {Object.keys(itemsByTeacher).length} enseignant(s) avec des tâches
                   </CardDescription>
                 </div>
-                <Button onClick={() => setShowAssignDialog(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Assigner une tâche
+                <Button onClick={() => setShowAssignDialog(true)} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Assigner
                 </Button>
               </div>
             </CardHeader>

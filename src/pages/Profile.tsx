@@ -578,41 +578,41 @@ const Profile = () => {
     <div className="min-h-screen bg-gradient-to-br from-muted/30 via-background to-muted/20">
       <div className="container mx-auto py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
         {/* En-tête */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-primary/10 rounded-xl">
-              <User className="h-6 w-6 text-primary" />
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-1.5">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <User className="h-5 w-5 text-primary" />
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold">
+            <h2 className="text-2xl font-bold">
               {isAdmin ? "Profil" : "Mon Profil"}
             </h2>
           </div>
-          <p className="text-muted-foreground">
-            {isAdmin ? "Vos informations" : "Matières, documents et factures"}
+          <p className="text-sm text-muted-foreground">
+            {isAdmin ? "Vos informations personnelles" : "Matières, documents et tâches"}
           </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           {!isAdmin ? (
-            <TabsList className="w-full flex flex-wrap gap-2 h-auto md:h-12 md:flex-nowrap bg-muted/60 p-2 backdrop-blur-sm border border-border/40">
-              <TabsTrigger value="profile" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg px-4">
-                <User className="w-4 h-4" />
-                <span className="text-xs sm:text-sm font-medium">Profil</span>
+            <TabsList className="w-full flex flex-wrap gap-1 h-auto md:h-11 md:flex-nowrap bg-muted/50 p-1.5 border border-border/40">
+              <TabsTrigger value="profile" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md px-3 py-2">
+                <User className="h-4 w-4" />
+                <span className="text-xs sm:text-sm font-medium">Informations</span>
               </TabsTrigger>
-              <TabsTrigger value="subjects" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg px-4">
-                <BookOpen className="w-4 h-4" />
+              <TabsTrigger value="subjects" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md px-3 py-2">
+                <BookOpen className="h-4 w-4" />
                 <span className="text-xs sm:text-sm font-medium">Matières</span>
               </TabsTrigger>
-              <TabsTrigger value="documents" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg px-4">
-                <FileText className="w-4 h-4" />
+              <TabsTrigger value="documents" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md px-3 py-2">
+                <FileText className="h-4 w-4" />
                 <span className="text-xs sm:text-sm font-medium">Documents</span>
               </TabsTrigger>
-              <TabsTrigger value="onboarding" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg px-4">
-                <Clipboard className="w-4 h-4" />
+              <TabsTrigger value="onboarding" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md px-3 py-2">
+                <Clipboard className="h-4 w-4" />
                 <span className="text-xs sm:text-sm font-medium">Onboarding</span>
               </TabsTrigger>
-              <TabsTrigger value="invoices" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-md rounded-lg px-4">
-                <Receipt className="w-4 h-4" />
+              <TabsTrigger value="invoices" className="flex items-center gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md px-3 py-2">
+                <Receipt className="h-4 w-4" />
                 <span className="text-xs sm:text-sm font-medium">Factures</span>
               </TabsTrigger>
             </TabsList>
