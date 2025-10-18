@@ -102,6 +102,21 @@ serve(async (req) => {
 
     console.log("Profil créé dans teacher_profiles");
 
+    // Créer AUSSI dans teachers (pour performance et triggers)
+    const { error: teacherError } = await supabaseClient
+      .from("teachers")
+      .insert({
+        user_id: newUser.user.id,
+        full_name: fullName,
+      });
+
+    if (teacherError) {
+      console.error("Erreur création teachers:", teacherError);
+      throw teacherError;
+    }
+
+    console.log("Entrée créée dans teachers - trigger sync_teacher_role activé");
+
     // Générer un lien d'invitation (reste valide tant que l'email n'est pas confirmé)
     const { data: magicLink, error: linkError } = await supabaseClient.auth.admin.generateLink({
       type: "invite",
