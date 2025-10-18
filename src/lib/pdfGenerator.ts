@@ -60,6 +60,10 @@ export interface PDFGenerator {
 // Implémentation basée sur Edge Function V2 avec nouvelle architecture
 export class PuppeteerGenerator implements PDFGenerator {
   async generateReportCard(data: ReportCardData): Promise<Blob> {
+    console.log('🎯 Génération PDF pour:', data.student.firstName, data.student.lastName);
+    console.log('📊 Nombre de matières:', data.grades?.length || 0);
+    console.log('📝 Config template présente:', !!data.template?.config);
+    
     const { data: response, error } = await supabase.functions.invoke(
       'generate-report-card-pdf-v2',
       {
@@ -68,10 +72,16 @@ export class PuppeteerGenerator implements PDFGenerator {
     );
 
     if (error) {
-      console.error('Error generating HTML:', error);
+      console.error('❌ Error generating HTML:', error);
       throw new Error('Échec de la génération du bulletin');
     }
+    
+    if (!response || !response.html) {
+      console.error('❌ Réponse invalide:', response);
+      throw new Error('Réponse invalide du serveur');
+    }
 
+    console.log('✅ HTML généré, taille:', response.html.length, 'caractères');
     const { html } = response;
     
     // Lazy load des dépendances
@@ -89,29 +99,35 @@ export class PuppeteerGenerator implements PDFGenerator {
     document.body.appendChild(tempDiv);
 
     try {
+      console.log('📸 Conversion HTML → Canvas...');
       // Capturer le HTML comme image (échelle réduite pour limiter la taille)
       const canvas = await html2canvas.default(tempDiv, {
         scale: 1.5,
         useCORS: true,
+        allowTaint: true,
         logging: false,
         backgroundColor: '#ffffff',
       });
 
+      console.log('📄 Création PDF...');
       // Créer le PDF
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
+        compress: true,
       });
 
       // Utiliser JPEG compressé pour réduire le poids
-      const imgData = canvas.toDataURL('image/jpeg', 0.82);
+      const imgData = canvas.toDataURL('image/jpeg', 0.85);
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
       
-      return pdf.output('blob');
+      const blob = pdf.output('blob');
+      console.log('✅ PDF généré, taille:', (blob.size / 1024).toFixed(2), 'KB');
+      return blob;
     } finally {
       document.body.removeChild(tempDiv);
     }
