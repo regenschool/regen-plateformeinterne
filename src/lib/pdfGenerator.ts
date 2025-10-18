@@ -32,6 +32,8 @@ export interface ReportCardData {
   }>;
   template?: {
     name: string;
+    logo_url?: string;
+    signature_url?: string;
     config: Array<{
       section_key: string;
       element_key: string;

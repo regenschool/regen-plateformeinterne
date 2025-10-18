@@ -252,9 +252,9 @@ export const useGenerateReportCard = () => {
         })),
         template: template ? {
           name: template.name,
-          config: templateConfig,
           logo_url: template.logo_url,
           signature_url: template.signature_url,
+          config: templateConfig,
         } : undefined,
         averages: {
           student: studentAverage,
