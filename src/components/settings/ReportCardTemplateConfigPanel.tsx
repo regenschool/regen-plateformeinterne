@@ -156,7 +156,9 @@ export const ReportCardTemplateConfigPanel = ({
                   </AccordionTrigger>
                   <AccordionContent>
                     <CardContent className="space-y-4 pt-4">
-                      {sectionElements.map(element => {
+                      {sectionElements
+                        .filter(element => element.element_key !== 'photo') // Masquer l'option photo
+                        .map(element => {
                         const key = `${section.section_key}_${element.element_key}`;
                         const elementConfig = config[key];
 

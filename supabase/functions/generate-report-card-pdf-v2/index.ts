@@ -296,7 +296,43 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
       font-style: italic;
       color: #6b7280;
       font-size: 8pt;
-      line-height: 1.3;
+      line-height: 1.4;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      max-width: 300px;
+    }
+    
+    /* Détail des évaluations */
+    .grades-detail {
+      margin-top: 8px;
+      padding: 8px;
+      background: #f9fafb;
+      border-radius: 4px;
+      border-left: 2px solid ${headerColor};
+    }
+    .grades-detail-title {
+      font-size: 7.5pt;
+      color: #6b7280;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    .grade-detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 3px 0;
+      font-size: 7pt;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .grade-detail-row:last-child {
+      border-bottom: none;
+    }
+    .grade-detail-name {
+      color: #374151;
+    }
+    .grade-detail-value {
+      font-weight: 600;
+      color: ${headerColor};
     }
     
     /* Moyenne générale premium */
@@ -457,18 +493,19 @@ const generateHTMLTemplate = (data: ReportCardData): string => {
             ${stat.subject}
             ${isVisible(config, 'grades_table', 'subject_category') && stat.category ? `<span class="category-badge">${stat.category}</span>` : ''}
             ${isVisible(config, 'grades_table', 'individual_grades') && stat.grades?.length > 1 ? `
-              <div style="margin-top: 8px; padding: 8px; background: #f9fafb; border-radius: 4px; border-left: 2px solid ${headerColor};">
-                <div style="font-size: 7.5pt; color: #6b7280; margin-bottom: 4px; font-weight: 600;">Détail des évaluations :</div>
+              <div class="grades-detail">
+                <div class="grades-detail-title">Détail des évaluations :</div>
                 ${stat.grades.map((g: any) => `
-                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 3px 0; font-size: 7pt; border-bottom: 1px solid #e5e7eb;">
-                    <span style="color: #374151;">${g.assessment_name || g.assessment_type}</span>
-                    <span style="font-weight: 600; color: ${headerColor};">${((g.grade / g.max_grade) * 20).toFixed(2)}/20</span>
+                  <div class="grade-detail-row">
+                    <span class="grade-detail-name">${g.assessment_name || g.assessment_type}</span>
+                    <span class="grade-detail-value">${formatGrade(g.grade, g.max_grade, gradeFormat)}</span>
                   </div>
                 `).join('')}
               </div>
             ` : ''}
           </td>
           ${isVisible(config, 'grades_table', 'student_subject_average') ? `<td class="grade-value">${formatGrade(stat.avg, 20, gradeFormat)}</td>` : ''}
+          ${isVisible(config, 'grades_table', 'class_subject_average') ? `<td style="text-align:center;font-size:8pt">${stat.minGrade > 0 ? formatGrade((stat.minGrade + stat.maxGrade) / 2, 20, gradeFormat) : '-'}</td>` : ''}
           ${isVisible(config, 'grades_table', 'class_subject_average') ? `<td style="text-align:center;font-size:8pt">${stat.minGrade > 0 ? formatGrade((stat.minGrade + stat.maxGrade) / 2, 20, gradeFormat) : '-'}</td>` : ''}
           ${isVisible(config, 'grades_table', 'class_min_average') ? `<td style="text-align:center;font-size:8pt;color:#dc2626">${stat.minGrade > 0 ? formatGrade(stat.minGrade, 20, gradeFormat) : '-'}</td>` : ''}
           ${isVisible(config, 'grades_table', 'class_max_average') ? `<td style="text-align:center;font-size:8pt;color:#16a34a">${stat.maxGrade > 0 ? formatGrade(stat.maxGrade, 20, gradeFormat) : '-'}</td>` : ''}

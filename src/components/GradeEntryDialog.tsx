@@ -84,6 +84,8 @@ export const GradeEntryDialog = ({
   const [appreciation, setAppreciation] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAbsent, setIsAbsent] = useState(false);
+  
+  const MAX_APPRECIATION_LENGTH = 200; // Limite pour une ou deux phrases
 
   useEffect(() => {
     setOpen(!!openExternal);
@@ -430,13 +432,26 @@ export const GradeEntryDialog = ({
           </div>
 
           <div>
-            <Label>Appréciation</Label>
+            <Label>
+              Appréciation (optionnel) - {appreciation.length}/{MAX_APPRECIATION_LENGTH} caractères
+            </Label>
             <Textarea
               value={appreciation}
-              onChange={(e) => setAppreciation(e.target.value)}
-              placeholder="Commentaire sur la performance de l'étudiant..."
+              onChange={(e) => {
+                const text = e.target.value;
+                if (text.length <= MAX_APPRECIATION_LENGTH) {
+                  setAppreciation(text);
+                }
+              }}
+              placeholder="Une ou deux phrases maximum..."
               className="min-h-[80px]"
+              maxLength={MAX_APPRECIATION_LENGTH}
             />
+            {appreciation.length >= MAX_APPRECIATION_LENGTH && (
+              <p className="text-xs text-amber-600 mt-1">
+                Limite atteinte - gardez l'appréciation concise
+              </p>
+            )}
           </div>
 
           <div className="flex gap-2 pt-4">
