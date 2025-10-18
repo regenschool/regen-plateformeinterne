@@ -93,6 +93,23 @@ export const useGenerateReportCard = () => {
     mutationFn: async (params: GenerateReportCardParams) => {
       const { studentId, schoolYear, semester, className } = params;
 
+      // 0. Vérifier si un bulletin existe déjà pour cet étudiant/année/semestre
+      const { data: existingReportCard } = await supabase
+        .from('student_report_cards')
+        .select('id, pdf_url')
+        .eq('student_id', studentId)
+        .eq('school_year', schoolYear)
+        .eq('semester', semester)
+        .maybeSingle();
+
+      // Si un bulletin avec PDF existe, supprimer le PDF du storage avant de continuer
+      if (existingReportCard?.pdf_url) {
+        const fileName = existingReportCard.pdf_url.split('/').pop();
+        if (fileName) {
+          await supabase.storage.from('report-cards').remove([fileName]);
+        }
+      }
+
       // 1. Récupérer l'étudiant avec classe et programme
       const { data: student, error: studentError } = await supabase
         .from('students')
@@ -321,29 +338,54 @@ export const useGenerateReportCard = () => {
         },
       };
 
-      // 8. Créer le brouillon
-      const { data: reportCard, error: insertError } = await supabase
-        .from('student_report_cards')
-        .insert([{
-          student_id: studentId,
-          school_year: schoolYear,
-          semester,
-          class_name: className,
-          template_id: template?.id,
-          generated_data: reportCardData as any,
-          status: 'draft',
-          pdf_url: null,
-        }])
-        .select()
-        .single();
+      // 8. Créer ou mettre à jour le brouillon
+      let reportCard;
+      if (existingReportCard) {
+        // Mise à jour du bulletin existant
+        const { data, error: updateError } = await supabase
+          .from('student_report_cards')
+          .update({
+            generated_data: reportCardData as any,
+            edited_data: null, // Reset des modifications
+            status: 'draft',
+            pdf_url: null, // Reset du PDF
+            template_id: template?.id,
+          })
+          .eq('id', existingReportCard.id)
+          .select()
+          .single();
 
-      if (insertError) throw insertError;
+        if (updateError) throw updateError;
+        reportCard = data;
+      } else {
+        // Création d'un nouveau bulletin
+        const { data, error: insertError } = await supabase
+          .from('student_report_cards')
+          .insert([{
+            student_id: studentId,
+            school_year: schoolYear,
+            semester,
+            class_name: className,
+            template_id: template?.id,
+            generated_data: reportCardData as any,
+            status: 'draft',
+            pdf_url: null,
+          }])
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        reportCard = data;
+      }
 
       return { reportCard, reportCardData };
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['report-cards'] });
-      toast.success('Brouillon créé - vous pouvez l\'éditer avant génération PDF');
+      const message = data.reportCard.created_at === data.reportCard.updated_at 
+        ? 'Brouillon créé - vous pouvez l\'éditer avant génération PDF'
+        : 'Brouillon mis à jour - l\'ancien PDF a été supprimé';
+      toast.success(message);
     },
     onError: (error: Error) => {
       console.error('Error generating report card:', error);

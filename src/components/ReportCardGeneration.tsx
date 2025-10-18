@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Loader2, FileText, Download, Trash2, AlertTriangle } from 'lucide-react';
 import { useGenerateReportCard, useReportCards } from '@/hooks/useReportCards';
 import { useDeleteReportCard } from '@/hooks/useReportCardActions';
+import { useBulkGeneratePDFs } from '@/hooks/useBulkReportCardGeneration';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -31,9 +32,12 @@ export const ReportCardGeneration = () => {
   const [selectedSemester, setSelectedSemester] = useState<string>('');
   const [subjectWeights, setSubjectWeights] = useState<SubjectWeight[]>([]);
   
+  const [bulkGenerationProgress, setBulkGenerationProgress] = useState<{ current: number; total: number } | null>(null);
+  
   const queryClient = useQueryClient();
   const generateReportCard = useGenerateReportCard();
   const deleteReportCard = useDeleteReportCard();
+  const bulkGeneratePDFs = useBulkGeneratePDFs();
   const navigate = useNavigate();
   // Récupérer les classes
   const { data: classes } = useQuery({
@@ -404,7 +408,7 @@ export const ReportCardGeneration = () => {
                     {students.length} élève{students.length > 1 ? 's' : ''} dans cette classe
                   </p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   {defaultTemplate && (
                     <Dialog>
                       <DialogTrigger asChild>
@@ -425,6 +429,7 @@ export const ReportCardGeneration = () => {
                     onClick={() => generateAllReportCards.mutate()}
                     disabled={generateAllReportCards.isPending || subjectWeights.length === 0}
                     size="lg"
+                    variant="secondary"
                   >
                     {generateAllReportCards.isPending ? (
                       <>
@@ -434,10 +439,47 @@ export const ReportCardGeneration = () => {
                     ) : (
                       <>
                         <FileText className="mr-2 h-4 w-4" />
-                        Générer tous les bulletins
+                        Créer brouillons en masse
                       </>
                     )}
                   </Button>
+                  {existingReportCards && existingReportCards.some(r => r.status === 'draft') && (
+                    <Button
+                      onClick={() => {
+                        const draftIds = existingReportCards
+                          .filter(r => r.status === 'draft' && r.school_year === selectedSchoolYear && r.semester === selectedSemester)
+                          .map(r => r.id);
+                        
+                        bulkGeneratePDFs.mutate({
+                          reportCardIds: draftIds,
+                          onProgress: (current, total) => {
+                            setBulkGenerationProgress({ current, total });
+                          },
+                        }, {
+                          onSettled: () => {
+                            setBulkGenerationProgress(null);
+                          },
+                        });
+                      }}
+                      disabled={bulkGeneratePDFs.isPending}
+                      size="lg"
+                    >
+                      {bulkGeneratePDFs.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          {bulkGenerationProgress 
+                            ? `Génération ${bulkGenerationProgress.current}/${bulkGenerationProgress.total}...`
+                            : 'Génération PDFs...'
+                          }
+                        </>
+                      ) : (
+                        <>
+                          <Download className="mr-2 h-4 w-4" />
+                          Générer PDFs des brouillons
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -597,11 +639,13 @@ export const ReportCardGeneration = () => {
                         <TableCell>
                           {new Date(report.created_at).toLocaleDateString('fr-FR')}
                         </TableCell>
-                        <TableCell>
-                          <span className="text-sm px-2 py-1 rounded-full bg-green-100 text-green-800">
-                            {report.status}
-                          </span>
-                        </TableCell>
+                         <TableCell>
+                           {report.status === 'draft' ? (
+                             <Badge variant="outline">Brouillon</Badge>
+                           ) : (
+                             <Badge variant="default">PDF généré</Badge>
+                           )}
+                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex gap-2 justify-end">
                             {report.pdf_url && (
