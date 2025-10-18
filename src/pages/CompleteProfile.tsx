@@ -21,6 +21,7 @@ export default function CompleteProfile() {
 
   useEffect(() => {
     handleAuthCallback();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleAuthCallback = async () => {

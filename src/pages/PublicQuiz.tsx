@@ -34,6 +34,7 @@ const PublicQuiz = () => {
     if (linkId) {
       validateLink();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [linkId]);
 
   const validateLink = async () => {

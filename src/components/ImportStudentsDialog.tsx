@@ -286,7 +286,7 @@ export const ImportStudentsDialog = ({ onImportComplete, selectedSchoolYearId }:
       }
 
       // 5. Batch insert nouveaux étudiants (1 requête)
-      let newStudentIds: string[] = [];
+      const newStudentIds: string[] = [];
       if (studentsToInsert.length > 0) {
         const { data: insertedStudents, error: insertError } = await supabase
           .from('students')

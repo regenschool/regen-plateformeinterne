@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import type { Json } from '@/integrations/supabase/types';
 
 type AuditAction = 'INSERT' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT' | 'EXPORT' | 'IMPORT';
 
@@ -9,8 +10,8 @@ export type AuditLog = {
   action: AuditAction;
   table_name: string;
   record_id: string | null;
-  old_values: Record<string, any> | null;
-  new_values: Record<string, any> | null;
+  old_values: Json | null;
+  new_values: Json | null;
   ip_address: string | null;
   user_agent: string | null;
   created_at: string;
@@ -59,16 +60,16 @@ export const useAuditLogs = (options: UseAuditLogsOptions = {}) => {
 export const logAuditAction = async (
   action: 'LOGIN' | 'LOGOUT' | 'EXPORT' | 'IMPORT',
   tableName: string,
-  details?: Record<string, any>
+  details?: Json
 ) => {
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) return;
 
-  await supabase.from('audit_logs').insert({
+  await supabase.from('audit_logs').insert([{
     user_id: user.id,
     action,
     table_name: tableName,
     new_values: details || {},
-  });
+  }]);
 };

@@ -28,6 +28,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     checkAdminStatus();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkAdminStatus = async () => {

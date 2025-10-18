@@ -152,6 +152,7 @@ export default function Grades() {
     if (!isAdmin) {
       fetchMySubjects();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
 
   const fetchMySubjects = async () => {

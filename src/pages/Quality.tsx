@@ -65,6 +65,7 @@ export default function Quality() {
 
       return () => clearInterval(interval);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
 
   const fetchStats = async () => {

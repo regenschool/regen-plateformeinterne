@@ -24,7 +24,7 @@ export const syncExistingDataToReferentials = async () => {
   try {
     console.log('🔄 Début de la synchronisation des référentiels...');
     
-    let stats = { classesAdded: 0, yearsAdded: 0, periodsAdded: 0, levelsAdded: 0 };
+    const stats = { classesAdded: 0, yearsAdded: 0, periodsAdded: 0, levelsAdded: 0 };
     
     // 1. Synchroniser les classes depuis la table students
     const { data: students, error: studentsError } = await supabase
@@ -84,12 +84,12 @@ export const syncExistingDataToReferentials = async () => {
       await supabase
         .from('classes')
         .update({ is_active: false })
-        .not('name', 'in', allUniqueClasses as any);
+        .not('name', 'in', `(${allUniqueClasses.join(',')})`);
 
       await supabase
         .from('classes')
         .update({ is_active: true })
-        .in('name', allUniqueClasses as any);
+        .in('name', allUniqueClasses);
     }
     
     // 4c. Synchroniser les niveaux depuis les classes
@@ -182,7 +182,13 @@ export const syncExistingDataToReferentials = async () => {
       .from('school_years')
       .select('id, label');
     
-    const periodsToInsert = [] as any[];
+    const periodsToInsert: Array<{
+      school_year_id: string;
+      label: string;
+      start_date: string;
+      end_date: string;
+      is_active: boolean;
+    }> = [];
     
     for (const semester of uniqueSemesters) {
       for (const schoolYear of schoolYears || []) {
@@ -249,7 +255,7 @@ export const syncExistingDataToReferentials = async () => {
       }
     };
     
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ Erreur lors de la synchronisation:', error);
     throw error;
   }

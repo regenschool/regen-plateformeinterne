@@ -216,6 +216,7 @@ export const ReportCardGeneration = () => {
     if (subjects && subjects.length > 0 && subjectWeights.length === 0) {
       initializeWeights();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subjects, existingWeights]);
 
   // Mettre à jour une pondération

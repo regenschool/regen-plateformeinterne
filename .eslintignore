@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+dist/
+build/
+
+# Generated files
+src/integrations/supabase/types.ts
+
+# Test files
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+src/test/
+
+# Config files
+vite.config.ts
+vitest.config.ts
+playwright.config.ts
+tailwind.config.ts
+postcss.config.js
+
+# Storybook
+.storybook/
+storybook-static/

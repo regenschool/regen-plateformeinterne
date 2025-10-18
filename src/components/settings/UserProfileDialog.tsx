@@ -31,6 +31,7 @@ export default function UserProfileDialog({ userId, userEmail, onClose, onUpdate
     if (userId) {
       fetchProfile();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
   const fetchProfile = async () => {
