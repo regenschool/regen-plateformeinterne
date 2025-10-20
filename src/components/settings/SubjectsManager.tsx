@@ -96,8 +96,9 @@ export const SubjectsManager = () => {
 
   const confirmDelete = async (subject: any, deleteGrades: boolean = false) => {
     try {
-      // Supprimer les notes associées si demandé
+      // Supprimer les notes et évaluations associées si demandé
       if (deleteGrades) {
+        // Supprimer les notes
         const { error: gradesError } = await supabase
           .from('grades')
           .delete()
@@ -107,6 +108,17 @@ export const SubjectsManager = () => {
           .eq('semester', subject.semester);
 
         if (gradesError) throw gradesError;
+
+        // Supprimer les évaluations (assessments)
+        const { error: assessmentsError } = await supabase
+          .from('assessments')
+          .delete()
+          .eq('subject', subject.subject_name)
+          .eq('class_name', subject.class_name)
+          .eq('school_year', subject.school_year)
+          .eq('semester', subject.semester);
+
+        if (assessmentsError) throw assessmentsError;
       }
 
       // Supprimer la matière
@@ -117,7 +129,7 @@ export const SubjectsManager = () => {
 
       if (error) throw error;
 
-      toast.success(deleteGrades ? "Matière et notes associées supprimées" : "Matière supprimée avec succès");
+      toast.success(deleteGrades ? "Matière, notes et évaluations supprimées" : "Matière supprimée avec succès");
       fetchAllSubjects();
     } catch (error: any) {
       console.error("Error deleting subject:", error);
@@ -257,7 +269,7 @@ export const SubjectsManager = () => {
                     Voulez-vous supprimer la matière <strong>{deleteSubject?.subject_name}</strong> ({deleteSubject?.class_name}, {deleteSubject?.school_year}, {deleteSubject?.semester}) ?
                   </p>
                   <p className="text-destructive font-medium">
-                    Si vous confirmez, toutes les notes associées seront également supprimées. Cette action est irréversible.
+                    Si vous confirmez, toutes les notes ET évaluations associées seront également supprimées. Cette action est irréversible.
                   </p>
                 </>
               ) : (
