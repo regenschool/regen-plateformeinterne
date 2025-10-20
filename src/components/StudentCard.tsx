@@ -268,41 +268,42 @@ export const StudentCard = ({
               {student.class_name}
             </div>
           </div>
-          <div className="absolute top-1.5 left-1.5 flex gap-1 z-20"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <EditStudentDialog student={student} onStudentUpdated={onUpdate} />
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="icon" variant="outline" className="h-7 w-7 bg-white/90 hover:bg-destructive/90 hover:text-destructive-foreground border-border/50">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                {enrollmentId && (
+          {isAdmin && (
+            <div className="absolute top-1.5 left-1.5 flex gap-1 z-20"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <EditStudentDialog student={student} onStudentUpdated={onUpdate} />
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="icon" variant="outline" className="h-7 w-7 bg-white/90 hover:bg-destructive/90 hover:text-destructive-foreground border-border/50">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {enrollmentId && (
+                    <DropdownMenuItem
+                      onClick={() => setShowDeleteDialog(true)}
+                      className="text-orange-600 focus:text-orange-600"
+                    >
+                      <UserMinus className="w-4 h-4 mr-2" />
+                      Désinscrire de {schoolYear || "cette année"}
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => setShowDeleteDialog(true)}
-                    className="text-orange-600 focus:text-orange-600"
+                    onClick={() => setShowPermanentDeleteDialog(true)}
+                    className="text-destructive focus:text-destructive"
                   >
-                    <UserMinus className="w-4 h-4 mr-2" />
-                    Désinscrire de {schoolYear || "cette année"}
+                    <UserX className="w-4 h-4 mr-2" />
+                    Supprimer définitivement
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => setShowPermanentDeleteDialog(true)}
-                  className="text-destructive focus:text-destructive"
-                >
-                  <UserX className="w-4 h-4 mr-2" />
-                  Supprimer définitivement
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-            {/* Dialog pour désinscrire de l'année */}
-            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-              <AlertDialogContent>
+              {/* Dialog pour désinscrire de l'année */}
+              <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Désinscrire de {schoolYear || "cette année"} ?</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -337,7 +338,8 @@ export const StudentCard = ({
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </div>
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-3 space-y-2">
@@ -349,14 +351,14 @@ export const StudentCard = ({
         </div>
 
         <div 
-          className="flex items-start gap-1.5 text-xs group cursor-pointer hover:bg-accent/30 rounded px-1 -mx-1 py-0.5 transition-colors"
+          className={`flex items-start gap-1.5 text-xs group ${isAdmin ? 'cursor-pointer hover:bg-accent/30' : ''} rounded px-1 -mx-1 py-0.5 transition-colors`}
           onClick={(e) => {
             e.stopPropagation();
-            if (!isEditingAcademic) setIsEditingAcademic(true);
+            if (isAdmin && !isEditingAcademic) setIsEditingAcademic(true);
           }}
         >
           <GraduationCap className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
-          {isEditingAcademic ? (
+          {isAdmin && isEditingAcademic ? (
             <div className="flex-1 flex items-center gap-1">
               <Input
                 value={academicValue}
@@ -380,21 +382,21 @@ export const StudentCard = ({
               </Button>
             </div>
           ) : (
-            <span className="text-muted-foreground line-clamp-1 flex-1 group-hover:text-foreground transition-colors">
+            <span className={`text-muted-foreground line-clamp-1 flex-1 ${isAdmin ? 'group-hover:text-foreground' : ''} transition-colors`}>
               {student.academic_background || t("studentCard.notSpecified")}
             </span>
           )}
         </div>
 
         <div 
-          className="flex items-start gap-1.5 text-xs group cursor-pointer hover:bg-accent/30 rounded px-1 -mx-1 py-0.5 transition-colors"
+          className={`flex items-start gap-1.5 text-xs group ${isAdmin ? 'cursor-pointer hover:bg-accent/30' : ''} rounded px-1 -mx-1 py-0.5 transition-colors`}
           onClick={(e) => {
             e.stopPropagation();
-            if (!isEditingCompany) setIsEditingCompany(true);
+            if (isAdmin && !isEditingCompany) setIsEditingCompany(true);
           }}
         >
           <Briefcase className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
-          {isEditingCompany ? (
+          {isAdmin && isEditingCompany ? (
             <div className="flex-1 flex items-center gap-1">
               <Input
                 value={companyValue}
@@ -418,7 +420,7 @@ export const StudentCard = ({
               </Button>
             </div>
           ) : (
-            <span className="text-muted-foreground line-clamp-1 flex-1 group-hover:text-foreground transition-colors">
+            <span className={`text-muted-foreground line-clamp-1 flex-1 ${isAdmin ? 'group-hover:text-foreground' : ''} transition-colors`}>
               {student.company || t("studentCard.notSpecified")}
             </span>
           )}

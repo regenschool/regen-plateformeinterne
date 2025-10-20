@@ -15,6 +15,7 @@ import { useEnrollments } from "@/hooks/useEnrollments";
 import { useSchoolYears } from "@/hooks/useReferentials";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateAge } from "@/lib/utils";
+import { useAdmin } from "@/contexts/AdminContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,6 +42,7 @@ const ITEMS_PER_PAGE = 24; // Pagination : 24 étudiants par page
 
 const Directory = () => {
   const { t } = useLanguage();
+  const { isAdmin } = useAdmin();
   const [selectedSchoolYearId, setSelectedSchoolYearId] = useState<string>("");
   const [selectedClass, setSelectedClass] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -311,37 +313,39 @@ const Directory = () => {
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="default"
-                disabled={filteredEnrollments.length === 0}
-                className="text-destructive hover:text-destructive"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Supprimer tout ({filteredEnrollments.length})</span>
-                <span className="sm:hidden">Suppr. ({filteredEnrollments.length})</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem
-                onClick={() => setShowDeleteAllDialog(true)}
-                className="text-orange-600 focus:text-orange-600"
-              >
-                <UserMinus className="w-4 h-4 mr-2" />
-                Désinscrire de {schoolYears?.find(y => y.id === selectedSchoolYearId)?.label || "cette année"}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => setShowPermanentDeleteAllDialog(true)}
-                className="text-destructive focus:text-destructive"
-              >
-                <UserX className="w-4 h-4 mr-2" />
-                Supprimer définitivement
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {isAdmin && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="default"
+                  disabled={filteredEnrollments.length === 0}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  <span className="hidden sm:inline">Supprimer tout ({filteredEnrollments.length})</span>
+                  <span className="sm:hidden">Suppr. ({filteredEnrollments.length})</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem
+                  onClick={() => setShowDeleteAllDialog(true)}
+                  className="text-orange-600 focus:text-orange-600"
+                >
+                  <UserMinus className="w-4 h-4 mr-2" />
+                  Désinscrire de {schoolYears?.find(y => y.id === selectedSchoolYearId)?.label || "cette année"}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setShowPermanentDeleteAllDialog(true)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <UserX className="w-4 h-4 mr-2" />
+                  Supprimer définitivement
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
           {/* Dialogs de suppression */}
           <AlertDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
@@ -406,18 +410,22 @@ const Directory = () => {
             <span className="hidden sm:inline">{t("directory.exportCSV")}</span>
             <span className="sm:hidden">Export</span>
           </Button>
-          <Suspense fallback={<Button variant="outline" disabled>Chargement...</Button>}>
-            <ImportStudentsDialog 
-              onImportComplete={() => refetch()} 
-              selectedSchoolYearId={selectedSchoolYearId}
-            />
-          </Suspense>
-          <Suspense fallback={<Button disabled>Chargement...</Button>}>
-            <AddStudentDialog 
-              onStudentAdded={() => refetch()} 
-              selectedSchoolYearId={selectedSchoolYearId}
-            />
-          </Suspense>
+          {isAdmin && (
+            <>
+              <Suspense fallback={<Button variant="outline" disabled>Chargement...</Button>}>
+                <ImportStudentsDialog 
+                  onImportComplete={() => refetch()} 
+                  selectedSchoolYearId={selectedSchoolYearId}
+                />
+              </Suspense>
+              <Suspense fallback={<Button disabled>Chargement...</Button>}>
+                <AddStudentDialog 
+                  onStudentAdded={() => refetch()} 
+                  selectedSchoolYearId={selectedSchoolYearId}
+                />
+              </Suspense>
+            </>
+          )}
         </div>
       </div>
 
