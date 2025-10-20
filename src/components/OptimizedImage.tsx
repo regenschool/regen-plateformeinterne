@@ -22,6 +22,7 @@ export const OptimizedImage = ({
   placeholderClassName 
 }: OptimizedImageProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const [isInView, setIsInView] = useState(false);
   const imgRef = useRef<HTMLDivElement>(null);
 
@@ -46,9 +47,9 @@ export const OptimizedImage = ({
     return () => observer.disconnect();
   }, []);
 
-  if (!src) {
+  if (!src || hasError) {
     return (
-      <div className={cn("bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center", placeholderClassName || className)}>
+      <div className={cn("bg-gradient-to-br from-muted/20 to-muted/10 flex items-center justify-center", placeholderClassName || className)}>
         <span className="text-4xl text-muted-foreground/40">?</span>
       </div>
     );
@@ -74,7 +75,10 @@ export const OptimizedImage = ({
             isLoaded ? "opacity-100" : "opacity-0"
           )}
           onLoad={() => setIsLoaded(true)}
-          onError={() => setIsLoaded(true)} // Afficher quand même si erreur
+          onError={() => {
+            console.error(`Failed to load image: ${src}`);
+            setHasError(true);
+          }}
         />
       )}
     </div>
