@@ -11,6 +11,21 @@ interface OptimizedImageProps {
 }
 
 /**
+ * Vérifie si une URL LinkedIn est potentiellement expirée
+ */
+const isLinkedInUrlExpired = (url: string): boolean => {
+  if (!url.includes('linkedin.com')) return false;
+  
+  const match = url.match(/[?&]e=(\d+)/);
+  if (!match) return false;
+  
+  const expiryTimestamp = parseInt(match[1], 10);
+  const now = Math.floor(Date.now() / 1000);
+  
+  return expiryTimestamp < now;
+};
+
+/**
  * Composant d'image optimisé avec lazy loading, dimensions fixes et placeholder
  */
 export const OptimizedImage = ({ 
@@ -25,6 +40,9 @@ export const OptimizedImage = ({
   const [hasError, setHasError] = useState(false);
   const [isInView, setIsInView] = useState(false);
   const imgRef = useRef<HTMLDivElement>(null);
+
+  // Vérifier si l'URL est expirée au montage
+  const isExpired = src ? isLinkedInUrlExpired(src) : false;
 
   // Intersection Observer pour lazy loading
   useEffect(() => {
@@ -47,10 +65,13 @@ export const OptimizedImage = ({
     return () => observer.disconnect();
   }, []);
 
-  if (!src || hasError) {
+  if (!src || hasError || isExpired) {
     return (
-      <div className={cn("bg-gradient-to-br from-muted/20 to-muted/10 flex items-center justify-center", placeholderClassName || className)}>
+      <div className={cn("bg-gradient-to-br from-muted/20 to-muted/10 flex flex-col items-center justify-center gap-2", placeholderClassName || className)}>
         <span className="text-4xl text-muted-foreground/40">?</span>
+        {isExpired && (
+          <span className="text-xs text-muted-foreground/60 px-2 text-center">Photo expirée</span>
+        )}
       </div>
     );
   }
