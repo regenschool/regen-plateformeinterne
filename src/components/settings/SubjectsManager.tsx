@@ -19,12 +19,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useState, useCallback, useEffect } from "react";
+import { AlertTriangle } from "lucide-react";
 
 export const SubjectsManager = () => {
   const [allSubjects, setAllSubjects] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [deleteSubject, setDeleteSubject] = useState<any>(null);
+  const [gradeCount, setGradeCount] = useState(0);
 
   const fetchAllSubjects = useCallback(async () => {
     setIsLoading(true);
@@ -55,16 +58,67 @@ export const SubjectsManager = () => {
     fetchAllSubjects();
   }, [fetchAllSubjects]);
 
-  const handleDelete = async (subjectId: string) => {
+  const handleDelete = async (subject: any) => {
     try {
+      // Vérifier s'il existe des notes pour cette matière
+      const { data: grades, error: gradesError } = await supabase
+        .from('grades')
+        .select('id')
+        .eq('subject', subject.subject_name)
+        .eq('class_name', subject.class_name)
+        .eq('school_year', subject.school_year)
+        .eq('semester', subject.semester)
+        .limit(1);
+
+      if (gradesError) throw gradesError;
+
+      // Si des notes existent, retourner le nombre pour l'affichage dans l'alerte
+      if (grades && grades.length > 0) {
+        // Compter le nombre total de notes
+        const { count } = await supabase
+          .from('grades')
+          .select('*', { count: 'exact', head: true })
+          .eq('subject', subject.subject_name)
+          .eq('class_name', subject.class_name)
+          .eq('school_year', subject.school_year)
+          .eq('semester', subject.semester);
+
+        return { hasGrades: true, count: count || 0 };
+      }
+
+      return { hasGrades: false, count: 0 };
+    } catch (error: any) {
+      console.error("Error checking grades:", error);
+      toast.error("Erreur lors de la vérification");
+      return { hasGrades: false, count: 0 };
+    }
+  };
+
+  const confirmDelete = async (subject: any, deleteGrades: boolean = false) => {
+    try {
+      // Supprimer les notes associées si demandé
+      if (deleteGrades) {
+        const { error: gradesError } = await supabase
+          .from('grades')
+          .delete()
+          .eq('subject', subject.subject_name)
+          .eq('class_name', subject.class_name)
+          .eq('school_year', subject.school_year)
+          .eq('semester', subject.semester);
+
+        if (gradesError) throw gradesError;
+      }
+
+      // Supprimer la matière
       const { error } = await supabase
         .from("subjects")
         .delete()
-        .eq("id", subjectId);
+        .eq("id", subject.id);
 
       if (error) throw error;
 
-      toast.success("Matière supprimée avec succès");
+      toast.success(deleteGrades ? "Matière et notes associées supprimées" : "Matière supprimée avec succès");
+      fetchAllSubjects();
     } catch (error: any) {
       console.error("Error deleting subject:", error);
       toast.error("Erreur lors de la suppression");
@@ -147,27 +201,17 @@ export const SubjectsManager = () => {
                   {subject.teacher_name || "-"}
                 </TableCell>
                 <TableCell>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button size="sm" variant="ghost">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Êtes-vous sûr de vouloir supprimer cette matière ? Cette action est irréversible.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDelete(subject.id)}>
-                          Supprimer
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={async () => {
+                      const result = await handleDelete(subject);
+                      setDeleteSubject(subject);
+                      setGradeCount(result.count);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -194,6 +238,49 @@ export const SubjectsManager = () => {
         onClose={handleDialogClose}
         onImportComplete={handleDialogClose}
       />
+
+      {/* Dialog de confirmation de suppression */}
+      <AlertDialog open={!!deleteSubject} onOpenChange={(open) => !open && setDeleteSubject(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              {gradeCount > 0 && <AlertTriangle className="h-5 w-5 text-orange-500" />}
+              Confirmer la suppression
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              {gradeCount > 0 ? (
+                <>
+                  <p className="font-medium text-orange-600">
+                    ⚠️ Cette matière contient {gradeCount} note{gradeCount > 1 ? 's' : ''}.
+                  </p>
+                  <p>
+                    Voulez-vous supprimer la matière <strong>{deleteSubject?.subject_name}</strong> ({deleteSubject?.class_name}, {deleteSubject?.school_year}, {deleteSubject?.semester}) ?
+                  </p>
+                  <p className="text-destructive font-medium">
+                    Si vous confirmez, toutes les notes associées seront également supprimées. Cette action est irréversible.
+                  </p>
+                </>
+              ) : (
+                <p>
+                  Êtes-vous sûr de vouloir supprimer la matière <strong>{deleteSubject?.subject_name}</strong> ({deleteSubject?.class_name}, {deleteSubject?.school_year}, {deleteSubject?.semester}) ?
+                </p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                confirmDelete(deleteSubject, gradeCount > 0);
+                setDeleteSubject(null);
+              }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Supprimer {gradeCount > 0 && `(${gradeCount} note${gradeCount > 1 ? 's' : ''})`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
