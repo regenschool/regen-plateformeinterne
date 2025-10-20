@@ -123,11 +123,16 @@ export const ReportCardGeneration = () => {
     enabled: !!selectedClass,
   });
 
-  // Récupérer les bulletins déjà générés
-  const { data: existingReportCards } = useReportCards({
+  // Récupérer les bulletins déjà générés - FILTRÉ PAR CLASSE
+  const { data: allReportCards } = useReportCards({
     schoolYear: selectedSchoolYear,
     semester: selectedSemester,
   });
+
+  // Filtrer les bulletins par la classe sélectionnée
+  const existingReportCards = allReportCards?.filter(
+    rc => rc.class_name === selectedClass
+  );
 
   // Récupérer le template par défaut pour l'aperçu
   const { data: defaultTemplate } = useQuery({
@@ -257,10 +262,12 @@ export const ReportCardGeneration = () => {
     setSubjectWeights(weights);
   };
 
-  // Charger automatiquement les pondérations quand les matières sont disponibles
+  // Réinitialiser les pondérations quand les filtres changent
   useEffect(() => {
-    if (subjects && subjects.length > 0 && subjectWeights.length === 0) {
+    if (subjects && subjects.length > 0) {
       initializeWeights();
+    } else {
+      setSubjectWeights([]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subjects, existingWeights]);
