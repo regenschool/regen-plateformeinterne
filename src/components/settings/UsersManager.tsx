@@ -235,21 +235,14 @@ export const UsersManager = () => {
 
   const handleResendInvitation = async (userId: string, userEmail: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke("admin-reset-password", {
-        body: { userId },
-      });
-
-      if (error) throw error;
-
-      // Utiliser l'email pour notifier via Resend
-      const { error: emailError } = await supabase.functions.invoke("resend-invitation", {
+      // La fonction resend-invitation génère maintenant le lien elle-même
+      const { error } = await supabase.functions.invoke("resend-invitation", {
         body: { 
-          email: userEmail,
-          resetLink: data.resetLink 
+          email: userEmail
         },
       });
 
-      if (emailError) throw emailError;
+      if (error) throw error;
 
       toast.success("Invitation renvoyée avec succès !");
     } catch (error: any) {

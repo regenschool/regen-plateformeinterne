@@ -42,11 +42,27 @@ serve(async (req) => {
       throw new Error("Accès refusé - Admin uniquement");
     }
 
-    const { email, resetLink } = await req.json();
+    const { email } = await req.json();
 
-    if (!email || !resetLink) {
-      throw new Error("Email et lien requis");
+    if (!email) {
+      throw new Error("Email requis");
     }
+
+    // Générer un nouveau lien magique avec redirection vers complete-profile
+    const { data: magicLinkData, error: magicLinkError } = await supabaseClient.auth.admin.generateLink({
+      type: 'magiclink',
+      email,
+      options: {
+        redirectTo: `${Deno.env.get('SITE_URL')}/complete-profile`
+      }
+    });
+
+    if (magicLinkError) {
+      console.error("Erreur génération lien:", magicLinkError);
+      throw new Error("Impossible de générer le lien d'invitation");
+    }
+
+    const resetLink = magicLinkData.properties.action_link;
 
     // Récupérer le nom de l'utilisateur
     const { data: profileData } = await supabaseClient
