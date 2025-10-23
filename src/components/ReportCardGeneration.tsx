@@ -597,15 +597,17 @@ export const ReportCardGeneration = () => {
                             <AlertTriangle className="h-5 w-5 text-destructive" />
                             Confirmer la suppression en masse
                           </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Vous êtes sur le point de supprimer <strong>{existingReportCards.length} bulletin(s)</strong> pour :
-                            <div className="mt-2 p-3 bg-muted rounded-md space-y-1">
-                              <div><strong>Année :</strong> {selectedSchoolYear}</div>
-                              <div><strong>Semestre :</strong> {selectedSemester}</div>
-                              <div><strong>Classe :</strong> {selectedClass}</div>
-                            </div>
-                            <div className="mt-3 text-destructive font-medium">
-                              Cette action est irréversible.
+                          <AlertDialogDescription asChild>
+                            <div>
+                              <p>Vous êtes sur le point de supprimer <strong>{existingReportCards.length} bulletin(s)</strong> pour :</p>
+                              <div className="mt-2 p-3 bg-muted rounded-md space-y-1">
+                                <div><strong>Année :</strong> {selectedSchoolYear}</div>
+                                <div><strong>Semestre :</strong> {selectedSemester}</div>
+                                <div><strong>Classe :</strong> {selectedClass}</div>
+                              </div>
+                              <div className="mt-3 text-destructive font-medium">
+                                Cette action est irréversible.
+                              </div>
                             </div>
                           </AlertDialogDescription>
                         </AlertDialogHeader>
