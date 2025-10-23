@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -60,6 +61,109 @@ type TeacherSubject = {
   teacher_name: string;
   school_year_fk_id: string | null;
   academic_period_id: string | null;
+};
+
+// Composant pour gérer la publication/dépublication d'une épreuve
+const PublishAssessmentButton = ({ 
+  assessmentName, 
+  subjectId, 
+  isComplete 
+}: { 
+  assessmentName: string; 
+  subjectId: string | null; 
+  isComplete: boolean;
+}) => {
+  const [assessmentData, setAssessmentData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const fetchAssessmentData = async () => {
+      if (!subjectId) return;
+      try {
+        const { data, error } = await supabase
+          .from('assessments')
+          .select('id, is_visible_to_students')
+          .eq('assessment_name', assessmentName)
+          .eq('subject_id', subjectId)
+          .maybeSingle();
+        
+        if (!error && data) {
+          setAssessmentData(data);
+        }
+      } catch (error) {
+        console.error('Error fetching assessment:', error);
+      }
+    };
+
+    fetchAssessmentData();
+  }, [assessmentName, subjectId]);
+
+  const handleToggleVisibility = async () => {
+    if (!subjectId || !assessmentData) return;
+    
+    setIsLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const newVisibility = !assessmentData.is_visible_to_students;
+      
+      const { error: updateError } = await supabase
+        .from('assessments')
+        .update({
+          is_visible_to_students: newVisibility,
+          visibility_changed_at: new Date().toISOString(),
+          visibility_changed_by: user?.id,
+        })
+        .eq('id', assessmentData.id);
+      
+      if (updateError) throw updateError;
+      
+      // Mettre à jour l'état local
+      setAssessmentData({ ...assessmentData, is_visible_to_students: newVisibility });
+      
+      // Invalider les requêtes pour rafraîchir les données
+      queryClient.invalidateQueries({ queryKey: ['grades-normalized'] });
+      
+      toast.success(
+        newVisibility 
+          ? `✅ Notes visibles pour les étudiants` 
+          : `🔒 Notes masquées aux étudiants`
+      );
+    } catch (error: any) {
+      toast.error('Erreur : ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!isComplete && !assessmentData?.is_visible_to_students) {
+    return null; // N'afficher le bouton que si l'épreuve est complète ou déjà publiée
+  }
+
+  const isVisible = assessmentData?.is_visible_to_students || false;
+
+  return (
+    <Button
+      size="sm"
+      variant={isVisible ? "default" : "outline"}
+      onClick={handleToggleVisibility}
+      disabled={isLoading}
+      className="gap-2"
+      title={isVisible ? "Masquer aux étudiants" : "Rendre visible aux étudiants"}
+    >
+      {isVisible ? (
+        <>
+          <EyeOff className="w-4 h-4" />
+          Dépublier
+        </>
+      ) : (
+        <>
+          <Eye className="w-4 h-4" />
+          Publier
+        </>
+      )}
+    </Button>
+  );
 };
 
 export default function Grades() {
@@ -1078,51 +1182,11 @@ export default function Grades() {
                           </p>
                         </div>
                         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                          {assessment.studentsWithGrades >= assessment.totalStudents && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={async () => {
-                                try {
-                                  const { data: assessmentData, error: fetchError } = await supabase
-                                    .from('assessments')
-                                    .select('*')
-                                    .eq('assessment_name', assessment.name)
-                                    .eq('subject_id', selectedSubjectId)
-                                    .maybeSingle();
-                                  
-                                  if (fetchError) throw fetchError;
-                                  
-                                  if (assessmentData) {
-                                    const { data: { user } } = await supabase.auth.getUser();
-                                    const { error: updateError } = await supabase
-                                      .from('assessments')
-                                      .update({
-                                        is_visible_to_students: !assessmentData.is_visible_to_students,
-                                        visibility_changed_at: new Date().toISOString(),
-                                        visibility_changed_by: user?.id,
-                                      })
-                                      .eq('id', assessmentData.id);
-                                    
-                                    if (updateError) throw updateError;
-                                    
-                                    toast.success(
-                                      !assessmentData.is_visible_to_students 
-                                        ? `✅ Notes visibles pour les étudiants` 
-                                        : `🔒 Notes masquées aux étudiants`
-                                    );
-                                  }
-                                } catch (error: any) {
-                                  toast.error('Erreur : ' + error.message);
-                                }
-                              }}
-                              className="gap-2"
-                              title="Rendre visible aux étudiants"
-                            >
-                              <Eye className="w-4 h-4" />
-                              Publier
-                            </Button>
-                          )}
+                          <PublishAssessmentButton 
+                            assessmentName={assessment.name}
+                            subjectId={selectedSubjectId}
+                            isComplete={assessment.studentsWithGrades >= assessment.totalStudents}
+                          />
                           
                           {assessment.studentsWithGrades < assessment.totalStudents && (
                             <Button
