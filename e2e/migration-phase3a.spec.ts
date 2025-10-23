@@ -132,7 +132,7 @@ async function login(page: Page) {
     await page.goto('/auth?e2e=1');
     await page.waitForLoadState('networkidle');
 
-    let outcome = await attemptSignIn(role);
+    const outcome = await attemptSignIn(role);
     if (outcome === 'success') {
       await page.goto('/directory');
       await page.waitForLoadState('networkidle');
@@ -140,24 +140,12 @@ async function login(page: Page) {
         console.log(`✅ Connexion réussie avec rôle: ${role}`);
         return;
       }
+    } else {
+      console.log(`❌ Échec connexion ${role}: ${outcome}`);
     }
-
-    console.log(`❌ Échec connexion ${role}: ${outcome} → tentative de création de compte`);
-    outcome = await attemptSignUpThenSignIn(role);
-
-    if (outcome === 'success') {
-      await page.goto('/directory');
-      await page.waitForLoadState('networkidle');
-      if (!page.url().includes('/auth')) {
-        console.log(`✅ Compte créé et connexion réussie (${role})`);
-        return;
-      }
-    }
-
-    console.log(`❌ Échec après création (${role}): ${outcome}`);
   }
 
-  throw new Error(`❌ Impossible de se connecter avec admin ou teacher. Vérifiez que le compte peut être créé automatiquement ou que les identifiants sont valides.`);
+  throw new Error('❌ Impossible de se connecter avec admin ou teacher. Vérifiez PLAYWRIGHT_EMAIL/PASSWORD et les droits.');
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPER: NAVIGATION DANS /grades
