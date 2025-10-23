@@ -120,7 +120,7 @@ export const EditGradeDialog = ({ grade, onGradeUpdated }: EditGradeDialogProps)
         assessment_custom_label: assessmentType === "autre" ? customLabel.trim() : null,
         grade: isAbsent ? 0 : parseFloat(gradeValue),
         max_grade: parseFloat(maxGrade),
-        weighting: parseFloat(weighting),
+        // weighting: le coefficient n'est plus modifiable ici (défini au niveau de l'épreuve)
         appreciation: appreciation.trim() || null,
         is_absent: isAbsent,
       },
@@ -221,21 +221,15 @@ export const EditGradeDialog = ({ grade, onGradeUpdated }: EditGradeDialogProps)
             </div>
 
             <div>
-              <Label>Pondération dans la note finale *</Label>
-              <Select value={weighting} onValueChange={setWeighting}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choisir la pondération" />
-                </SelectTrigger>
-                <SelectContent>
-                  {weightingOptions.map((weight) => (
-                    <SelectItem key={weight} value={weight}>
-                      {weight}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Ex: 1 pour coefficient normal, 2 pour double, 0.5 pour demi
+              <Label>Pondération dans la note finale</Label>
+              <Input
+                type="text"
+                value={weighting}
+                disabled
+                className="bg-muted cursor-not-allowed"
+              />
+              <p className="text-xs text-amber-600 mt-1">
+                ⚠️ Le coefficient est défini au niveau de l'épreuve pour toute la classe. Pour le modifier, créez une nouvelle épreuve avec le bon coefficient.
               </p>
             </div>
 
