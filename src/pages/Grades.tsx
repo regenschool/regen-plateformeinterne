@@ -65,12 +65,30 @@ type TeacherSubject = {
 
 // Composant pour gérer la publication/dépublication d'une épreuve
 const PublishAssessmentButton = ({ 
-  assessmentName, 
-  subjectId, 
-  isComplete 
-}: { 
-  assessmentName: string; 
-  subjectId: string | null; 
+  assessmentName,
+  assessmentType,
+  assessmentCustomLabel,
+  subjectId,
+  subjectName,
+  className,
+  schoolYear,
+  semester,
+  teacherName,
+  studentsWithGrades,
+  totalStudents,
+  isComplete,
+}: {
+  assessmentName: string;
+  assessmentType: string;
+  assessmentCustomLabel: string | null;
+  subjectId: string | null;
+  subjectName: string;
+  className: string;
+  schoolYear: string;
+  semester: string;
+  teacherName: string;
+  studentsWithGrades: number;
+  totalStudents: number;
   isComplete: boolean;
 }) => {
   const queryClient = useQueryClient();
@@ -87,7 +105,6 @@ const PublishAssessmentButton = ({
         .eq('assessment_name', assessmentName)
         .eq('subject_id', subjectId)
         .maybeSingle();
-      
       if (error) throw error;
       return data;
     },
@@ -95,54 +112,79 @@ const PublishAssessmentButton = ({
   });
 
   const handleToggleVisibility = async () => {
-    if (!subjectId || !assessmentData) return;
-    
+    if (!subjectId) return;
     setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const newVisibility = !assessmentData.is_visible_to_students;
-      
-      const { error: updateError } = await supabase
-        .from('assessments')
-        .update({
-          is_visible_to_students: newVisibility,
+      if (!user) throw new Error('Utilisateur non authentifié');
+
+      if (!assessmentData) {
+        // Aucune ligne d'épreuve existante: on la crée et on publie directement
+        const insertPayload: any = {
+          assessment_name: assessmentName,
+          assessment_type: assessmentType,
+          assessment_custom_label: assessmentCustomLabel,
+          subject_id: subjectId,
+          subject: subjectName,
+          class_name: className,
+          school_year: schoolYear,
+          semester,
+          teacher_id: user.id,
+          teacher_name: teacherName || null,
+          total_students: totalStudents,
+          graded_students: studentsWithGrades,
+          is_complete: studentsWithGrades >= totalStudents,
+          weighting: 1,
+          max_grade: 20,
+          is_visible_to_students: true, // publication initiale
           visibility_changed_at: new Date().toISOString(),
-          visibility_changed_by: user?.id,
-        })
-        .eq('id', assessmentData.id);
-      
-      if (updateError) throw updateError;
-      
+          visibility_changed_by: user.id,
+        };
+        const { error: insertError } = await supabase
+          .from('assessments')
+          .insert(insertPayload);
+        if (insertError) throw insertError;
+      } else {
+        // Ligne existante: toggle visibilité
+        const newVisibility = !assessmentData.is_visible_to_students;
+        const { error: updateError } = await supabase
+          .from('assessments')
+          .update({
+            is_visible_to_students: newVisibility,
+            visibility_changed_at: new Date().toISOString(),
+            visibility_changed_by: user.id,
+          })
+          .eq('id', assessmentData.id);
+        if (updateError) throw updateError;
+      }
+
       // Invalider les requêtes pour rafraîchir les données
       queryClient.invalidateQueries({ queryKey: ['assessment-visibility'] });
       queryClient.invalidateQueries({ queryKey: ['grades-normalized'] });
-      
+
+      const nowVisible = assessmentData ? !assessmentData.is_visible_to_students : true;
       toast.success(
-        newVisibility 
-          ? `✅ Notes visibles pour les étudiants` 
-          : `🔒 Notes masquées aux étudiants`
+        nowVisible ? `✅ Notes visibles pour les étudiants` : `🔒 Notes masquées aux étudiants`
       );
     } catch (error: any) {
-      toast.error('Erreur : ' + error.message);
+      toast.error('Erreur : ' + (error?.message || 'Action impossible'));
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!isComplete && !assessmentData?.is_visible_to_students) {
-    return null; // N'afficher le bouton que si l'épreuve est complète ou déjà publiée
-  }
-
+  // N'afficher le bouton que si l'épreuve est complète ou déjà publiée
   const isVisible = assessmentData?.is_visible_to_students || false;
+  if (!isComplete && !isVisible) return null;
 
   return (
     <Button
       size="sm"
-      variant={isVisible ? "default" : "outline"}
+      variant={isVisible ? 'default' : 'outline'}
       onClick={handleToggleVisibility}
       disabled={isLoading}
       className="gap-2"
-      title={isVisible ? "Masquer aux étudiants" : "Rendre visible aux étudiants"}
+      title={isVisible ? 'Masquer aux étudiants' : 'Rendre visible aux étudiants'}
     >
       {isVisible ? (
         <>
@@ -1177,7 +1219,16 @@ export default function Grades() {
                         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                           <PublishAssessmentButton 
                             assessmentName={assessment.name}
+                            assessmentType={assessment.type}
+                            assessmentCustomLabel={assessment.customLabel || null}
                             subjectId={selectedSubjectId}
+                            subjectName={subjects.find(s => s.id === selectedSubjectId)?.subject_name || selectedSubject}
+                            className={subjects.find(s => s.id === selectedSubjectId)?.class_name || selectedClass}
+                            schoolYear={subjects.find(s => s.id === selectedSubjectId)?.school_year || selectedSchoolYear}
+                            semester={subjects.find(s => s.id === selectedSubjectId)?.semester || selectedSemester}
+                            teacherName={subjects.find(s => s.id === selectedSubjectId)?.teacher_name || ''}
+                            studentsWithGrades={assessment.studentsWithGrades}
+                            totalStudents={assessment.totalStudents}
                             isComplete={assessment.studentsWithGrades >= assessment.totalStudents}
                           />
                           
