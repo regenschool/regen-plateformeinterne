@@ -57,17 +57,24 @@ console.log('[E2E ENV] Final email:', TEST_EMAIL);
  * @throws Error si l'authentification échoue
  */
 async function login(page: Page) {
-  // Toujours utiliser le bypass E2E (localhost + ?e2e=1)
+  // Vérifier si déjà authentifié
+  await page.goto('/directory');
+  await page.waitForLoadState('networkidle');
+  if (!page.url().includes('/auth')) {
+    console.log('🔓 Session déjà active');
+    return;
+  }
+  // Bypass E2E pour la connexion locale
   await page.goto('/auth?e2e=1');
   await page.waitForLoadState('networkidle');
 
   const roles: Array<'admin' | 'teacher'> = ['admin', 'teacher'];
 
   const attemptSignIn = async (role: 'admin' | 'teacher') => {
-    // Sélectionner le rôle
+    // Sélectionner le rôle via data-testid (plus stable)
     const roleBtn = role === 'admin'
-      ? page.getByRole('button', { name: /Direction/i })
-      : page.getByRole('button', { name: /Enseignant/i });
+      ? page.getByTestId('role-admin')
+      : page.getByTestId('role-teacher');
 
     if (await roleBtn.isVisible().catch(() => false)) {
       await roleBtn.click();
@@ -82,7 +89,7 @@ async function login(page: Page) {
     await passwordInput.fill(String(TEST_PASSWORD));
     console.log(`E2E creds: email=${String(TEST_EMAIL)} | pwd_len=${String(TEST_PASSWORD).length}`);
 
-    const submitBtn = page.getByRole('button', { name: /se connecter|connexion/i });
+    const submitBtn = page.getByTestId('submit-auth');
     await submitBtn.click();
 
     const outcome = await Promise.race([
@@ -94,37 +101,7 @@ async function login(page: Page) {
     return outcome;
   };
 
-  const attemptSignUpThenSignIn = async (role: 'admin' | 'teacher') => {
-    // Rester sur /auth?e2e=1, sélectionner rôle
-    const roleBtn = role === 'admin'
-      ? page.getByRole('button', { name: /Direction/i })
-      : page.getByRole('button', { name: /Enseignant/i });
-    if (await roleBtn.isVisible().catch(() => false)) {
-      await roleBtn.click();
-      await page.waitForTimeout(200);
-    }
-
-    // Ouvrir le mode création de compte
-    const createBtn = page.getByRole('button', { name: /créer un compte/i });
-    if (await createBtn.isVisible().catch(() => false)) {
-      await createBtn.click();
-      await page.waitForTimeout(200);
-    }
-
-    // Remplir formulaire de création
-    await page.fill('input[type="email"], input#email', String(TEST_EMAIL));
-    await page.fill('input[type="password"], input#password', String(TEST_PASSWORD));
-
-    // Soumettre création
-    const submitCreate = page.getByRole('button', { name: /créer le compte/i });
-    await submitCreate.click();
-
-    // Attendre retour auto vers login (le composant repasse en mode login)
-    await page.waitForTimeout(800);
-
-    // Réessayer la connexion immédiatement (auto-confirm activé)
-    return await attemptSignIn(role);
-  };
+  // attemptSignUpThenSignIn supprimé pour stabilité E2E (pas de création auto de compte)
 
   for (const role of roles) {
     console.log(`🔐 Tentative connexion avec rôle: ${role}`);
@@ -272,6 +249,8 @@ async function setupGradesPage(page: Page, options: {
 // ═════════════════════════════════════════════════════════════════════════════
 // SUITE DE TESTS: NON-RÉGRESSION MIGRATION PHASE 3A
 // ═════════════════════════════════════════════════════════════════════════════
+
+test.describe.configure({ mode: 'serial' });
 
 test.describe('Migration Phase 3A - Non-régression', () => {
   test.beforeEach(async () => {

@@ -275,6 +275,7 @@ const Auth = () => {
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <button
+                  data-testid="role-teacher"
                   onClick={() => setSelectedRole("teacher")}
                   className="p-6 border-2 border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-all flex flex-col items-center gap-3 group"
                 >
@@ -287,6 +288,7 @@ const Auth = () => {
                   </div>
                 </button>
                 <button
+                  data-testid="role-admin"
                   onClick={() => setSelectedRole("admin")}
                   className="p-6 border-2 border-border rounded-lg hover:border-primary hover:bg-primary/5 transition-all flex flex-col items-center gap-3 group"
                 >
@@ -344,7 +346,7 @@ const Auth = () => {
                   minLength={6}
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button data-testid="submit-auth" type="submit" className="w-full" disabled={loading}>
                 {loading ? "..." : (isSignup ? "Créer le compte" : "Se connecter")}
               </Button>
               
@@ -387,6 +389,7 @@ const Auth = () => {
 
               <div className="text-center space-y-2">
                 <button
+                  data-testid="toggle-signup"
                   type="button"
                   className="text-sm text-primary underline block mx-auto"
                   onClick={() => setIsSignup(!isSignup)}
