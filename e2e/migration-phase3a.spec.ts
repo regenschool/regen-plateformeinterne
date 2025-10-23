@@ -55,53 +55,71 @@ async function login(page: Page) {
   await page.goto('/auth');
   await page.waitForLoadState('networkidle');
 
-  // Essayer admin d'abord, puis teacher
-  const roles = ['admin', 'teacher'];
+  const roles: Array<'admin' | 'teacher'> = ['admin', 'teacher'];
   
   for (const role of roles) {
-    console.log(`Tentative connexion avec rôle: ${role}`);
+    console.log(`🔐 Tentative connexion avec rôle: ${role}`);
     
-    // Aller sur /auth au cas où
+    // Navigation vers /auth
     await page.goto('/auth');
     await page.waitForLoadState('networkidle');
     
     // Sélectionner le rôle
-    if (role === 'admin') {
-      const adminBtn = page.getByRole('button', { name: /Direction/i });
-      if (await adminBtn.isVisible().catch(() => false)) {
-        await adminBtn.click();
-      }
+    const roleBtn = role === 'admin' 
+      ? page.getByRole('button', { name: /Direction/i })
+      : page.getByRole('button', { name: /Enseignant/i });
+    
+    if (await roleBtn.isVisible().catch(() => false)) {
+      await roleBtn.click();
+      await page.waitForTimeout(500);
     } else {
-      const teacherBtn = page.getByRole('button', { name: /Enseignant/i });
-      if (await teacherBtn.isVisible().catch(() => false)) {
-        await teacherBtn.click();
-      }
+      console.log(`⚠️ Bouton ${role} non trouvé`);
+      continue;
     }
     
-    // Remplir et soumettre
-    await page.fill('input[type="email"], input#email', String(TEST_EMAIL));
-    await page.fill('input[type="password"], input#password', String(TEST_PASSWORD));
+    // Remplir les identifiants
+    const emailInput = page.locator('input[type="email"], input#email').first();
+    const passwordInput = page.locator('input[type="password"], input#password').first();
     
+    await emailInput.waitFor({ state: 'visible', timeout: 5000 });
+    await emailInput.fill(String(TEST_EMAIL));
+    await passwordInput.fill(String(TEST_PASSWORD));
+    
+    // Soumettre le formulaire
     const submitBtn = page.getByRole('button', { name: /se connecter|connexion/i });
     await submitBtn.click();
     
-    // Attendre 3 secondes pour que l'app traite
-    await page.waitForTimeout(3000);
+    // Attendre soit succès (redirection) soit erreur
+    const outcome = await Promise.race([
+      // Succès: URL change et ne contient plus /auth
+      page.waitForURL(/^(?!.*\/auth).*$/i, { timeout: 8000 }).then(() => 'success'),
+      // Erreur: message d'erreur visible
+      page.waitForSelector('text=/n\'avez pas accès|erreur|invalid|incorrect|mot de passe/i', { 
+        timeout: 8000 
+      }).then(() => 'error'),
+      // Timeout
+      page.waitForTimeout(8000).then(() => 'timeout')
+    ]).catch(() => 'timeout');
     
-    // Tester l'accès à /directory
-    await page.goto('/directory');
-    await page.waitForLoadState('networkidle');
-    
-    // Si on reste sur /directory (pas redirigé vers /auth), c'est bon
-    if (!page.url().includes('/auth')) {
-      console.log(`✅ Connexion réussie avec rôle: ${role}`);
-      return;
+    if (outcome === 'success') {
+      // Vérifier qu'on peut accéder à /directory
+      await page.goto('/directory');
+      await page.waitForLoadState('networkidle');
+      
+      if (!page.url().includes('/auth')) {
+        console.log(`✅ Connexion réussie avec rôle: ${role}`);
+        return;
+      }
     }
     
-    console.log(`❌ Échec avec rôle: ${role}`);
+    console.log(`❌ Échec connexion ${role}: ${outcome}`);
   }
   
-  throw new Error('Impossible de se connecter avec admin ou teacher');
+  throw new Error(`❌ Impossible de se connecter avec admin ou teacher. Vérifiez:
+  - Email: ${TEST_EMAIL}
+  - L'utilisateur existe dans auth.users
+  - L'utilisateur a un rôle dans user_roles (admin ou teacher)
+  - Le mot de passe est correct`);
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPER: NAVIGATION DANS /grades
