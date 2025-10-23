@@ -928,7 +928,7 @@ export default function Grades() {
               <div>
                 <label className="text-sm font-medium mb-2 block">{t("grades.schoolYear")}</label>
                 <Select value={selectedSchoolYear} onValueChange={setSelectedSchoolYear}>
-                  <SelectTrigger>
+                  <SelectTrigger data-testid="school-year-select">
                     <SelectValue placeholder={t("grades.selectSchoolYear")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -944,7 +944,7 @@ export default function Grades() {
               <div>
                 <label className="text-sm font-medium mb-2 block">{t("grades.semester")}</label>
                 <Select value={selectedSemester} onValueChange={setSelectedSemester}>
-                  <SelectTrigger>
+                  <SelectTrigger data-testid="semester-select">
                     <SelectValue placeholder={t("grades.selectSemester")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -960,7 +960,7 @@ export default function Grades() {
               <div>
                 <label className="text-sm font-medium mb-2 block">{t("grades.class")}</label>
                 <Select value={selectedClass} onValueChange={setSelectedClass}>
-                  <SelectTrigger>
+                  <SelectTrigger data-testid="class-select">
                     <SelectValue placeholder={t("grades.selectClass")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -992,7 +992,7 @@ export default function Grades() {
                     }}
                     disabled={!selectedClass || !selectedSchoolYear || !selectedSemester}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger data-testid="subject-select">
                       <SelectValue placeholder={t("grades.selectSubject")} />
                     </SelectTrigger>
                     <SelectContent>
@@ -1111,6 +1111,7 @@ export default function Grades() {
               <Button 
                 onClick={() => setShowBulkImport(true)}
                 variant="default"
+                data-testid="new-assessment-button"
               >
                 <PlusCircle className="w-4 h-4 mr-2" />
                 Nouvelle épreuve
@@ -1275,6 +1276,7 @@ export default function Grades() {
                             <Button
                               size="sm"
                               variant="outline"
+                              data-testid={`complete-assessment-${assessment.name}`}
                               onClick={() => {
                                 const sel = {
                                   name: assessment.name,
@@ -1310,6 +1312,7 @@ export default function Grades() {
                                 size="sm"
                                 variant="ghost"
                                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                data-testid={`delete-assessment-${assessment.name}`}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
