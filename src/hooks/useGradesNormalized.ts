@@ -31,6 +31,11 @@ export type GradeNormalized = {
     semester: string;
     teacher_name: string;
   };
+  // Propriétés de compatibilité pour EditGradeDialog (mappées depuis subjects)
+  subject?: string;
+  teacher_name?: string | null;
+  school_year?: string | null;
+  semester?: string | null;
 };
 
 type GradesNormalizedFilters = {
@@ -46,11 +51,11 @@ type GradesNormalizedFilters = {
  * Hook pour récupérer les notes avec JOIN sur subjects
  * Utilise subject_id pour des requêtes optimisées
  */
-export const useGradesNormalized = (filters: GradesNormalizedFilters) => {
-  const { className, subject, schoolYear, semester, teacherId } = filters;
+export const useGradesNormalized = (filters: GradesNormalizedFilters = {}) => {
+  const { subject_id, className, subject, schoolYear, semester, teacherId } = filters;
   
   return useQuery({
-    queryKey: ['grades-normalized', className, subject, schoolYear, semester, teacherId],
+    queryKey: ['grades-normalized', subject_id, className, subject, schoolYear, semester, teacherId],
     queryFn: async () => {
       let query = supabase
         .from('grades')
@@ -64,6 +69,11 @@ export const useGradesNormalized = (filters: GradesNormalizedFilters) => {
             teacher_name
           )
         `);
+      
+      // Filtrage direct via subject_id si fourni
+      if (subject_id) {
+        query = query.eq('subject_id', subject_id);
+      }
       
       // Filtrage via JOIN sur subjects
       if (className || subject || schoolYear || semester) {
@@ -92,9 +102,16 @@ export const useGradesNormalized = (filters: GradesNormalizedFilters) => {
         filteredData = filteredData.filter(g => g.subjects?.semester === semester);
       }
       
-      return filteredData;
+      // Mapper les données pour compatibilité avec les anciens composants
+      return filteredData.map(grade => ({
+        ...grade,
+        subject: grade.subjects?.subject_name,
+        teacher_name: grade.subjects?.teacher_name || null,
+        school_year: grade.subjects?.school_year || null,
+        semester: grade.subjects?.semester || null,
+      }));
     },
-    enabled: !!(className && subject && schoolYear && semester),
+    enabled: !!(subject_id || (className && subject && schoolYear && semester)),
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
@@ -143,7 +160,14 @@ export const useStudentGradesNormalized = (
         filteredData = filteredData.filter(g => g.subjects?.semester === filters.semester);
       }
       
-      return filteredData;
+      // Mapper pour compatibilité
+      return filteredData.map(grade => ({
+        ...grade,
+        subject: grade.subjects?.subject_name,
+        teacher_name: grade.subjects?.teacher_name || null,
+        school_year: grade.subjects?.school_year || null,
+        semester: grade.subjects?.semester || null,
+      }));
     },
     enabled: !!studentId,
   });
