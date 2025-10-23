@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Edit2, Trash2 } from "lucide-react";
 import {
@@ -39,6 +40,7 @@ type Grade = {
   school_year: string | null;
   semester: string | null;
   subject_id?: string | null;
+  is_absent?: boolean;
 };
 
 type EditGradeDialogProps = {
@@ -69,6 +71,7 @@ export const EditGradeDialog = ({ grade, onGradeUpdated }: EditGradeDialogProps)
   const [maxGrade, setMaxGrade] = useState(grade.max_grade.toString());
   const [weighting, setWeighting] = useState(grade.weighting.toString());
   const [appreciation, setAppreciation] = useState(grade.appreciation || "");
+  const [isAbsent, setIsAbsent] = useState(grade.is_absent || false);
   
   const updateGradeMutation = useUpdateGradeNormalized();
   const deleteGradeMutation = useDeleteGradeNormalized();
@@ -81,6 +84,7 @@ export const EditGradeDialog = ({ grade, onGradeUpdated }: EditGradeDialogProps)
       setMaxGrade(grade.max_grade.toString());
       setWeighting(grade.weighting.toString());
       setAppreciation(grade.appreciation || "");
+      setIsAbsent(grade.is_absent || false);
     }
   }, [open, grade]);
 
@@ -99,12 +103,12 @@ export const EditGradeDialog = ({ grade, onGradeUpdated }: EditGradeDialogProps)
       return;
     }
 
-    if (!gradeValue || parseFloat(gradeValue) < 0) {
+    if (!isAbsent && (!gradeValue || parseFloat(gradeValue) < 0)) {
       toast.error("Veuillez saisir une note valide");
       return;
     }
 
-    if (!maxGrade || parseFloat(maxGrade) <= 0) {
+    if (!isAbsent && (!maxGrade || parseFloat(maxGrade) <= 0)) {
       toast.error("La note maximale doit être supérieure à 0");
       return;
     }
@@ -114,10 +118,11 @@ export const EditGradeDialog = ({ grade, onGradeUpdated }: EditGradeDialogProps)
       updates: {
         assessment_type: assessmentType as "participation_individuelle" | "oral_groupe" | "oral_individuel" | "ecrit_groupe" | "ecrit_individuel" | "memoire" | "autre",
         assessment_custom_label: assessmentType === "autre" ? customLabel.trim() : null,
-        grade: parseFloat(gradeValue),
+        grade: isAbsent ? 0 : parseFloat(gradeValue),
         max_grade: parseFloat(maxGrade),
         weighting: parseFloat(weighting),
         appreciation: appreciation.trim() || null,
+        is_absent: isAbsent,
       },
     }, {
       onSuccess: () => {
@@ -177,6 +182,17 @@ export const EditGradeDialog = ({ grade, onGradeUpdated }: EditGradeDialogProps)
               </div>
             )}
 
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="absent-edit"
+                checked={isAbsent}
+                onCheckedChange={(checked) => setIsAbsent(checked as boolean)}
+              />
+              <Label htmlFor="absent-edit" className="cursor-pointer">
+                Étudiant absent
+              </Label>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Note *</Label>
@@ -186,7 +202,8 @@ export const EditGradeDialog = ({ grade, onGradeUpdated }: EditGradeDialogProps)
                   value={gradeValue}
                   onChange={(e) => setGradeValue(e.target.value)}
                   placeholder="15.5"
-                  required
+                  required={!isAbsent}
+                  disabled={isAbsent}
                 />
               </div>
               <div>
@@ -197,7 +214,8 @@ export const EditGradeDialog = ({ grade, onGradeUpdated }: EditGradeDialogProps)
                   value={maxGrade}
                   onChange={(e) => setMaxGrade(e.target.value)}
                   placeholder="20"
-                  required
+                  required={!isAbsent}
+                  disabled={isAbsent}
                 />
               </div>
             </div>

@@ -310,8 +310,9 @@ export const BulkGradeImport = ({ students, classname, subject, subjectId, subje
           </div>
 
           <Tabs defaultValue="visual" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="visual">Saisie visuelle</TabsTrigger>
+              <TabsTrigger value="table">Tableau Excel</TabsTrigger>
               <TabsTrigger value="csv">Import CSV</TabsTrigger>
             </TabsList>
 
@@ -352,6 +353,107 @@ export const BulkGradeImport = ({ students, classname, subject, subjectId, subje
                   </div>
                 ))}
               </div>
+            </TabsContent>
+
+            <TabsContent value="table" className="border-t pt-4 mt-4">
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  💡 <strong>Mode Tableau Excel :</strong> Copiez vos données depuis Excel/LibreOffice et collez-les directement dans le tableau ci-dessous (Ctrl+V ou Cmd+V)
+                </p>
+              </div>
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-medium">Photo</th>
+                      <th className="px-3 py-2 text-left font-medium">Étudiant</th>
+                      <th className="px-3 py-2 text-left font-medium w-24">Note /{maxGrade}</th>
+                      <th className="px-3 py-2 text-left font-medium w-20">Coef.</th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    className="divide-y"
+                    onPaste={(e) => {
+                      e.preventDefault();
+                      const pastedData = e.clipboardData.getData('text');
+                      const lines = pastedData.trim().split('\n');
+                      const newGrades: Record<string, string> = {};
+                      const newWeightings: Record<string, string> = {};
+                      
+                      lines.forEach((line, index) => {
+                        if (index < students.length) {
+                          const parts = line.split('\t').map(p => p.trim());
+                          const gradeValue = parts[0];
+                          const weightValue = parts[1] || weighting;
+                          
+                          if (gradeValue && !isNaN(parseFloat(gradeValue))) {
+                            newGrades[students[index].id] = gradeValue;
+                            newWeightings[students[index].id] = weightValue;
+                          }
+                        }
+                      });
+                      
+                      if (Object.keys(newGrades).length > 0) {
+                        setGrades(prev => ({ ...prev, ...newGrades }));
+                        setWeightings(prev => ({ ...prev, ...newWeightings }));
+                        toast.success(`${Object.keys(newGrades).length} notes collées depuis Excel`);
+                      }
+                    }}
+                  >
+                    {students.map((student, index) => (
+                      <tr key={student.id} className="hover:bg-muted/50">
+                        <td className="px-3 py-2">
+                          <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10">
+                            {student.photo_url ? (
+                              <OptimizedImage
+                                src={student.photo_url}
+                                alt={`${student.first_name} ${student.last_name}`}
+                                width={32}
+                                height={32}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-xs font-bold text-primary/30">
+                                {student.first_name[0]}{student.last_name[0]}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 font-medium">
+                          {student.first_name} {student.last_name}
+                        </td>
+                        <td className="px-3 py-2">
+                          <Input
+                            type="number"
+                            step="0.1"
+                            placeholder="Note"
+                            value={grades[student.id] || ""}
+                            onChange={(e) => handleGradeChange(student.id, e.target.value)}
+                            className="h-8 text-center"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <Input
+                            type="number"
+                            step="0.5"
+                            placeholder={weighting}
+                            value={weightings[student.id] || ""}
+                            onChange={(e) => setWeightings(prev => ({ ...prev, [student.id]: e.target.value }))}
+                            className="h-8 text-center"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {Object.keys(grades).length > 0 && (
+                <div className="mt-3 p-2 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <p className="text-sm text-green-800 dark:text-green-200">
+                    ✓ {Object.keys(grades).length} note(s) saisie(s)
+                  </p>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="csv" className="border-t pt-4 mt-4 space-y-4">
