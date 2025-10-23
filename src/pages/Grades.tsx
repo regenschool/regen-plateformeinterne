@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GradeEntryDialog } from "@/components/GradeEntryDialog";
 import { EditGradeDialog } from "@/components/EditGradeDialog";
+import { EditAssessmentDialog } from "@/components/EditAssessmentDialog";
 import { BulkGradeImport } from "@/components/BulkGradeImport";
 import { NewSubjectDialog } from "@/components/NewSubjectDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -1243,6 +1244,18 @@ export default function Grades() {
                           </p>
                         </div>
                         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                          <EditAssessmentDialog
+                            assessmentName={assessment.name}
+                            assessmentType={assessment.type}
+                            assessmentCustomLabel={assessment.customLabel || null}
+                            className={subjects.find(s => s.id === selectedSubjectId)?.class_name || selectedClass}
+                            subject={subjects.find(s => s.id === selectedSubjectId)?.subject_name || selectedSubject}
+                            schoolYear={subjects.find(s => s.id === selectedSubjectId)?.school_year || selectedSchoolYear}
+                            semester={subjects.find(s => s.id === selectedSubjectId)?.semester || selectedSemester}
+                            subjectId={selectedSubjectId}
+                            onUpdated={handleGradeUpdated}
+                          />
+                          
                           <PublishAssessmentButton 
                             assessmentName={assessment.name}
                             assessmentType={assessment.type}
