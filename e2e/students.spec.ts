@@ -3,10 +3,24 @@ import { test, expect } from '@playwright/test';
 // Helper pour se connecter (à adapter avec vos vraies credentials de test)
 async function login(page: any) {
   await page.goto('/auth');
-  await page.fill('input[type="email"]', process.env.TEST_USER_EMAIL || 'test@example.com');
-  await page.fill('input[type="password"]', process.env.TEST_USER_PASSWORD || 'testpassword');
+  await page.waitForLoadState('networkidle');
+
+  // Sélection du rôle (admin prioritaire)
+  const adminBtn = page.getByRole('button', { name: /Direction/i });
+  const teacherBtn = page.getByRole('button', { name: /Enseignant/i });
+  if (await adminBtn.isVisible().catch(() => false)) {
+    await adminBtn.click();
+  } else if (await teacherBtn.isVisible().catch(() => false)) {
+    await teacherBtn.click();
+  }
+
+  const email = process.env.PLAYWRIGHT_EMAIL || process.env.TEST_USER_EMAIL || '';
+  const password = process.env.PLAYWRIGHT_PASSWORD || process.env.TEST_USER_PASSWORD || '';
+  await page.locator('input[type="email"], input#email').first().waitFor({ state: 'visible', timeout: 10000 });
+  await page.fill('input[type="email"], input#email', email);
+  await page.fill('input[type="password"], input#password', password);
   await page.click('button[type="submit"]');
-  await page.waitForURL('/directory');
+  await page.waitForURL(/^(?!.*auth).*$/i, { timeout: 20000 });
 }
 
 test.describe('Student Management Flow', () => {

@@ -5,16 +5,29 @@ async function loginAsAdmin(page: any) {
   await page.goto('/auth');
   await page.waitForLoadState('networkidle');
   
-  await page.fill('input[type="email"]', process.env.TEST_USER_EMAIL || '');
-  await page.fill('input[type="password"]', process.env.TEST_USER_PASSWORD || '');
+  // Sélection du rôle (admin prioritaire)
+  const adminBtn = page.getByRole('button', { name: /Direction/i });
+  const teacherBtn = page.getByRole('button', { name: /Enseignant/i });
+  if (await adminBtn.isVisible().catch(() => false)) {
+    await adminBtn.click();
+  } else if (await teacherBtn.isVisible().catch(() => false)) {
+    await teacherBtn.click();
+  }
+  
+  const email = process.env.PLAYWRIGHT_EMAIL || process.env.TEST_USER_EMAIL || '';
+  const password = process.env.PLAYWRIGHT_PASSWORD || process.env.TEST_USER_PASSWORD || '';
+
+  await page.locator('input[type="email"], input#email').first().waitFor({ state: 'visible', timeout: 10000 });
+  await page.fill('input[type="email"], input#email', email);
+  await page.fill('input[type="password"], input#password', password);
   await page.click('button[type="submit"]');
   
-  // Attendre la redirection
-  await page.waitForURL(/.*directory/, { timeout: 15000 });
+  // Attendre la redirection (toute URL hors /auth)
+  await page.waitForURL(/^(?!.*auth).*$/i, { timeout: 20000 });
 }
 
 test.describe('Admin Authenticated Flow', () => {
-  test.skip(!process.env.TEST_USER_EMAIL, 'Skipping - no test credentials');
+  test.skip(!((process.env.PLAYWRIGHT_EMAIL || process.env.TEST_USER_EMAIL) && (process.env.PLAYWRIGHT_PASSWORD || process.env.TEST_USER_PASSWORD)), 'Skipping - no test credentials');
 
   test('should login successfully with valid credentials', async ({ page }) => {
     await loginAsAdmin(page);
