@@ -55,59 +55,74 @@ async function login(page: Page) {
   await page.goto('/auth');
   await page.waitForLoadState('networkidle');
 
-  // Sélectionner le type d'utilisateur (admin ou enseignant)
-  const adminBtn = page.getByRole('button', { name: /Direction/i });
-  const teacherBtn = page.getByRole('button', { name: /Enseignant/i });
-  
-  if (await adminBtn.isVisible().catch(() => false)) {
-    await adminBtn.click();
-  } else if (await teacherBtn.isVisible().catch(() => false)) {
-    await teacherBtn.click();
-  }
+  const preferred = (process.env.PLAYWRIGHT_ROLE || 'teacher').toLowerCase() as 'teacher' | 'admin';
 
-  // Remplir les identifiants
-  const emailInput = page.locator('input[type="email"], input#email');
-  const passwordInput = page.locator('input[type="password"], input#password');
-  
-  await emailInput.waitFor({ state: 'visible', timeout: 10000 });
-  await emailInput.fill(String(TEST_EMAIL));
-  await passwordInput.fill(String(TEST_PASSWORD));
+  const performLogin = async (role: 'teacher' | 'admin') => {
+    // Sélection rôle explicite
+    const adminBtn = page.getByRole('button', { name: /Direction/i });
+    const teacherBtn = page.getByRole('button', { name: /Enseignant/i });
 
-  // Soumettre le formulaire
-  const submit = page.getByRole('button', { name: /se connecter|login|connexion|sign in/i });
-  
-  if (await submit.isVisible().catch(() => false)) {
-    await submit.click();
-  } else {
-    await page.click('button[type="submit"]');
-  }
+    if (role === 'admin' && await adminBtn.isVisible().catch(() => false)) {
+      await adminBtn.click();
+    } else if (role === 'teacher' && await teacherBtn.isVisible().catch(() => false)) {
+      await teacherBtn.click();
+    } else if (await teacherBtn.isVisible().catch(() => false)) {
+      await teacherBtn.click();
+    } else if (await adminBtn.isVisible().catch(() => false)) {
+      await adminBtn.click();
+    }
 
-  // Attendre la redirection OU la présence d'une session Supabase en localStorage
-  await page.waitForLoadState('networkidle');
-  const outcome = await Promise.race([
-    page.waitForURL(/^(?!.*auth).*$/i, { timeout: 40000 }).then(() => 'redirected'),
-    page.waitForFunction(() => {
+    // Remplir les identifiants
+    const emailInput = page.locator('input[type="email"], input#email');
+    const passwordInput = page.locator('input[type="password"], input#password');
+    await emailInput.waitFor({ state: 'visible', timeout: 10000 });
+    await emailInput.fill(String(TEST_EMAIL));
+    await passwordInput.fill(String(TEST_PASSWORD));
+
+    // Soumettre
+    const submit = page.getByRole('button', { name: /se connecter|login|connexion|sign in/i });
+    if (await submit.isVisible().catch(() => false)) {
+      await submit.click();
+    } else {
+      await page.click('button[type="submit"]');
+    }
+
+    // Attendre un éventuel message d'erreur d'accès/rôle ou de mot de passe
+    const errorDetected = await Promise.race([
+      page.waitForSelector('text=/n\'avez pas accès|erreur|invalid|incorrect|mot de passe/i', { timeout: 6000 }).then(() => true).catch(() => false),
+      page.waitForTimeout(6000).then(() => false)
+    ]);
+    if (errorDetected) return false;
+
+    // Forcer une page post-login stable pour éviter d'attendre la redirection interne
+    await page.goto('/grades');
+    await page.waitForLoadState('networkidle');
+
+    // Vérifier si on est encore sur /auth → échec
+    if (page.url().includes('/auth')) return false;
+
+    // Vérifier session locale
+    const hasSession = await page.evaluate(() => {
       try {
         const keys = Object.keys(localStorage);
         return keys.some((k) => k.startsWith('sb-') && !!localStorage.getItem(k));
-      } catch {
-        return false;
-      }
-    }, { timeout: 40000 }).then(() => 'session').catch(() => 'none'),
-    page.waitForSelector('text=/erreur|invalid|incorrect|mot de passe/i', { timeout: 10000 }).then(() => 'error').catch(() => 'none')
-  ]);
+      } catch { return false; }
+    });
 
-  // Fallback: si pas de redirection mais session détectée, forcer une navigation
-  if (outcome !== 'error' && page.url().includes('/auth')) {
-    await page.goto('/grades');
-    await page.waitForLoadState('networkidle');
-  }
+    return hasSession || !page.url().includes('/auth');
+  };
 
-  if (page.url().includes('/auth') && outcome !== 'redirected' && outcome !== 'session') {
-    throw new Error('Échec de connexion: pas de redirection et pas de session détectée');
-  }
+  // Essai 1: rôle préféré (par défaut "teacher")
+  const okPreferred = await performLogin(preferred);
+  if (okPreferred) return;
+
+  // Essai 2: autre rôle (ex: si admin refusé, tenter teacher)
+  const fallbackRole = preferred === 'teacher' ? 'admin' : 'teacher';
+  const okFallback = await performLogin(fallbackRole);
+  if (okFallback) return;
+
+  throw new Error('Échec de connexion: identifiants/role invalides ou absence de session');
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPER: NAVIGATION DANS /grades
 // ─────────────────────────────────────────────────────────────────────────────
