@@ -72,6 +72,7 @@ export type Database = {
           school_year: string
           semester: string
           subject: string
+          subject_id: string | null
           teacher_id: string
           teacher_name: string | null
           total_students: number
@@ -96,6 +97,7 @@ export type Database = {
           school_year: string
           semester: string
           subject: string
+          subject_id?: string | null
           teacher_id: string
           teacher_name?: string | null
           total_students?: number
@@ -120,6 +122,7 @@ export type Database = {
           school_year?: string
           semester?: string
           subject?: string
+          subject_id?: string | null
           teacher_id?: string
           teacher_name?: string | null
           total_students?: number
@@ -143,6 +146,13 @@ export type Database = {
             referencedRelation: "classes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "assessments_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
         ]
       }
       audit_logs: {
@@ -150,7 +160,7 @@ export type Database = {
           action: string
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           new_values: Json | null
           old_values: Json | null
           record_id: string | null
@@ -162,7 +172,7 @@ export type Database = {
           action: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           record_id?: string | null
@@ -174,7 +184,7 @@ export type Database = {
           action?: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           record_id?: string | null
@@ -341,6 +351,7 @@ export type Database = {
           semester: string | null
           student_id: string
           subject: string
+          subject_id: string | null
           teacher_id: string
           teacher_name: string | null
           updated_at: string
@@ -363,6 +374,7 @@ export type Database = {
           semester?: string | null
           student_id: string
           subject: string
+          subject_id?: string | null
           teacher_id: string
           teacher_name?: string | null
           updated_at?: string
@@ -385,6 +397,7 @@ export type Database = {
           semester?: string | null
           student_id?: string
           subject?: string
+          subject_id?: string | null
           teacher_id?: string
           teacher_name?: string | null
           updated_at?: string
@@ -417,6 +430,13 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_students_enriched"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]
@@ -2342,10 +2362,7 @@ export type Database = {
       }
     }
     Functions: {
-      calculate_age: {
-        Args: { birth_date: string }
-        Returns: number
-      }
+      calculate_age: { Args: { birth_date: string }; Returns: number }
       calculate_class_subject_stats: {
         Args: {
           p_class_name: string
@@ -2364,10 +2381,7 @@ export type Database = {
         Args: { days_to_keep?: number }
         Returns: number
       }
-      cleanup_old_rate_limits: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_old_rate_limits: { Args: never; Returns: undefined }
       get_subject_weights_for_class: {
         Args: {
           p_class_name: string
@@ -2379,14 +2393,8 @@ export type Database = {
           weight: number
         }[]
       }
-      get_user_email: {
-        Args: { _user_id: string }
-        Returns: string
-      }
-      get_user_id_from_email: {
-        Args: { _email: string }
-        Returns: string
-      }
+      get_user_email: { Args: { _user_id: string }; Returns: string }
+      get_user_id_from_email: { Args: { _email: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2394,18 +2402,12 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_email_confirmed: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
+      is_email_confirmed: { Args: { _user_id: string }; Returns: boolean }
       link_user_to_student: {
         Args: { p_student_id: string; p_user_id: string }
         Returns: undefined
       }
-      refresh_student_visible_grades: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      refresh_student_visible_grades: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "teacher" | "student"
