@@ -258,7 +258,9 @@ export default function Grades() {
 
       const userEmail = user.email;
 
-      // ✅ Les admins voient TOUTES les matières, les enseignants voient uniquement les leurs
+      // ✅ NAVIGATION SCOPE: 
+      // - Admin: voit TOUTES les matières du semestre/classe
+      // - Enseignant: voit uniquement SES matières (pour respecter les permissions)
       let query = supabase
         .from("subjects")
         .select("*")
@@ -266,12 +268,12 @@ export default function Grades() {
         .eq("school_year", selectedSchoolYear)
         .eq("semester", selectedSemester);
 
-      // Si non-admin, filtrer par teacher_id/email
+      // Les enseignants ne naviguent que dans leurs propres matières
       if (!isAdmin) {
         query = query.or(`teacher_id.eq.${user.id},teacher_email.eq.${userEmail}`);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await query.order('subject_name');
       
       if (error) throw error;
       
@@ -639,6 +641,13 @@ export default function Grades() {
       const newSubject = subjects[newIndex];
       setSelectedSubject(newSubject.subject_name);
       setSelectedSubjectId(newSubject.id);
+      
+      // ✅ Mettre à jour les métadonnées pour afficher le bon nom d'enseignant
+      setNewSubjectMetadata({
+        teacherName: newSubject.teacher_name,
+        schoolYear: newSubject.school_year,
+        semester: newSubject.semester,
+      });
     }
   };
 
