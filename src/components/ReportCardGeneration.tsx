@@ -181,8 +181,11 @@ export const ReportCardGeneration = () => {
       if (error) throw error;
     },
     onSuccess: () => {
+      // Invalider tous les caches liés aux coefficients
       queryClient.invalidateQueries({ queryKey: ['subject-weights'] });
-      toast.success('Pondérations sauvegardées');
+      queryClient.invalidateQueries({ queryKey: ['class-subject-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['report-cards'] });
+      toast.success('Pondérations sauvegardées - régénérez les brouillons pour appliquer les changements');
     },
     onError: (error: Error) => {
       toast.error('Erreur lors de la sauvegarde des pondérations');
