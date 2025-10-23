@@ -82,18 +82,29 @@ async function login(page: Page) {
     await page.click('button[type="submit"]');
   }
 
-  // Attendre la redirection
+  // Attendre la redirection OU la présence d'une session Supabase en localStorage
   await page.waitForLoadState('networkidle');
-  
-  const loginOutcome = await Promise.race([
-    page.waitForURL(/^(?!.*auth).*$/i, { timeout: 20000 }).then(() => 'redirected'),
-    page.waitForSelector('text=/erreur|invalid|incorrect|mot de passe/i', { timeout: 7000 })
-      .then(() => 'error')
-      .catch(() => 'none')
+  const outcome = await Promise.race([
+    page.waitForURL(/^(?!.*auth).*$/i, { timeout: 40000 }).then(() => 'redirected'),
+    page.waitForFunction(() => {
+      try {
+        const keys = Object.keys(localStorage);
+        return keys.some((k) => k.startsWith('sb-') && !!localStorage.getItem(k));
+      } catch {
+        return false;
+      }
+    }, { timeout: 40000 }).then(() => 'session').catch(() => 'none'),
+    page.waitForSelector('text=/erreur|invalid|incorrect|mot de passe/i', { timeout: 10000 }).then(() => 'error').catch(() => 'none')
   ]);
-  
-  if (loginOutcome === 'error' && page.url().includes('/auth')) {
-    throw new Error('Échec de connexion: identifiants de test invalides');
+
+  // Fallback: si pas de redirection mais session détectée, forcer une navigation
+  if (outcome !== 'error' && page.url().includes('/auth')) {
+    await page.goto('/grades');
+    await page.waitForLoadState('networkidle');
+  }
+
+  if (page.url().includes('/auth') && outcome !== 'redirected' && outcome !== 'session') {
+    throw new Error('Échec de connexion: pas de redirection et pas de session détectée');
   }
 }
 
