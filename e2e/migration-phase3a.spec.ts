@@ -52,74 +52,106 @@ const HAS_CREDS = !!(TEST_EMAIL && TEST_PASSWORD);
  * @throws Error si l'authentification échoue
  */
 async function login(page: Page) {
+  // Toujours utiliser le bypass E2E (localhost + ?e2e=1)
   await page.goto('/auth?e2e=1');
   await page.waitForLoadState('networkidle');
 
   const roles: Array<'admin' | 'teacher'> = ['admin', 'teacher'];
-  
-  for (const role of roles) {
-    console.log(`🔐 Tentative connexion avec rôle: ${role}`);
-    
-    // Navigation vers /auth
-    await page.goto('/auth?e2e=1');
-    await page.waitForLoadState('networkidle');
-    
+
+  const attemptSignIn = async (role: 'admin' | 'teacher') => {
     // Sélectionner le rôle
-    const roleBtn = role === 'admin' 
+    const roleBtn = role === 'admin'
       ? page.getByRole('button', { name: /Direction/i })
       : page.getByRole('button', { name: /Enseignant/i });
-    
+
     if (await roleBtn.isVisible().catch(() => false)) {
       await roleBtn.click();
-      await page.waitForTimeout(500);
-    } else {
-      console.log(`⚠️ Bouton ${role} non trouvé`);
-      continue;
+      await page.waitForTimeout(300);
     }
-    
-    // Remplir les identifiants
+
     const emailInput = page.locator('input[type="email"], input#email').first();
     const passwordInput = page.locator('input[type="password"], input#password').first();
-    
-    await emailInput.waitFor({ state: 'visible', timeout: 5000 });
+
+    await emailInput.waitFor({ state: 'visible', timeout: 7000 });
     await emailInput.fill(String(TEST_EMAIL));
     await passwordInput.fill(String(TEST_PASSWORD));
-    
-    // Soumettre le formulaire
+
     const submitBtn = page.getByRole('button', { name: /se connecter|connexion/i });
     await submitBtn.click();
-    
-    // Attendre soit succès (redirection) soit erreur
+
     const outcome = await Promise.race([
-      // Succès: URL change et ne contient plus /auth
       page.waitForURL(/^(?!.*\/auth).*$/i, { timeout: 8000 }).then(() => 'success'),
-      // Erreur: message d'erreur visible
-      page.waitForSelector('text=/n\'avez pas accès|erreur|invalid|incorrect|mot de passe/i', { 
-        timeout: 8000 
-      }).then(() => 'error'),
-      // Timeout
+      page.waitForSelector('text=/n\'avez pas accès|erreur|invalid|incorrect|mot de passe/i', { timeout: 8000 }).then(() => 'error'),
       page.waitForTimeout(8000).then(() => 'timeout')
     ]).catch(() => 'timeout');
-    
+
+    return outcome;
+  };
+
+  const attemptSignUpThenSignIn = async (role: 'admin' | 'teacher') => {
+    // Rester sur /auth?e2e=1, sélectionner rôle
+    const roleBtn = role === 'admin'
+      ? page.getByRole('button', { name: /Direction/i })
+      : page.getByRole('button', { name: /Enseignant/i });
+    if (await roleBtn.isVisible().catch(() => false)) {
+      await roleBtn.click();
+      await page.waitForTimeout(200);
+    }
+
+    // Ouvrir le mode création de compte
+    const createBtn = page.getByRole('button', { name: /créer un compte/i });
+    if (await createBtn.isVisible().catch(() => false)) {
+      await createBtn.click();
+      await page.waitForTimeout(200);
+    }
+
+    // Remplir formulaire de création
+    await page.fill('input[type="email"], input#email', String(TEST_EMAIL));
+    await page.fill('input[type="password"], input#password', String(TEST_PASSWORD));
+
+    // Soumettre création
+    const submitCreate = page.getByRole('button', { name: /créer le compte/i });
+    await submitCreate.click();
+
+    // Attendre retour auto vers login (le composant repasse en mode login)
+    await page.waitForTimeout(800);
+
+    // Réessayer la connexion immédiatement (auto-confirm activé)
+    return await attemptSignIn(role);
+  };
+
+  for (const role of roles) {
+    console.log(`🔐 Tentative connexion avec rôle: ${role}`);
+
+    await page.goto('/auth?e2e=1');
+    await page.waitForLoadState('networkidle');
+
+    let outcome = await attemptSignIn(role);
     if (outcome === 'success') {
-      // Vérifier qu'on peut accéder à /directory
       await page.goto('/directory');
       await page.waitForLoadState('networkidle');
-      
       if (!page.url().includes('/auth')) {
         console.log(`✅ Connexion réussie avec rôle: ${role}`);
         return;
       }
     }
-    
-    console.log(`❌ Échec connexion ${role}: ${outcome}`);
+
+    console.log(`❌ Échec connexion ${role}: ${outcome} → tentative de création de compte`);
+    outcome = await attemptSignUpThenSignIn(role);
+
+    if (outcome === 'success') {
+      await page.goto('/directory');
+      await page.waitForLoadState('networkidle');
+      if (!page.url().includes('/auth')) {
+        console.log(`✅ Compte créé et connexion réussie (${role})`);
+        return;
+      }
+    }
+
+    console.log(`❌ Échec après création (${role}): ${outcome}`);
   }
-  
-  throw new Error(`❌ Impossible de se connecter avec admin ou teacher. Vérifiez:
-  - Email: ${TEST_EMAIL}
-  - L'utilisateur existe dans auth.users
-  - L'utilisateur a un rôle dans user_roles (admin ou teacher)
-  - Le mot de passe est correct`);
+
+  throw new Error(`❌ Impossible de se connecter avec admin ou teacher. Vérifiez que le compte peut être créé automatiquement ou que les identifiants sont valides.`);
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPER: NAVIGATION DANS /grades
