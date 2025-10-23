@@ -128,18 +128,35 @@ export const GradeEntryDialog = ({
     }
   };
 
-  const handleAssessmentSelection = (value: string) => {
+  const handleAssessmentSelection = async (value: string) => {
     setSelectedAssessment(value);
     if (value === "__new__") {
       setAssessmentName("");
       setAssessmentType("");
       setCustomLabel("");
+      setWeighting("1"); // Reset au coefficient par défaut
     } else {
       const assessment = existingAssessments.find(a => a.name === value);
       if (assessment) {
         setAssessmentName(assessment.name);
         setAssessmentType(assessment.type);
         setCustomLabel(assessment.customLabel || "");
+        
+        // Récupérer le coefficient de l'épreuve existante
+        const { data: existingGradeWithWeighting } = await supabase
+          .from("grades")
+          .select("weighting")
+          .eq("assessment_name", assessment.name)
+          .eq("class_name", student.class_name)
+          .eq("subject", subject)
+          .eq("school_year", subjectMetadata?.schoolYear || "")
+          .eq("semester", subjectMetadata?.semester || "")
+          .limit(1)
+          .maybeSingle();
+        
+        if (existingGradeWithWeighting) {
+          setWeighting(existingGradeWithWeighting.weighting.toString());
+        }
       }
     }
   };
@@ -435,22 +452,38 @@ export const GradeEntryDialog = ({
           </div>
 
           <div>
-            <Label>Pondération dans la note finale *</Label>
-            <Select value={weighting} onValueChange={setWeighting}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choisir la pondération" />
-              </SelectTrigger>
-              <SelectContent>
-                {weightingOptions.map((weight) => (
-                  <SelectItem key={weight} value={weight}>
-                    {weight}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground mt-1">
-              Ex: 1 pour coefficient normal, 2 pour double, 0.5 pour demi
-            </p>
+            <Label>Pondération dans la note finale {selectedAssessment === "__new__" || selectedAssessment === "" ? "*" : ""}</Label>
+            {selectedAssessment !== "" && selectedAssessment !== "__new__" ? (
+              <>
+                <Input
+                  type="text"
+                  value={weighting}
+                  disabled
+                  className="bg-muted cursor-not-allowed"
+                />
+                <p className="text-xs text-amber-600 mt-1">
+                  ⚠️ Le coefficient est défini au niveau de l'épreuve pour toute la classe et ne peut pas être modifié.
+                </p>
+              </>
+            ) : (
+              <>
+                <Select value={weighting} onValueChange={setWeighting}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choisir la pondération" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {weightingOptions.map((weight) => (
+                      <SelectItem key={weight} value={weight}>
+                        {weight}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ex: 1 pour coefficient normal, 2 pour double, 0.5 pour demi
+                </p>
+              </>
+            )}
           </div>
 
           <div>
