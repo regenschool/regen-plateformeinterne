@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -73,31 +73,26 @@ const PublishAssessmentButton = ({
   subjectId: string | null; 
   isComplete: boolean;
 }) => {
-  const [assessmentData, setAssessmentData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const queryClient = useQueryClient();
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchAssessmentData = async () => {
-      if (!subjectId) return;
-      try {
-        const { data, error } = await supabase
-          .from('assessments')
-          .select('id, is_visible_to_students')
-          .eq('assessment_name', assessmentName)
-          .eq('subject_id', subjectId)
-          .maybeSingle();
-        
-        if (!error && data) {
-          setAssessmentData(data);
-        }
-      } catch (error) {
-        console.error('Error fetching assessment:', error);
-      }
-    };
-
-    fetchAssessmentData();
-  }, [assessmentName, subjectId]);
+  // Utiliser TanStack Query pour récupérer les données de l'épreuve
+  const { data: assessmentData } = useQuery({
+    queryKey: ['assessment-visibility', subjectId, assessmentName],
+    queryFn: async () => {
+      if (!subjectId) return null;
+      const { data, error } = await supabase
+        .from('assessments')
+        .select('id, is_visible_to_students')
+        .eq('assessment_name', assessmentName)
+        .eq('subject_id', subjectId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!subjectId,
+  });
 
   const handleToggleVisibility = async () => {
     if (!subjectId || !assessmentData) return;
@@ -118,10 +113,8 @@ const PublishAssessmentButton = ({
       
       if (updateError) throw updateError;
       
-      // Mettre à jour l'état local
-      setAssessmentData({ ...assessmentData, is_visible_to_students: newVisibility });
-      
       // Invalider les requêtes pour rafraîchir les données
+      queryClient.invalidateQueries({ queryKey: ['assessment-visibility'] });
       queryClient.invalidateQueries({ queryKey: ['grades-normalized'] });
       
       toast.success(
