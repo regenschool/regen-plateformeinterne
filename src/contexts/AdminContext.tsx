@@ -42,12 +42,15 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const checkAdminStatus = async (userId: string) => {
-    const { data: roleData } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
+    // Utiliser la fonction sécurisée has_role au lieu de lire directement la table user_roles (bloquée par RLS)
+    const { data: hasRoleData, error: hasRoleError } = await supabase.rpc('has_role', {
+      _user_id: userId,
+      _role: 'admin'
+    });
+
+    if (hasRoleError) {
+      console.error('Erreur has_role:', hasRoleError);
+    }
 
     const { data: override } = await (supabase as any)
       .from("dev_role_overrides")
@@ -55,7 +58,7 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
       .eq("user_id", userId)
       .maybeSingle();
 
-    const hasRole = !!roleData;
+    const hasRole = !!hasRoleData;
     setHasAdminRole(hasRole);
     
     // Vérifier si un choix a été fait précédemment dans sessionStorage
@@ -67,7 +70,6 @@ export const AdminProvider = ({ children }: { children: ReactNode }) => {
       setIsAdmin(hasRole || !!override?.is_admin);
     }
   };
-
   const toggleAdmin = async (checked: boolean) => {
     if (!userId) return;
     
