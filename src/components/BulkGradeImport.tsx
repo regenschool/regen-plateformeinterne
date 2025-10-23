@@ -8,12 +8,12 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Upload, FileSpreadsheet } from "lucide-react";
+import { Upload } from "lucide-react";
 import { checkRateLimit, RATE_LIMITS, RateLimitError } from "@/lib/rateLimiter";
 import { logAuditAction } from "@/hooks/useAuditLog";
 import { useAddGradeNormalized } from "@/hooks/useGradesNormalized";
@@ -62,7 +62,7 @@ export const BulkGradeImport = ({ students, classname, subject, subjectId, subje
   const [weighting, setWeighting] = useState("1");
   const [grades, setGrades] = useState<Record<string, string>>({});
   const [weightings, setWeightings] = useState<Record<string, string>>({});
-  const [csvData, setCsvData] = useState("");
+  const [absences, setAbsences] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ✅ Utiliser le hook normalisé
@@ -72,65 +72,13 @@ export const BulkGradeImport = ({ students, classname, subject, subjectId, subje
     setGrades(prev => ({ ...prev, [studentId]: value }));
   };
 
-  const parseCSV = () => {
-    if (!csvData.trim()) {
-      toast.error("Veuillez coller des données CSV");
-      return;
+  const handleAbsenceChange = (studentId: string, isAbsent: boolean) => {
+    setAbsences(prev => ({ ...prev, [studentId]: isAbsent }));
+    if (isAbsent) {
+      setGrades(prev => ({ ...prev, [studentId]: "0" }));
     }
-
-    const lines = csvData.trim().split('\n');
-    const newGrades: Record<string, string> = {};
-    const newWeightings: Record<string, string> = {};
-    
-    lines.forEach((line, index) => {
-      const parts = line.split(/[,;\t]/).map(p => p.trim());
-      
-      // Format: Nom Prénom Note [Pondération]
-      if (parts.length >= 2) {
-        const gradeValue = parts[parts.length - 2] || parts[parts.length - 1];
-        const weightValue = parts.length >= 3 && !isNaN(parseFloat(parts[parts.length - 1])) 
-          ? parts[parts.length - 1] 
-          : weighting;
-        
-        // Si on a 3+ colonnes, les premières sont le nom
-        const nameEndIndex = parts.length >= 3 ? parts.length - 2 : parts.length - 1;
-        const studentName = parts.slice(0, nameEndIndex).join(' ').toLowerCase();
-        
-        // Trouver l'étudiant correspondant
-        const student = students.find(s => {
-          const fullName = `${s.first_name} ${s.last_name}`.toLowerCase();
-          const reverseName = `${s.last_name} ${s.first_name}`.toLowerCase();
-          return fullName.includes(studentName) || reverseName.includes(studentName) || studentName.includes(fullName);
-        });
-        
-        if (student && gradeValue && !isNaN(parseFloat(gradeValue))) {
-          newGrades[student.id] = gradeValue;
-          newWeightings[student.id] = weightValue;
-        }
-      } 
-      // Format: Note [Pondération] (ordre des étudiants)
-      else if (parts.length >= 1 && index < students.length) {
-        const gradeValue = parts[0];
-        const weightValue = parts.length >= 2 && !isNaN(parseFloat(parts[1])) 
-          ? parts[1] 
-          : weighting;
-        
-        if (gradeValue && !isNaN(parseFloat(gradeValue))) {
-          newGrades[students[index].id] = gradeValue;
-          newWeightings[students[index].id] = weightValue;
-        }
-      }
-    });
-
-    if (Object.keys(newGrades).length === 0) {
-      toast.error("Aucune note valide n'a été détectée");
-      return;
-    }
-
-    setGrades(newGrades);
-    setWeightings(newWeightings);
-    toast.success(`${Object.keys(newGrades).length} notes importées depuis le CSV`);
   };
+
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
@@ -168,10 +116,10 @@ export const BulkGradeImport = ({ students, classname, subject, subjectId, subje
     }
 
     const gradeEntries = Object.entries(grades)
-      .filter(([_, grade]) => grade && grade.trim() !== "");
+      .filter(([studentId, grade]) => absences[studentId] || (grade && grade.trim() !== ""));
 
     if (gradeEntries.length === 0) {
-      toast.error("Veuillez saisir au moins une note");
+      toast.error("Veuillez saisir au moins une note ou marquer des absences");
       return;
     }
 
@@ -184,16 +132,18 @@ export const BulkGradeImport = ({ students, classname, subject, subjectId, subje
 
       for (const [studentId, grade] of gradeEntries) {
         try {
+          const isAbsent = absences[studentId] || false;
           await addGradeMutation.mutateAsync({
             student_id: studentId,
-            subject_id: subjectId, // ✅ FK normalisée
+            subject_id: subjectId,
             teacher_id: user.id,
             assessment_name: assessmentName.trim(),
             assessment_type: assessmentType as "participation_individuelle" | "oral_groupe" | "oral_individuel" | "ecrit_groupe" | "ecrit_individuel" | "memoire" | "autre",
             assessment_custom_label: assessmentType === "autre" ? customLabel : null,
-            grade: parseFloat(grade),
+            grade: isAbsent ? 0 : parseFloat(grade),
             max_grade: parseFloat(maxGrade),
             weighting: parseFloat(weightings[studentId] || weighting),
+            is_absent: isAbsent,
             appreciation: null,
             // Colonnes temporaires pour backward compatibility
             class_name: classname,
@@ -310,10 +260,9 @@ export const BulkGradeImport = ({ students, classname, subject, subjectId, subje
           </div>
 
           <Tabs defaultValue="visual" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="visual">Saisie visuelle</TabsTrigger>
               <TabsTrigger value="table">Tableau Excel</TabsTrigger>
-              <TabsTrigger value="csv">Import CSV</TabsTrigger>
             </TabsList>
 
             <TabsContent value="visual" className="border-t pt-4 mt-4">
@@ -341,14 +290,25 @@ export const BulkGradeImport = ({ students, classname, subject, subjectId, subje
                         {student.first_name} {student.last_name}
                       </p>
                     </div>
-                    <div className="w-24">
+                    <div className="flex items-center gap-2">
                       <Input
                         type="number"
                         step="0.1"
                         placeholder="Note"
                         value={grades[student.id] || ""}
                         onChange={(e) => handleGradeChange(student.id, e.target.value)}
+                        disabled={absences[student.id]}
+                        className="w-24"
                       />
+                      <label className="flex items-center gap-1 text-xs whitespace-nowrap cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={absences[student.id] || false}
+                          onChange={(e) => handleAbsenceChange(student.id, e.target.checked)}
+                          className="rounded border-input"
+                        />
+                        Absent
+                      </label>
                     </div>
                   </div>
                 ))}
@@ -369,6 +329,7 @@ export const BulkGradeImport = ({ students, classname, subject, subjectId, subje
                       <th className="px-3 py-2 text-left font-medium">Étudiant</th>
                       <th className="px-3 py-2 text-left font-medium w-24">Note /{maxGrade}</th>
                       <th className="px-3 py-2 text-left font-medium w-20">Coef.</th>
+                      <th className="px-3 py-2 text-left font-medium w-16">Absent</th>
                     </tr>
                   </thead>
                   <tbody
@@ -429,6 +390,7 @@ export const BulkGradeImport = ({ students, classname, subject, subjectId, subje
                             placeholder="Note"
                             value={grades[student.id] || ""}
                             onChange={(e) => handleGradeChange(student.id, e.target.value)}
+                            disabled={absences[student.id]}
                             className="h-8 text-center"
                           />
                         </td>
@@ -442,6 +404,14 @@ export const BulkGradeImport = ({ students, classname, subject, subjectId, subje
                             className="h-8 text-center"
                           />
                         </td>
+                        <td className="px-3 py-2 text-center">
+                          <input
+                            type="checkbox"
+                            checked={absences[student.id] || false}
+                            onChange={(e) => handleAbsenceChange(student.id, e.target.checked)}
+                            className="rounded border-input"
+                          />
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -452,55 +422,6 @@ export const BulkGradeImport = ({ students, classname, subject, subjectId, subje
                   <p className="text-sm text-green-800 dark:text-green-200">
                     ✓ {Object.keys(grades).length} note(s) saisie(s)
                   </p>
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="csv" className="border-t pt-4 mt-4 space-y-4">
-              <div>
-                <Label>Coller vos données CSV *</Label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Formats acceptés:<br/>
-                  • Note [Pondération] (une par ligne, dans l'ordre affiché)<br/>
-                  • Nom Prénom Note [Pondération] (séparés par virgule, point-virgule ou tabulation)<br/>
-                  • Prénom Nom Note [Pondération]<br/>
-                  <span className="text-primary font-medium">La pondération est optionnelle</span>
-                </p>
-                <Textarea
-                  value={csvData}
-                  onChange={(e) => setCsvData(e.target.value)}
-                  placeholder="Exemple avec pondération:&#10;Jean Dupont, 15.5, 2&#10;Marie Martin, 18, 1&#10;&#10;Ou simplement:&#10;15.5, 2&#10;18, 1&#10;16, 1.5"
-                  className="min-h-[200px] font-mono text-sm"
-                />
-              </div>
-              <Button onClick={parseCSV} variant="outline" className="w-full">
-                <FileSpreadsheet className="w-4 h-4 mr-2" />
-                Parser le CSV
-              </Button>
-              
-              {Object.keys(grades).length > 0 && (
-                <div className="border rounded-lg p-3 bg-muted/50">
-                  <p className="text-sm font-medium mb-2">{Object.keys(grades).length} notes détectées:</p>
-                  <div className="space-y-1 max-h-40 overflow-y-auto">
-                    {students
-                      .filter(s => grades[s.id])
-                      .map(student => (
-                        <div key={student.id} className="flex items-center gap-2 text-sm">
-                          <div className="w-6 h-6 rounded-full overflow-hidden bg-gradient-to-br from-primary/10 to-accent/10 flex-shrink-0">
-                            {student.photo_url ? (
-                              <OptimizedImage src={student.photo_url} alt="" width={24} height={24} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-xs font-bold text-primary/30">
-                                {student.first_name[0]}{student.last_name[0]}
-                              </div>
-                            )}
-                          </div>
-                          <span className="flex-1">{student.first_name} {student.last_name}</span>
-                          <span className="font-bold">{grades[student.id]}</span>
-                          <span className="text-xs text-muted-foreground">(×{weightings[student.id] || weighting})</span>
-                        </div>
-                      ))}
-                  </div>
                 </div>
               )}
             </TabsContent>
