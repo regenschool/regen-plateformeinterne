@@ -1,8 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 
 // Charger les variables d'environnement depuis .env.test
-dotenv.config({ path: '.env.test' });
+const envPath = path.resolve(__dirname, '.env.test');
+console.log('Loading .env.test from:', envPath);
+const result = dotenv.config({ path: envPath });
+console.log('Dotenv result:', result.error ? result.error.message : `Loaded ${Object.keys(result.parsed || {}).length} vars`);
 
 export default defineConfig({
   testDir: './e2e',
