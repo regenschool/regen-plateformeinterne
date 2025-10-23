@@ -20,20 +20,23 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
+    // Firefox et webkit désactivés en CI pour économiser du temps
+    ...(process.env.CI ? [] : [
+      {
+        name: 'firefox',
+        use: { ...devices['Desktop Firefox'] },
+      },
+      {
+        name: 'webkit',
+        use: { ...devices['Desktop Safari'] },
+      },
+    ]),
   ],
 
   webServer: {
     command: 'npm run build && npm run preview -- --port=4173',
     url: 'http://localhost:4173',
     reuseExistingServer: !process.env.CI,
-    timeout: 180000,
+    timeout: 240000, // 4 minutes pour le build + preview en CI
   },
 });
