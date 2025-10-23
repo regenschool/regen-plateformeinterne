@@ -76,34 +76,22 @@ async function login(page: Page) {
     if (await submit.isVisible().catch(() => false)) await submit.click();
     else await page.click('button[type="submit"]');
 
-    // 3) Détection rapide d'un message d'erreur
-    const hadError = await Promise.race([
-      page.waitForSelector('text=/n\'avez pas accès|erreur|invalid|incorrect|mot de passe/i', { timeout: 6000 }).then(() => true).catch(() => false),
-      page.waitForTimeout(6000).then(() => false)
-    ]);
-    if (hadError) return false;
+    // 3) Attendre soit succès (sortie de /auth) soit erreur visible - SANS timeout fixe
+    const outcome = await Promise.race([
+      // Succès: on quitte /auth (redirection automatique)
+      page.waitForURL(/^(?!.*\/auth).*$/i, { timeout: 15000 }).then(() => 'redirected'),
+      // Échec: message d'erreur visible
+      page.waitForSelector('text=/n\'avez pas accès|erreur|invalid|incorrect|mot de passe/i', { timeout: 15000 }).then(() => 'error')
+    ]).catch(() => 'timeout');
 
-    // 4) Validation déterministe: on force /directory (route protégée)
+    if (outcome === 'error') return false;
+    if (outcome === 'timeout') return false;
+
+    // 4) Double validation: on force /directory et on vérifie qu'on y reste
     await page.goto('/directory');
-
-    // On attend soit l'accès confirmé (Layout rendu), soit une redirection vers /auth
-    const result = await Promise.race([
-      page.waitForURL(/.*\/directory.*/i, { timeout: 20000 }).then(() => 'directory').catch(() => 'none'),
-      page.waitForSelector('text=/Regen School/i', { timeout: 20000 }).then(() => 'layout').catch(() => 'none'),
-      page.waitForURL(/.*\/auth.*/i, { timeout: 20000 }).then(() => 'auth').catch(() => 'none')
-    ]);
-
-    if (result === 'auth') return false;
-
-    // Double vérification côté stockage local
-    const hasSession = await page.evaluate(() => {
-      try {
-        const keys = Object.keys(localStorage);
-        return keys.some((k) => k.startsWith('sb-') && !!localStorage.getItem(k));
-      } catch { return false; }
-    });
-
-    return hasSession || result === 'directory' || result === 'layout';
+    await page.waitForLoadState('networkidle');
+    
+    return !page.url().includes('/auth');
   };
 
   // Essai 1: rôle préféré
