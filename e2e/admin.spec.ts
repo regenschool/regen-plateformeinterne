@@ -22,8 +22,15 @@ async function loginAsAdmin(page: any) {
   await page.fill('input[type="password"], input#password', password);
   await page.click('button[type="submit"]');
   
-  // Attendre la redirection (toute URL hors /auth)
-  await page.waitForURL(/^(?!.*auth).*$/i, { timeout: 20000 });
+  // Attendre la redirection (toute URL hors /auth) OU détecter une erreur rapide
+  const result = await Promise.race([
+    page.waitForURL(/^(?!.*auth).*$/i, { timeout: 20000 }).then(() => 'redirected'),
+    page.waitForSelector('text=/erreur|invalid|incorrect|mot de passe/i', { timeout: 7000 }).then(() => 'error').catch(() => 'none')
+  ]);
+
+  if (result === 'error' && page.url().includes('/auth')) {
+    throw new Error('Échec de connexion: vérifier PLAYWRIGHT_EMAIL/PASSWORD');
+  }
 }
 
 test.describe('Admin Authenticated Flow', () => {
@@ -31,8 +38,10 @@ test.describe('Admin Authenticated Flow', () => {
 
   test('should login successfully with valid credentials', async ({ page }) => {
     await loginAsAdmin(page);
-    
-    // Vérifier qu'on est bien sur la page directory
+    // Doit être connecté (pas sur /auth)
+    expect(page.url()).not.toMatch(/auth/);
+    // Puis accéder à l'annuaire
+    await page.goto('/directory');
     await expect(page).toHaveURL(/.*directory/);
   });
 

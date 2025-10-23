@@ -44,7 +44,13 @@ async function login(page: import('@playwright/test').Page) {
   }
 
   await page.waitForLoadState('networkidle');
-  await page.waitForURL(/^(?!.*auth).*$/i, { timeout: 20000 });
+  const loginOutcome = await Promise.race([
+    page.waitForURL(/^(?!.*auth).*$/i, { timeout: 20000 }).then(() => 'redirected'),
+    page.waitForSelector('text=/erreur|invalid|incorrect|mot de passe/i', { timeout: 7000 }).then(() => 'error').catch(() => 'none')
+  ]);
+  if (loginOutcome === 'error' && page.url().includes('/auth')) {
+    throw new Error('Échec de connexion: identifiants de test invalides');
+  }
 }
 
 

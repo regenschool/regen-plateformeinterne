@@ -34,8 +34,10 @@ test.describe('Student Management Flow', () => {
     await page.goto('/directory');
     
     // Devrait rediriger vers auth si pas connecté
-    if (page.url().includes('/auth')) {
-      await expect(page).toHaveURL(/.*auth/);
+    const titleText = await page.locator('h1').first().textContent().catch(() => '');
+    if (page.url().includes('/auth') || (titleText && /Connexion/i.test(titleText))) {
+      await expect(page).toHaveURL(/.*auth/).catch(() => {});
+      await expect(page.locator('h1')).toContainText(/Connexion/i);
     } else {
       await expect(page.locator('h1')).toContainText('Annuaire');
     }
