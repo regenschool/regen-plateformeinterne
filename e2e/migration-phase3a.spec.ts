@@ -286,6 +286,9 @@ async function setupGradesPage(page: Page, options: {
 // ═════════════════════════════════════════════════════════════════════════════
 
 test.describe('Migration Phase 3A - Non-régression', () => {
+  test.beforeEach(async () => {
+    console.log(`[E2E ENV] email=${String(TEST_EMAIL)} | pwd_len=${String(TEST_PASSWORD).length}`);
+  });
   
   // ───────────────────────────────────────────────────────────────────────────
   // TEST 1: Création de note avec subject_id
