@@ -41,6 +41,11 @@ const TEST_EMAIL = process.env.PLAYWRIGHT_EMAIL || process.env.TEST_USER_EMAIL;
 const TEST_PASSWORD = process.env.PLAYWRIGHT_PASSWORD || process.env.TEST_USER_PASSWORD;
 const HAS_CREDS = !!(TEST_EMAIL && TEST_PASSWORD);
 
+console.log('[E2E ENV] PLAYWRIGHT_EMAIL:', process.env.PLAYWRIGHT_EMAIL);
+console.log('[E2E ENV] TEST_USER_EMAIL:', process.env.TEST_USER_EMAIL);
+console.log('[E2E ENV] Pwd length:', (TEST_PASSWORD || '').length);
+console.log('[E2E ENV] Final email:', TEST_EMAIL);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPER: AUTHENTIFICATION
 // ─────────────────────────────────────────────────────────────────────────────
