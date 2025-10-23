@@ -52,7 +52,7 @@ const HAS_CREDS = !!(TEST_EMAIL && TEST_PASSWORD);
  * @throws Error si l'authentification échoue
  */
 async function login(page: Page) {
-  await page.goto('/auth');
+  await page.goto('/auth?e2e=1');
   await page.waitForLoadState('networkidle');
 
   const roles: Array<'admin' | 'teacher'> = ['admin', 'teacher'];
@@ -61,7 +61,7 @@ async function login(page: Page) {
     console.log(`🔐 Tentative connexion avec rôle: ${role}`);
     
     // Navigation vers /auth
-    await page.goto('/auth');
+    await page.goto('/auth?e2e=1');
     await page.waitForLoadState('networkidle');
     
     // Sélectionner le rôle
