@@ -96,15 +96,34 @@ const PublishAssessmentButton = ({
 
   // Utiliser TanStack Query pour récupérer les données de l'épreuve
   const { data: assessmentData } = useQuery({
-    queryKey: ['assessment-visibility', subjectId, assessmentName],
+    queryKey: ['assessment-visibility', subjectId, assessmentName, subjectName, className, schoolYear, semester],
     queryFn: async () => {
       if (!subjectId) return null;
-      const { data, error } = await supabase
+      
+      // Essayer d'abord avec subject_id
+      let { data, error } = await supabase
         .from('assessments')
         .select('id, is_visible_to_students')
         .eq('assessment_name', assessmentName)
         .eq('subject_id', subjectId)
         .maybeSingle();
+      
+      // Si pas trouvé avec subject_id, chercher avec les champs dénormalisés (épreuves historiques)
+      if (!data && !error) {
+        const result = await supabase
+          .from('assessments')
+          .select('id, is_visible_to_students')
+          .eq('assessment_name', assessmentName)
+          .eq('subject', subjectName)
+          .eq('class_name', className)
+          .eq('school_year', schoolYear)
+          .eq('semester', semester)
+          .is('subject_id', null)
+          .maybeSingle();
+        data = result.data;
+        error = result.error;
+      }
+      
       if (error) throw error;
       return data;
     },
