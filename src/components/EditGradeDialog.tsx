@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useUpdateGradeNormalized, useDeleteGradeNormalized } from "@/hooks/useGradesNormalized";
 
 type Grade = {
   id: string;
@@ -38,6 +38,7 @@ type Grade = {
   teacher_name: string | null;
   school_year: string | null;
   semester: string | null;
+  subject_id?: string | null;
 };
 
 type EditGradeDialogProps = {
@@ -68,7 +69,9 @@ export const EditGradeDialog = ({ grade, onGradeUpdated }: EditGradeDialogProps)
   const [maxGrade, setMaxGrade] = useState(grade.max_grade.toString());
   const [weighting, setWeighting] = useState(grade.weighting.toString());
   const [appreciation, setAppreciation] = useState(grade.appreciation || "");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const updateGradeMutation = useUpdateGradeNormalized();
+  const deleteGradeMutation = useDeleteGradeNormalized();
 
   useEffect(() => {
     if (open) {
@@ -84,7 +87,7 @@ export const EditGradeDialog = ({ grade, onGradeUpdated }: EditGradeDialogProps)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (isSubmitting) return;
+    if (updateGradeMutation.isPending) return;
 
     if (!assessmentType) {
       toast.error("Veuillez sélectionner un type d'épreuve");
@@ -106,53 +109,32 @@ export const EditGradeDialog = ({ grade, onGradeUpdated }: EditGradeDialogProps)
       return;
     }
 
-    try {
-      setIsSubmitting(true);
-
-      const updateData = {
+    updateGradeMutation.mutate({
+      id: grade.id,
+      updates: {
         assessment_type: assessmentType as "participation_individuelle" | "oral_groupe" | "oral_individuel" | "ecrit_groupe" | "ecrit_individuel" | "memoire" | "autre",
         assessment_custom_label: assessmentType === "autre" ? customLabel.trim() : null,
         grade: parseFloat(gradeValue),
         max_grade: parseFloat(maxGrade),
         weighting: parseFloat(weighting),
         appreciation: appreciation.trim() || null,
-      };
-
-      const { error } = await supabase
-        .from("grades")
-        .update(updateData)
-        .eq("id", grade.id);
-
-      if (error) throw error;
-
-      toast.success("Note modifiée avec succès");
-      setOpen(false);
-      onGradeUpdated();
-    } catch (error) {
-      console.error("Error updating grade:", error);
-      toast.error("Erreur lors de la modification de la note");
-    } finally {
-      setIsSubmitting(false);
-    }
+      },
+    }, {
+      onSuccess: () => {
+        setOpen(false);
+        onGradeUpdated();
+      },
+    });
   };
 
   const handleDelete = async () => {
-    try {
-      const { error } = await supabase
-        .from("grades")
-        .delete()
-        .eq("id", grade.id);
-
-      if (error) throw error;
-
-      toast.success("Note supprimée avec succès");
-      setShowDeleteDialog(false);
-      setOpen(false);
-      onGradeUpdated();
-    } catch (error) {
-      console.error("Error deleting grade:", error);
-      toast.error("Erreur lors de la suppression de la note");
-    }
+    deleteGradeMutation.mutate(grade.id, {
+      onSuccess: () => {
+        setShowDeleteDialog(false);
+        setOpen(false);
+        onGradeUpdated();
+      },
+    });
   };
 
   return (
@@ -250,18 +232,18 @@ export const EditGradeDialog = ({ grade, onGradeUpdated }: EditGradeDialogProps)
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button type="submit" className="flex-1" disabled={isSubmitting}>
-                {isSubmitting ? "Enregistrement..." : "Enregistrer"}
+              <Button type="submit" className="flex-1" disabled={updateGradeMutation.isPending}>
+                {updateGradeMutation.isPending ? "Enregistrement..." : "Enregistrer"}
               </Button>
               <Button 
                 type="button" 
                 variant="destructive" 
                 onClick={() => setShowDeleteDialog(true)}
-                disabled={isSubmitting}
+                disabled={updateGradeMutation.isPending || deleteGradeMutation.isPending}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={updateGradeMutation.isPending}>
                 Annuler
               </Button>
             </div>

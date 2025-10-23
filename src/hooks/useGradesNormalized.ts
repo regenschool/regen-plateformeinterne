@@ -9,7 +9,7 @@ import { toast } from 'sonner';
  * Avantages: performance, intégrité, évolutivité
  */
 
-type GradeNormalized = {
+export type GradeNormalized = {
   id: string;
   student_id: string;
   subject_id: string;
@@ -34,6 +34,7 @@ type GradeNormalized = {
 };
 
 type GradesNormalizedFilters = {
+  subject_id?: string;
   className?: string;
   subject?: string;
   schoolYear?: string;

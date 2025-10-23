@@ -10,7 +10,9 @@ import { BulkGradeImport } from "@/components/BulkGradeImport";
 import { NewSubjectDialog } from "@/components/NewSubjectDialog";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
+import { useRealtimeGrades } from "@/hooks/useRealtimeGrades";
 import { useAdmin } from "@/contexts/AdminContext";
+import { useGradesNormalized } from "@/hooks/useGradesNormalized";
 import { toast } from "sonner";
 import { ClipboardList, Upload, TrendingUp, FileText, AlertTriangle, Trash2, ArrowLeft, ChevronLeft, ChevronRight, PlusCircle, BookOpen, Eye, EyeOff } from "lucide-react";
 import { OptimizedImage } from "@/components/OptimizedImage";
@@ -36,23 +38,10 @@ type Student = {
   class_name: string;
 };
 
-type Grade = {
-  id: string;
-  student_id: string;
-  subject: string;
-  assessment_name: string | null;
-  assessment_type: string;
-  assessment_custom_label: string | null;
-  grade: number;
-  max_grade: number;
-  weighting: number;
-  appreciation: string | null;
-  created_at: string;
-  teacher_name: string | null;
-  school_year: string | null;
-  semester: string | null;
-  is_absent?: boolean;
-};
+// Utiliser directement le type GradeNormalized
+import type { GradeNormalized } from "@/hooks/useGradesNormalized";
+
+type Grade = GradeNormalized;
 
 type Assessment = {
   name: string;
@@ -63,6 +52,7 @@ type Assessment = {
 };
 
 type TeacherSubject = {
+  id: string;
   subject_name: string;
   class_name: string;
   school_year: string;
@@ -78,13 +68,13 @@ export default function Grades() {
   const location = useLocation();
   const navigate = useNavigate();
   const [students, setStudents] = useState<Student[]>([]);
-  const [grades, setGrades] = useState<Grade[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>("");
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [selectedSchoolYear, setSelectedSchoolYear] = useState<string>("");
   const [selectedSemester, setSelectedSemester] = useState<string>("");
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
   const [classes, setClasses] = useState<string[]>([]);
-  const [subjects, setSubjects] = useState<string[]>([]);
+  const [subjects, setSubjects] = useState<TeacherSubject[]>([]);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [newSubject, setNewSubject] = useState("");
@@ -103,6 +93,25 @@ export default function Grades() {
   const [studentsToComplete, setStudentsToComplete] = useState<Student[]>([]);
   const [currentCompletionIndex, setCurrentCompletionIndex] = useState<number>(0);
   const [mySubjects, setMySubjects] = useState<TeacherSubject[]>([]);
+  const [assessments, setAssessments] = useState<Assessment[]>([]);
+
+  // Utiliser le hook normalisé pour récupérer les notes
+  const { data: gradesData = [], isLoading: gradesLoading } = useGradesNormalized({
+    subject_id: selectedSubjectId || undefined,
+  });
+
+  // Real-time subscription pour les notes via subject_id
+  useRealtimeGrades(selectedSubjectId || undefined);
+
+  // Real-time subscription pour la table subjects
+  useRealtimeSubscription({
+    table: "subjects",
+    onChange: () => {
+      if (selectedClass && selectedSchoolYear && selectedSemester) {
+        fetchSubjects();
+      }
+    },
+  });
 
   // Handle prefilled data from navigation (state ou query params)
   useEffect(() => {
@@ -119,33 +128,20 @@ export default function Grades() {
       if (prefilledSchoolYear) setSelectedSchoolYear(prefilledSchoolYear);
       if (prefilledSemester) setSelectedSemester(prefilledSemester);
     } else if (subjectParam || classParam || schoolYearParam || semesterParam) {
-      // Pré-remplir depuis les query params
       if (classParam) setSelectedClass(decodeURIComponent(classParam));
       if (subjectParam) setSelectedSubject(decodeURIComponent(subjectParam));
       if (schoolYearParam) setSelectedSchoolYear(decodeURIComponent(schoolYearParam));
       if (semesterParam) setSelectedSemester(decodeURIComponent(semesterParam));
     } else {
-      // Si on arrive sans state ni params (clic sur navigation), réinitialiser tout
       setSelectedClass("");
       setSelectedSubject("");
       setSelectedSchoolYear("");
       setSelectedSemester("");
-      setGrades([]);
+      setSelectedSubjectId(null);
       setNewSubjectMetadata(null);
       setAssessments([]);
     }
   }, [location.state, location.search, location.key]);
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
-
-  useEffect(() => {
-    if (selectedClass && selectedSchoolYear && selectedSemester) {
-      fetchSubjects();
-      if (selectedSubject) {
-        fetchGrades();
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin]);
 
   const currentYear = new Date().getFullYear();
   const schoolYears = [
@@ -165,7 +161,6 @@ export default function Grades() {
     if (!isAdmin) {
       fetchMySubjects();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin]);
 
   const fetchMySubjects = async () => {
@@ -173,8 +168,7 @@ export default function Grades() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Trouver l'année scolaire dont la période contient la date actuelle
-      const today = new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD
+      const today = new Date().toISOString().split('T')[0];
       
       const { data: currentYear } = await supabase
         .from("school_years")
@@ -191,7 +185,7 @@ export default function Grades() {
 
       const { data, error } = await supabase
         .from("subjects")
-        .select("subject_name, class_name, school_year, semester, teacher_name, school_year_fk_id, academic_period_id")
+        .select("id, subject_name, class_name, school_year, semester, teacher_name, school_year_fk_id, academic_period_id")
         .eq("teacher_id", user.id)
         .eq("school_year", currentYear.label)
         .order("subject_name");
@@ -209,52 +203,34 @@ export default function Grades() {
     setSelectedSchoolYear(subject.school_year);
     setSelectedSemester(subject.semester);
     setSelectedSubject(subject.subject_name);
+    setSelectedSubjectId(subject.id);
     setNewSubjectMetadata({
       teacherName: subject.teacher_name,
       schoolYear: subject.school_year,
       semester: subject.semester,
     });
   };
-  
-  // Real-time subscriptions for grades and subjects
-  useRealtimeSubscription({
-    table: "grades",
-    onChange: () => {
-      if (selectedClass && selectedSubject && selectedSchoolYear && selectedSemester) {
-        fetchGrades();
-      }
-    },
-  });
-  
-  useRealtimeSubscription({
-    table: "subjects",
-    onChange: () => {
-      if (selectedClass && selectedSchoolYear && selectedSemester) {
-        fetchSubjects();
-      }
-    },
-  });
 
   useEffect(() => {
     if (selectedClass && selectedSchoolYear && selectedSemester) {
       fetchSubjects();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClass, selectedSchoolYear, selectedSemester]);
 
   useEffect(() => {
     if (selectedClass) {
       fetchStudents();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedClass]);
 
+  // Calculer les assessments depuis gradesData
   useEffect(() => {
-    if (selectedClass && selectedSubject && selectedSchoolYear && selectedSemester) {
-      fetchGrades();
+    if (gradesData && gradesData.length > 0) {
+      calculateAssessments(gradesData);
+    } else {
+      setAssessments([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClass, selectedSubject, selectedSchoolYear, selectedSemester]);
+  }, [gradesData, students.length]);
 
   const fetchClasses = async () => {
     try {
@@ -282,7 +258,6 @@ export default function Grades() {
 
       const userEmail = user.email;
 
-      // Récupérer les matières créées par l'enseignant OU assignées via son email
       const { data, error } = await supabase
         .from("subjects")
         .select("*")
@@ -294,34 +269,33 @@ export default function Grades() {
       if (error) throw error;
       
       if (data) {
-        const uniqueSubjects = Array.from(new Set(data.map(s => s.subject_name)));
-        setSubjects(uniqueSubjects);
+        setSubjects(data as TeacherSubject[]);
         
         const subjectToCheck = subjectName ?? selectedSubject;
-        // Vérifier si la matière sélectionnée existe dans la BDD
         const currentSubjectExists = subjectToCheck
           ? data.find(s => s.subject_name === subjectToCheck)
           : undefined;
         
         if (subjectToCheck && currentSubjectExists) {
-          // Récupérer les métadonnées de la matière sélectionnée
+          setSelectedSubjectId(currentSubjectExists.id);
           setNewSubjectMetadata({
             teacherName: currentSubjectExists.teacher_name,
             schoolYear: currentSubjectExists.school_year,
             semester: currentSubjectExists.semester,
           });
         } else if (subjectToCheck && !currentSubjectExists) {
-          // La matière sélectionnée n'existe pas, réinitialiser
           setSelectedSubject("");
+          setSelectedSubjectId(null);
           setNewSubjectMetadata(null);
-          setGrades([]);
           toast.warning("La matière sélectionnée n'existe pas pour cette combinaison classe/année/semestre");
         } else {
           setNewSubjectMetadata(null);
+          setSelectedSubjectId(null);
         }
       } else {
         setSubjects([]);
         setSelectedSubject("");
+        setSelectedSubjectId(null);
         setNewSubjectMetadata(null);
       }
     } catch (error) {
@@ -350,43 +324,10 @@ export default function Grades() {
     }
   };
 
-  const fetchGrades = async () => {
-    try {
-      setIsLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      let gradesQuery = supabase
-        .from("grades")
-        .select("*")
-        .eq("class_name", selectedClass)
-        .eq("subject", selectedSubject)
-        .eq("school_year", selectedSchoolYear)
-        .eq("semester", selectedSemester);
-
-      if (!isAdmin) {
-        gradesQuery = gradesQuery.eq("teacher_id", user.id);
-      }
-
-      const { data, error } = await gradesQuery;
-
-      if (error) throw error;
-
-      setGrades(data || []);
-      calculateAssessments(data || []);
-    } catch (error) {
-      console.error("Error fetching grades:", error);
-      toast.error("Erreur lors du chargement des notes");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const calculateAssessments = (allGrades: Grade[]) => {
     const assessmentMap = new Map<string, Assessment>();
     
     allGrades.forEach(grade => {
-      // Générer une clé unique pour l'épreuve
       const key = grade.assessment_name || 
                   (grade.assessment_type === "autre" 
                     ? `${grade.assessment_type}_${grade.assessment_custom_label}`
@@ -406,7 +347,6 @@ export default function Grades() {
       }
     });
     
-    // Compter les étudiants qui ont une note (présents ou absents) pour chaque épreuve
     assessmentMap.forEach((assessment, key) => {
       const studentsWithThisGrade = new Set(
         allGrades
@@ -426,15 +366,8 @@ export default function Grades() {
     setAssessments(Array.from(assessmentMap.values()));
   };
 
-  // Recalcule les épreuves quand les élèves ou les notes changent
-  useEffect(() => {
-    if (selectedClass && selectedSubject && selectedSchoolYear && selectedSemester) {
-      calculateAssessments(grades);
-    }
-  }, [students, grades, selectedClass, selectedSubject, selectedSchoolYear, selectedSemester]);
-
   const getStudentGrades = (studentId: string) => {
-    return grades.filter(g => g.student_id === studentId);
+    return gradesData.filter(g => g.student_id === studentId);
   };
 
   const calculateWeightedAverage = (studentGrades: Grade[]) => {
@@ -444,7 +377,6 @@ export default function Grades() {
     let totalWeighting = 0;
     
     studentGrades.forEach(grade => {
-      // Les absents comptent 0 pour la moyenne de l'étudiant
       const normalizedGrade = (grade.grade / grade.max_grade) * 20;
       totalWeightedScore += normalizedGrade * grade.weighting;
       totalWeighting += grade.weighting;
@@ -453,9 +385,8 @@ export default function Grades() {
     return totalWeighting > 0 ? (totalWeightedScore / totalWeighting).toFixed(2) : null;
   };
 
-  // Calculate class statistics
   const getClassStatistics = () => {
-    if (students.length === 0 || grades.length === 0) {
+    if (students.length === 0 || gradesData.length === 0) {
       return {
         classAverage: null,
         totalAssessments: 0,
@@ -464,9 +395,8 @@ export default function Grades() {
       };
     }
 
-    // Get unique assessments using the same logic as calculateAssessments
     const assessments = new Map();
-    grades.forEach(grade => {
+    gradesData.forEach(grade => {
       const key = grade.assessment_name || 
                   (grade.assessment_type === "autre" 
                     ? `${grade.assessment_type}_${grade.assessment_custom_label}`
@@ -486,13 +416,11 @@ export default function Grades() {
 
     const totalAssessments = assessments.size;
 
-    // Calculate class average (excluding absents from class average)
     let totalAverage = 0;
     let studentsWithGrades = 0;
     
     students.forEach(student => {
       const studentGrades = getStudentGrades(student.id);
-      // Filter out absent grades for class average calculation
       const presentGrades = studentGrades.filter(g => !g.is_absent);
       if (presentGrades.length > 0) {
         const average = calculateWeightedAverage(presentGrades);
@@ -507,7 +435,6 @@ export default function Grades() {
       ? (totalAverage / studentsWithGrades).toFixed(2)
       : null;
 
-    // Calculate total missing grades (absents are not missing) and find students with missing grades
     let missingGradesCount = 0;
     const studentsWithMissingGrades: string[] = [];
     
@@ -542,15 +469,11 @@ export default function Grades() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get the teacher_id from the teacher's email or user_id
-      // For admins, we get the selected teacher from the dialog
-      // For teachers, we use the current user's ID
       let teacherId = user.id;
       let teacherEmail = user.email;
       let teacherFkId = null;
 
       if (isAdmin) {
-        // Find teacher by name to get their user_id
         const { data: teacher } = await supabase
           .from('teachers')
           .select('user_id, full_name')
@@ -561,7 +484,6 @@ export default function Grades() {
           teacherId = teacher.user_id;
           teacherFkId = teacher.user_id;
           
-          // Get email from teacher_profiles
           const { data: profile } = await supabase
             .from('teacher_profiles')
             .select('email')
@@ -571,7 +493,6 @@ export default function Grades() {
           teacherEmail = profile?.email;
         }
       } else {
-        // For non-admin users, get their teacher record
         const { data: teacher } = await supabase
           .from('teachers')
           .select('user_id, full_name')
@@ -581,7 +502,6 @@ export default function Grades() {
         if (teacher) {
           teacherFkId = teacher.user_id;
           
-          // Get email from teacher_profiles
           const { data: profile } = await supabase
             .from('teacher_profiles')
             .select('email')
@@ -592,8 +512,7 @@ export default function Grades() {
         }
       }
 
-      // Save the subject to the subjects table avec les FK normalisées
-      const { error } = await supabase.from("subjects").insert({
+      const { data: newSubjectData, error } = await supabase.from("subjects").insert({
         teacher_id: teacherId,
         teacher_email: teacherEmail,
         teacher_fk_id: teacherFkId,
@@ -602,21 +521,19 @@ export default function Grades() {
         teacher_name: teacherName,
         school_year: schoolYear,
         semester: semester,
-        // FK normalisées
         school_year_fk_id: schoolYearId,
         academic_period_id: academicPeriodId,
-      });
+      }).select().single();
 
       if (error) throw error;
 
       setSelectedSubject(subject);
+      setSelectedSubjectId(newSubjectData.id);
       setNewSubjectMetadata({ teacherName, schoolYear, semester });
       setShowNewSubjectDialog(false);
       
-      // Ajouter la nouvelle matière à la liste
-      setSubjects(prev => [...prev, subject]);
-      
       toast.success("Matière créée avec succès");
+      fetchSubjects();
     } catch (error: any) {
       console.error("Error creating subject:", error);
       toast.error("Erreur lors de la création de la matière");
@@ -624,7 +541,6 @@ export default function Grades() {
   };
 
   const handleGradeUpdated = () => {
-    fetchGrades();
     fetchSubjects();
   };
 
@@ -633,38 +549,28 @@ export default function Grades() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Delete all grades for this subject
+      if (!selectedSubjectId) return;
+
       const { error: gradesError } = await supabase
         .from("grades")
         .delete()
-        .eq("teacher_id", user.id)
-        .eq("class_name", selectedClass)
-        .eq("subject", selectedSubject)
-        .eq("school_year", selectedSchoolYear)
-        .eq("semester", selectedSemester);
+        .eq("subject_id", selectedSubjectId);
 
       if (gradesError) throw gradesError;
 
-      // Delete the subject
       const { error: subjectError } = await supabase
         .from("subjects")
         .delete()
-        .eq("teacher_id", user.id)
-        .eq("class_name", selectedClass)
-        .eq("subject_name", selectedSubject)
-        .eq("school_year", selectedSchoolYear)
-        .eq("semester", selectedSemester);
+        .eq("id", selectedSubjectId);
 
       if (subjectError) throw subjectError;
 
       toast.success("Matière supprimée avec succès");
       
-      // Reset selection
       setSelectedSubject("");
+      setSelectedSubjectId(null);
       setNewSubjectMetadata(null);
-      setGrades([]);
       
-      // Refresh subjects list
       fetchSubjects();
     } catch (error) {
       console.error("Error deleting subject:", error);
@@ -677,8 +583,7 @@ export default function Grades() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Identifier toutes les notes de cette épreuve
-      const gradesToDelete = grades.filter(g => {
+      const gradesToDelete = gradesData.filter(g => {
         const gradeKey = g.assessment_name || 
                         (g.assessment_type === "autre" 
                           ? `${g.assessment_type}_${g.assessment_custom_label}`
@@ -699,7 +604,6 @@ export default function Grades() {
         return;
       }
 
-      // Supprimer toutes les notes de cette épreuve
       const { error } = await supabase
         .from("grades")
         .delete()
@@ -708,7 +612,6 @@ export default function Grades() {
       if (error) throw error;
 
       toast.success(`Épreuve "${assessment.name}" supprimée avec ${gradesToDelete.length} note(s)`);
-      fetchGrades();
     } catch (error) {
       console.error("Error deleting assessment:", error);
       toast.error("Erreur lors de la suppression de l'épreuve");
@@ -717,20 +620,22 @@ export default function Grades() {
 
   const handleResetSelection = () => {
     setSelectedSubject("");
-    setGrades([]);
+    setSelectedSubjectId(null);
   };
 
   const handleNavigateToSubject = (direction: 'prev' | 'next') => {
-    const currentIndex = subjects.indexOf(selectedSubject);
+    const currentIndex = subjects.findIndex(s => s.id === selectedSubjectId);
     if (currentIndex === -1) return;
     
     const newIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
     if (newIndex >= 0 && newIndex < subjects.length) {
-      setSelectedSubject(subjects[newIndex]);
+      const newSubject = subjects[newIndex];
+      setSelectedSubject(newSubject.subject_name);
+      setSelectedSubjectId(newSubject.id);
     }
   };
 
-  const currentSubjectIndex = subjects.indexOf(selectedSubject);
+  const currentSubjectIndex = subjects.findIndex(s => s.id === selectedSubjectId);
   const hasPrevSubject = currentSubjectIndex > 0;
   const hasNextSubject = currentSubjectIndex >= 0 && currentSubjectIndex < subjects.length - 1;
 
@@ -890,13 +795,17 @@ export default function Grades() {
                 <label className="text-sm font-medium mb-2 block">{t("grades.subject")}</label>
                 <div className="space-y-2">
                   <Select 
-                    value={selectedSubject} 
+                    value={selectedSubjectId || ""} 
                     onValueChange={(value) => {
                       if (value === "__new__") {
                         setShowNewSubjectDialog(true);
                       } else {
-                        setSelectedSubject(value);
-                        fetchSubjects(value);
+                        const subject = subjects.find(s => s.id === value);
+                        if (subject) {
+                          setSelectedSubject(subject.subject_name);
+                          setSelectedSubjectId(value);
+                          fetchSubjects(subject.subject_name);
+                        }
                       }
                     }}
                     disabled={!selectedClass || !selectedSchoolYear || !selectedSemester}
@@ -906,8 +815,8 @@ export default function Grades() {
                     </SelectTrigger>
                     <SelectContent>
                       {subjects.map((subject) => (
-                        <SelectItem key={subject} value={subject}>
-                          {subject}
+                        <SelectItem key={subject.id} value={subject.id}>
+                          {subject.subject_name}
                         </SelectItem>
                       ))}
                       <SelectItem value="__new__">{t("grades.newSubject")}</SelectItem>
@@ -919,16 +828,17 @@ export default function Grades() {
                       <span className="text-xs text-muted-foreground">Suggestions :</span>
                       {subjects.slice(0, 5).map((subject) => (
                         <Button
-                          key={subject}
+                          key={subject.id}
                           variant="outline"
                           size="sm"
                           className="h-6 text-xs px-2"
                           onClick={() => {
-                            setSelectedSubject(subject);
-                            fetchSubjects(subject);
+                            setSelectedSubject(subject.subject_name);
+                            setSelectedSubjectId(subject.id);
+                            fetchSubjects(subject.subject_name);
                           }}
                         >
-                          {subject}
+                          {subject.subject_name}
                         </Button>
                       ))}
                     </div>
@@ -940,7 +850,7 @@ export default function Grades() {
         </Card>
       )}
 
-{selectedClass && selectedSubject && selectedSubject !== "__new__" && selectedSchoolYear && selectedSemester && (
+{selectedClass && selectedSubject && selectedSubject !== "__new__" && selectedSchoolYear && selectedSemester && selectedSubjectId && (
         <div className="space-y-6">
           {/* Header élégant de la matière */}
           <Card className="border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
@@ -1026,7 +936,7 @@ export default function Grades() {
             </div>
 
             {/* Class Statistics Dashboard */}
-            {grades.length > 0 && (
+            {gradesData.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card>
                   <CardContent className="p-4">
@@ -1097,9 +1007,8 @@ export default function Grades() {
                             type: assessment.type,
                             customLabel: assessment.customLabel || null,
                           };
-                          // Trouver le premier  e9l e8ve sans note pour cette  e9preuve
                           const missing = students.filter((st) => {
-                            const sg = grades.filter((g) => g.student_id === st.id);
+                            const sg = gradesData.filter((g) => g.student_id === st.id);
                             return !sg.some((g) => {
                               const gradeKey = g.assessment_name || (g.assessment_type === "autre" ? `${g.assessment_type}_${g.assessment_custom_label}` : g.assessment_type);
                               const assessmentKey = sel.name || (sel.type === "autre" ? `${sel.type}_${sel.customLabel || ""}` : sel.type);
@@ -1107,7 +1016,7 @@ export default function Grades() {
                             });
                           });
                           if (missing.length === 0) {
-                            toast.info("Toutes les notes sont d e9j e0 saisies pour cette  e9preuve");
+                            toast.info("Toutes les notes sont déjà saisies pour cette épreuve");
                             return;
                           }
                           setSelectedAssessment(sel);
@@ -1124,7 +1033,7 @@ export default function Grades() {
                               customLabel: assessment.customLabel || null,
                             };
                             const missing = students.filter((st) => {
-                              const sg = grades.filter((g) => g.student_id === st.id);
+                              const sg = gradesData.filter((g) => g.student_id === st.id);
                               return !sg.some((g) => {
                                 const gradeKey = g.assessment_name || (g.assessment_type === "autre" ? `${g.assessment_type}_${g.assessment_custom_label}` : g.assessment_type);
                                 const assessmentKey = sel.name || (sel.type === "autre" ? `${sel.type}_${sel.customLabel || ""}` : sel.type);
@@ -1132,7 +1041,7 @@ export default function Grades() {
                               });
                             });
                             if (missing.length === 0) {
-                              toast.info("Toutes les notes sont d e9j e0 saisies pour cette  e9preuve");
+                              toast.info("Toutes les notes sont déjà saisies pour cette épreuve");
                               return;
                             }
                             setSelectedAssessment(sel);
@@ -1153,28 +1062,22 @@ export default function Grades() {
                           </p>
                         </div>
                         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                          {/* Toggle visibilité (uniquement si complète) */}
                           {assessment.studentsWithGrades >= assessment.totalStudents && (
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={async () => {
                                 try {
-                                  // Récupérer l'assessment depuis la DB
                                   const { data: assessmentData, error: fetchError } = await supabase
                                     .from('assessments')
                                     .select('*')
                                     .eq('assessment_name', assessment.name)
-                                    .eq('subject', selectedSubject)
-                                    .eq('class_name', selectedClass)
-                                    .eq('school_year', selectedSchoolYear)
-                                    .eq('semester', selectedSemester)
+                                    .eq('subject_id', selectedSubjectId)
                                     .maybeSingle();
                                   
                                   if (fetchError) throw fetchError;
                                   
                                   if (assessmentData) {
-                                    // Toggle la visibilité
                                     const { data: { user } } = await supabase.auth.getUser();
                                     const { error: updateError } = await supabase
                                       .from('assessments')
@@ -1192,7 +1095,6 @@ export default function Grades() {
                                         ? `✅ Notes visibles pour les étudiants` 
                                         : `🔒 Notes masquées aux étudiants`
                                     );
-                                    fetchGrades(); // Rafraîchir
                                   }
                                 } catch (error: any) {
                                   toast.error('Erreur : ' + error.message);
@@ -1216,9 +1118,8 @@ export default function Grades() {
                                   type: assessment.type,
                                   customLabel: assessment.customLabel || null,
                                 };
-                                // Trouver tous les élèves sans note (hors absents) pour cette épreuve
                                 const missing = students.filter((st) => {
-                                  const sg = grades.filter((g) => g.student_id === st.id);
+                                  const sg = gradesData.filter((g) => g.student_id === st.id);
                                   return !sg.some((g) => {
                                     const gradeKey = g.assessment_name || (g.assessment_type === "autre" ? `${g.assessment_type}_${g.assessment_custom_label}` : g.assessment_type);
                                     const assessmentKey = sel.name || (sel.type === "autre" ? `${sel.type}_${sel.customLabel || ""}` : sel.type);
@@ -1289,7 +1190,7 @@ export default function Grades() {
               </Alert>
             )}
 
-            {isLoading ? (
+            {isLoading || gradesLoading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="text-center space-y-2">
                   <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -1372,6 +1273,7 @@ export default function Grades() {
                        <GradeEntryDialog
                         student={student}
                         subject={selectedSubject}
+                        subjectId={selectedSubjectId}
                         subjectMetadata={newSubjectMetadata}
                         onGradeUpdated={handleGradeUpdated}
                         preselectedAssessment={selectedAssessment}
