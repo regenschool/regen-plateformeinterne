@@ -27,6 +27,7 @@ type Student = {
 type GradeEntryDialogProps = {
   student: Student;
   subject: string;
+  subjectId?: string; // NOUVEAU: Phase 3A - FK normalisée
   subjectMetadata: {
     teacherName: string;
     schoolYear: string;
@@ -61,7 +62,8 @@ const weightingOptions = [
 
 export const GradeEntryDialog = ({ 
   student, 
-  subject, 
+  subject,
+  subjectId, // NOUVEAU: Phase 3A
   subjectMetadata, 
   onGradeUpdated, 
   preselectedAssessment, 
@@ -181,9 +183,27 @@ export const GradeEntryDialog = ({
     try {
       setIsSubmitting(true);
 
+    // Phase 3A: Récupérer subject_id si non fourni (backward compatibility)
+    let effectiveSubjectId = subjectId;
+    if (!effectiveSubjectId && subjectMetadata) {
+      const { data: subjectData } = await supabase
+        .from('subjects')
+        .select('id')
+        .eq('subject_name', subject)
+        .eq('class_name', student.class_name)
+        .eq('school_year', subjectMetadata.schoolYear)
+        .eq('semester', subjectMetadata.semester)
+        .eq('teacher_id', user.id)
+        .maybeSingle();
+      
+      effectiveSubjectId = subjectData?.id || undefined;
+    }
+
     const gradeData = {
       student_id: student.id,
       teacher_id: user.id,
+      subject_id: effectiveSubjectId, // NOUVEAU: Phase 3A FK
+      // Colonnes dénormalisées (conservées pour backward compatibility)
       class_name: student.class_name,
       subject: subject,
       assessment_name: assessmentName.trim(),
