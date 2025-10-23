@@ -193,7 +193,8 @@ export const useGenerateReportCard = () => {
 
       if (gradesError) throw gradesError;
 
-      // ✅ OPTIMISÉ : Récupérer les coefficients via RPC (avec cache potentiel)
+      // ✅ CRITIQUE : Récupérer TOUJOURS les coefficients à jour (pas de cache React Query ici)
+      // On force le refetch direct depuis Supabase pour éviter les valeurs obsolètes
       const { data: subjectWeightsData } = await supabase.rpc('get_subject_weights_for_class', {
         p_class_name: className,
         p_school_year: schoolYear,
@@ -404,8 +405,9 @@ export const useGenerateReportCard = () => {
       return { reportCard, reportCardData };
     },
     onSuccess: (data, variables) => {
-      // Invalider les caches pertinents
+      // Invalider TOUS les caches pertinents, y compris les coefficients
       queryClient.invalidateQueries({ queryKey: ['report-cards'] });
+      queryClient.invalidateQueries({ queryKey: ['subject-weights'] });
       queryClient.invalidateQueries({ 
         queryKey: ['class-subject-stats', variables.className, variables.schoolYear, variables.semester] 
       });
