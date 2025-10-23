@@ -65,14 +65,38 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
     queryFn: async () => {
       if (!studentId) return [];
       
-      const { data, error } = await supabase
+      // Récupérer toutes les notes de l'étudiant
+      const { data: allGrades, error: gradesError } = await supabase
         .from("grades")
         .select("*")
         .eq("student_id", studentId)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      return data;
+      if (gradesError) throw gradesError;
+      if (!allGrades || allGrades.length === 0) return [];
+
+      // Filtrer uniquement les notes dont l'épreuve est visible
+      // Pour chaque note, vérifier si l'assessment correspondant est visible
+      const visibleGrades = await Promise.all(
+        allGrades.map(async (grade) => {
+          // Chercher l'assessment correspondant (avec subject_id OU avec champs dénormalisés)
+          const { data: assessment } = await supabase
+            .from("assessments")
+            .select("is_visible_to_students")
+            .eq("assessment_name", grade.assessment_name)
+            .or(`subject_id.eq.${grade.subject_id},and(subject.eq.${grade.subject},class_name.eq.${grade.class_name},school_year.eq.${grade.school_year},semester.eq.${grade.semester})`)
+            .maybeSingle();
+
+          // Si l'assessment n'existe pas, considérer la note comme non publiée (masquée)
+          // Si l'assessment existe, vérifier is_visible_to_students
+          const isVisible = assessment?.is_visible_to_students === true;
+          
+          return isVisible ? grade : null;
+        })
+      );
+
+      // Retirer les notes null (non visibles)
+      return visibleGrades.filter(g => g !== null);
     },
     enabled: !!studentId,
   });
