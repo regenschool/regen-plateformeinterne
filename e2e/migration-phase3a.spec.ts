@@ -22,12 +22,12 @@ async function login(page: import('@playwright/test').Page) {
   await page.goto('/auth');
   await page.waitForLoadState('networkidle');
 
-  const teacherBtn = page.getByRole('button', { name: /Enseignant/i });
   const adminBtn = page.getByRole('button', { name: /Direction/i });
-  if (await teacherBtn.isVisible().catch(() => false)) {
-    await teacherBtn.click();
-  } else if (await adminBtn.isVisible().catch(() => false)) {
+  const teacherBtn = page.getByRole('button', { name: /Enseignant/i });
+  if (await adminBtn.isVisible().catch(() => false)) {
     await adminBtn.click();
+  } else if (await teacherBtn.isVisible().catch(() => false)) {
+    await teacherBtn.click();
   }
 
   const emailInput = page.locator('input[type="email"], input#email');
