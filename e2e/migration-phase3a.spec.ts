@@ -243,49 +243,31 @@ test.describe('Migration Phase 3A - Non-régression', () => {
     expect(context.subjectName).not.toBe('');
     
     // Cliquer sur "Ajouter une note" (premier étudiant)
-    const addGradeButton = page.getByRole('button', { name: /ajouter une note/i }).first();
+    const addGradeButton = page.getByTestId('add-grade-button').first();
     await addGradeButton.waitFor({ state: 'visible', timeout: 5000 });
     await addGradeButton.click();
-    
+
     // Attendre que le dialog s'ouvre
     const dialog = page.locator('[role="dialog"]').first();
     await dialog.waitFor({ state: 'visible', timeout: 3000 });
-    
+
     // Remplir le formulaire
-    // Note: Si épreuves existantes, sélectionner "Nouvelle épreuve"
-    const existingAssessmentSelect = dialog.locator('select, [role="combobox"]').first();
-    if (await existingAssessmentSelect.isVisible().catch(() => false)) {
-      await existingAssessmentSelect.click();
-      await page.waitForTimeout(200);
-      
-      const newAssessmentOption = page.getByRole('option', { name: /nouvelle épreuve/i });
-      if (await newAssessmentOption.isVisible().catch(() => false)) {
-        await newAssessmentOption.click();
-        await page.waitForTimeout(200);
-      }
-    }
-    
-    // Nom de l'épreuve
-    const assessmentNameInput = dialog.locator('input').first();
-    await assessmentNameInput.fill('Test E2E Phase 3A');
-    
+    await dialog.getByTestId('assessment-name-input').fill('Test E2E Phase 3A');
+
     // Type d'épreuve
-    const assessmentTypeSelect = dialog.locator('select, [role="combobox"]').nth(1);
-    await assessmentTypeSelect.click();
+    await dialog.getByTestId('assessment-type-select').click();
     await page.waitForTimeout(200);
     await page.getByRole('option', { name: /participation individuelle/i }).click();
-    
+
     // Note
-    const gradeInput = dialog.locator('input[type="number"]').first();
-    await gradeInput.fill('15');
-    
+    await dialog.getByTestId('grade-input').fill('15');
+
     // Soumettre
-    const submitButton = dialog.getByRole('button', { name: /enregistrer/i });
-    await submitButton.click();
-    
+    await dialog.getByTestId('save-grade-button').click();
+
     // Vérifier que le dialog se ferme (= succès)
     await dialog.waitFor({ state: 'hidden', timeout: 5000 });
-    
+
     console.log('✅ Note créée avec subject_id');
   });
   

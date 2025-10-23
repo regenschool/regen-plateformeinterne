@@ -331,7 +331,7 @@ export const GradeEntryDialog = ({
       }
     }}>
       <DialogTrigger asChild>
-        <Button variant="default" className="w-full">
+        <Button variant="default" className="w-full" data-testid="add-grade-button">
           <ClipboardList className="w-4 h-4 mr-2" />
           {t("grades.addGrade") || "Ajouter une note"}
         </Button>
@@ -372,6 +372,7 @@ export const GradeEntryDialog = ({
           <div>
             <Label>Nom de l'épreuve * (max 50 caractères)</Label>
             <Input
+              data-testid="assessment-name-input"
               value={assessmentName}
               onChange={(e) => setAssessmentName(e.target.value.slice(0, 50))}
               placeholder="Ex: Contrôle continu 1, Examen final..."
@@ -383,15 +384,15 @@ export const GradeEntryDialog = ({
           </div>
           <div>
             <Label>Type d'épreuve *</Label>
-            <Select 
-              value={assessmentType} 
-              onValueChange={setAssessmentType}
-              disabled={selectedAssessment !== "" && selectedAssessment !== "__new__"}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner le type d'épreuve" />
-              </SelectTrigger>
-              <SelectContent>
+              <Select 
+                value={assessmentType} 
+                onValueChange={setAssessmentType}
+                disabled={selectedAssessment !== "" && selectedAssessment !== "__new__"}
+              >
+                <SelectTrigger data-testid="assessment-type-select">
+                  <SelectValue placeholder="Sélectionner le type d'épreuve" />
+                </SelectTrigger>
+                <SelectContent>
                 {assessmentTypes.map((type) => (
                   <SelectItem key={type.value} value={type.value}>
                     {type.label}
@@ -435,6 +436,7 @@ export const GradeEntryDialog = ({
                 placeholder="15.5"
                 required={!isAbsent}
                 disabled={isAbsent}
+                data-testid="grade-input"
               />
             </div>
             <div>
@@ -447,6 +449,7 @@ export const GradeEntryDialog = ({
                 placeholder="20"
                 required={!isAbsent}
                 disabled={isAbsent}
+                data-testid="max-grade-input"
               />
             </div>
           </div>
@@ -520,7 +523,7 @@ export const GradeEntryDialog = ({
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                <Button type="submit" className="flex-1" disabled={isSubmitting} data-testid="save-grade-button">
                   {isSubmitting ? "Enregistrement..." : (currentStudentIndex < studentsToComplete.length - 1 ? "Enregistrer et suivant" : "Enregistrer")}
                 </Button>
                 <Button 
@@ -535,7 +538,7 @@ export const GradeEntryDialog = ({
             )}
             {!studentsToComplete && (
               <>
-                <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                <Button type="submit" className="flex-1" disabled={isSubmitting} data-testid="save-grade-button">
                   {isSubmitting ? "Enregistrement..." : t("grades.save") || "Enregistrer"}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>

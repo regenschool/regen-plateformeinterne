@@ -146,7 +146,7 @@ export const EditGradeDialog = ({ grade, onGradeUpdated }: EditGradeDialogProps)
     <>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-6 w-6">
+          <Button variant="ghost" size="icon" className="h-6 w-6" data-testid={`edit-grade-${grade.id}`}>
             <Edit2 className="h-3 w-3" />
           </Button>
         </DialogTrigger>
@@ -244,7 +244,7 @@ export const EditGradeDialog = ({ grade, onGradeUpdated }: EditGradeDialogProps)
             </div>
 
             <div className="flex gap-2 pt-4">
-              <Button type="submit" className="flex-1" disabled={updateGradeMutation.isPending}>
+              <Button type="submit" className="flex-1" disabled={updateGradeMutation.isPending} data-testid="save-edit-grade-button">
                 {updateGradeMutation.isPending ? "Enregistrement..." : "Enregistrer"}
               </Button>
               <Button 
