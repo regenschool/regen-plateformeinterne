@@ -14,19 +14,45 @@ import { test, expect } from '@playwright/test';
  * 6. Affichage des notes par étudiant
  */
 
-test.describe('Migration Phase 3A - Non-régression', () => {
-  test.beforeEach(async ({ page }) => {
-    // Se connecter en tant qu'enseignant
-    await page.goto('/auth');
-    await page.fill('input[type="email"]', 'teacher@test.com');
-    await page.fill('input[type="password"]', 'test123');
+const TEST_EMAIL = process.env.PLAYWRIGHT_EMAIL || process.env.TEST_USER_EMAIL;
+const TEST_PASSWORD = process.env.PLAYWRIGHT_PASSWORD || process.env.TEST_USER_PASSWORD;
+const HAS_CREDS = !!(TEST_EMAIL && TEST_PASSWORD);
+
+async function login(page: import('@playwright/test').Page) {
+  await page.goto('/auth');
+  await page.waitForLoadState('networkidle');
+
+  const teacherBtn = page.getByRole('button', { name: /Enseignant/i });
+  const adminBtn = page.getByRole('button', { name: /Direction/i });
+  if (await teacherBtn.isVisible().catch(() => false)) {
+    await teacherBtn.click();
+  } else if (await adminBtn.isVisible().catch(() => false)) {
+    await adminBtn.click();
+  }
+
+  const emailInput = page.locator('input[type="email"], input#email');
+  const passwordInput = page.locator('input[type="password"], input#password');
+  await emailInput.waitFor({ state: 'visible', timeout: 10000 });
+  await emailInput.fill(String(TEST_EMAIL));
+  await passwordInput.fill(String(TEST_PASSWORD));
+
+  const submit = page.getByRole('button', { name: /se connecter|login|connexion|sign in/i });
+  if (await submit.isVisible().catch(() => false)) {
+    await submit.click();
+  } else {
     await page.click('button[type="submit"]');
-    
-    // Attendre la redirection
-    await page.waitForURL('/');
-  });
+  }
+
+  await page.waitForLoadState('networkidle');
+  await page.waitForURL(/^(?!.*auth).*$/i, { timeout: 20000 });
+}
+
+
+test.describe('Migration Phase 3A - Non-régression', () => {
 
   test('1. Création de note avec subject_id', async ({ page }) => {
+    test.skip(!HAS_CREDS, 'Identifiants de test manquants (PLAYWRIGHT_EMAIL/PLAYWRIGHT_PASSWORD)');
+    await login(page);
     // Aller sur la page des notes
     await page.goto('/grades');
     await page.waitForLoadState('networkidle');
@@ -70,6 +96,8 @@ test.describe('Migration Phase 3A - Non-régression', () => {
   });
 
   test('2. Édition de note existante', async ({ page }) => {
+    test.skip(!HAS_CREDS, 'Identifiants de test manquants (PLAYWRIGHT_EMAIL/PLAYWRIGHT_PASSWORD)');
+    await login(page);
     await page.goto('/grades');
     await page.waitForLoadState('networkidle');
 
@@ -105,6 +133,8 @@ test.describe('Migration Phase 3A - Non-régression', () => {
   });
 
   test('3. Suppression de note', async ({ page }) => {
+    test.skip(!HAS_CREDS, 'Identifiants de test manquants (PLAYWRIGHT_EMAIL/PLAYWRIGHT_PASSWORD)');
+    await login(page);
     await page.goto('/grades');
     await page.waitForLoadState('networkidle');
 
@@ -135,6 +165,8 @@ test.describe('Migration Phase 3A - Non-régression', () => {
   });
 
   test('4. Import en masse CSV', async ({ page }) => {
+    test.skip(!HAS_CREDS, 'Identifiants de test manquants (PLAYWRIGHT_EMAIL/PLAYWRIGHT_PASSWORD)');
+    await login(page);
     await page.goto('/grades');
     await page.waitForLoadState('networkidle');
 
@@ -162,6 +194,8 @@ test.describe('Migration Phase 3A - Non-régression', () => {
   });
 
   test('5. Affichage des notes dans StudentDetailDrawer', async ({ page }) => {
+    test.skip(!HAS_CREDS, 'Identifiants de test manquants (PLAYWRIGHT_EMAIL/PLAYWRIGHT_PASSWORD)');
+    await login(page);
     // Aller sur l'annuaire
     await page.goto('/directory');
     await page.waitForLoadState('networkidle');
@@ -263,11 +297,8 @@ test.describe('Migration Phase 3A - Backward Compatibility', () => {
     // Ce test vérifie que la stratégie "Dual Write" fonctionne
     // subject_id ET les colonnes dénormalisées doivent être cohérentes
     
-    await page.goto('/auth');
-    await page.fill('input[type="email"]', 'teacher@test.com');
-    await page.fill('input[type="password"]', 'test123');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('/');
+    test.skip(!HAS_CREDS, 'Identifiants de test manquants (PLAYWRIGHT_EMAIL/PLAYWRIGHT_PASSWORD)');
+    await login(page);
 
     await page.goto('/grades');
     await page.waitForLoadState('networkidle');
