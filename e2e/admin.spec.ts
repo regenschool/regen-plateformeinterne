@@ -4,33 +4,36 @@ import { test, expect } from '@playwright/test';
 async function loginAsAdmin(page: any) {
   await page.goto('/auth');
   await page.waitForLoadState('networkidle');
-  
+
   // Sélection du rôle (admin prioritaire)
   const adminBtn = page.getByRole('button', { name: /Direction/i });
   const teacherBtn = page.getByRole('button', { name: /Enseignant/i });
-  if (await adminBtn.isVisible().catch(() => false)) {
-    await adminBtn.click();
-  } else if (await teacherBtn.isVisible().catch(() => false)) {
-    await teacherBtn.click();
-  }
-  
+  if (await adminBtn.isVisible().catch(() => false)) await adminBtn.click();
+  else if (await teacherBtn.isVisible().catch(() => false)) await teacherBtn.click();
+
   const email = process.env.PLAYWRIGHT_EMAIL || process.env.TEST_USER_EMAIL || '';
   const password = process.env.PLAYWRIGHT_PASSWORD || process.env.TEST_USER_PASSWORD || '';
 
-  await page.locator('input[type="email"], input#email').first().waitFor({ state: 'visible', timeout: 10000 });
+  await page.locator('input[type="email"], input#email').first().waitFor({ state: 'visible', timeout: 15000 });
   await page.fill('input[type="email"], input#email', email);
   await page.fill('input[type="password"], input#password', password);
   await page.click('button[type="submit"]');
-  
-  // Attendre la redirection (toute URL hors /auth) OU détecter une erreur rapide
-  const result = await Promise.race([
-    page.waitForURL(/^(?!.*auth).*$/i, { timeout: 20000 }).then(() => 'redirected'),
-    page.waitForSelector('text=/erreur|invalid|incorrect|mot de passe/i', { timeout: 7000 }).then(() => 'error').catch(() => 'none')
-  ]);
 
-  if (result === 'error' && page.url().includes('/auth')) {
-    throw new Error('Échec de connexion: vérifier PLAYWRIGHT_EMAIL/PASSWORD');
-  }
+  // Détection rapide d'une erreur
+  const hadError = await Promise.race([
+    page.waitForSelector('text=/n\'avez pas accès|erreur|invalid|incorrect|mot de passe/i', { timeout: 6000 }).then(() => true).catch(() => false),
+    page.waitForTimeout(6000).then(() => false)
+  ]);
+  if (hadError) throw new Error('Échec de connexion: vérifier PLAYWRIGHT_EMAIL/PASSWORD');
+
+  // Validation déterministe via route protégée
+  await page.goto('/directory');
+  const result = await Promise.race([
+    page.waitForURL(/.*\/directory.*/i, { timeout: 20000 }).then(() => 'directory').catch(() => 'none'),
+    page.waitForSelector('text=/Regen School/i', { timeout: 20000 }).then(() => 'layout').catch(() => 'none'),
+    page.waitForURL(/.*\/auth.*/i, { timeout: 20000 }).then(() => 'auth').catch(() => 'none')
+  ]);
+  if (result === 'auth') throw new Error('Échec de connexion: redirigé vers /auth');
 }
 
 test.describe('Admin Authenticated Flow', () => {

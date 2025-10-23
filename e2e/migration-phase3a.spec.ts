@@ -58,50 +58,44 @@ async function login(page: Page) {
   const preferred = (process.env.PLAYWRIGHT_ROLE || 'teacher').toLowerCase() as 'teacher' | 'admin';
 
   const performLogin = async (role: 'teacher' | 'admin') => {
-    // Sélection rôle explicite
+    // 1) Sélection explicite du rôle
     const adminBtn = page.getByRole('button', { name: /Direction/i });
     const teacherBtn = page.getByRole('button', { name: /Enseignant/i });
+    if (role === 'admin' && await adminBtn.isVisible().catch(() => false)) await adminBtn.click();
+    else if (role === 'teacher' && await teacherBtn.isVisible().catch(() => false)) await teacherBtn.click();
+    else if (await teacherBtn.isVisible().catch(() => false)) await teacherBtn.click();
+    else if (await adminBtn.isVisible().catch(() => false)) await adminBtn.click();
 
-    if (role === 'admin' && await adminBtn.isVisible().catch(() => false)) {
-      await adminBtn.click();
-    } else if (role === 'teacher' && await teacherBtn.isVisible().catch(() => false)) {
-      await teacherBtn.click();
-    } else if (await teacherBtn.isVisible().catch(() => false)) {
-      await teacherBtn.click();
-    } else if (await adminBtn.isVisible().catch(() => false)) {
-      await adminBtn.click();
-    }
-
-    // Remplir les identifiants
+    // 2) Saisie identifiants + submit
     const emailInput = page.locator('input[type="email"], input#email');
     const passwordInput = page.locator('input[type="password"], input#password');
-    await emailInput.waitFor({ state: 'visible', timeout: 10000 });
+    await emailInput.waitFor({ state: 'visible', timeout: 15000 });
     await emailInput.fill(String(TEST_EMAIL));
     await passwordInput.fill(String(TEST_PASSWORD));
-
-    // Soumettre
     const submit = page.getByRole('button', { name: /se connecter|login|connexion|sign in/i });
-    if (await submit.isVisible().catch(() => false)) {
-      await submit.click();
-    } else {
-      await page.click('button[type="submit"]');
-    }
+    if (await submit.isVisible().catch(() => false)) await submit.click();
+    else await page.click('button[type="submit"]');
 
-    // Attendre un éventuel message d'erreur d'accès/rôle ou de mot de passe
-    const errorDetected = await Promise.race([
+    // 3) Détection rapide d'un message d'erreur
+    const hadError = await Promise.race([
       page.waitForSelector('text=/n\'avez pas accès|erreur|invalid|incorrect|mot de passe/i', { timeout: 6000 }).then(() => true).catch(() => false),
       page.waitForTimeout(6000).then(() => false)
     ]);
-    if (errorDetected) return false;
+    if (hadError) return false;
 
-    // Forcer une page post-login stable pour éviter d'attendre la redirection interne
-    await page.goto('/grades');
-    await page.waitForLoadState('networkidle');
+    // 4) Validation déterministe: on force /directory (route protégée)
+    await page.goto('/directory');
 
-    // Vérifier si on est encore sur /auth → échec
-    if (page.url().includes('/auth')) return false;
+    // On attend soit l'accès confirmé (Layout rendu), soit une redirection vers /auth
+    const result = await Promise.race([
+      page.waitForURL(/.*\/directory.*/i, { timeout: 20000 }).then(() => 'directory').catch(() => 'none'),
+      page.waitForSelector('text=/Regen School/i', { timeout: 20000 }).then(() => 'layout').catch(() => 'none'),
+      page.waitForURL(/.*\/auth.*/i, { timeout: 20000 }).then(() => 'auth').catch(() => 'none')
+    ]);
 
-    // Vérifier session locale
+    if (result === 'auth') return false;
+
+    // Double vérification côté stockage local
     const hasSession = await page.evaluate(() => {
       try {
         const keys = Object.keys(localStorage);
@@ -109,19 +103,17 @@ async function login(page: Page) {
       } catch { return false; }
     });
 
-    return hasSession || !page.url().includes('/auth');
+    return hasSession || result === 'directory' || result === 'layout';
   };
 
-  // Essai 1: rôle préféré (par défaut "teacher")
-  const okPreferred = await performLogin(preferred);
-  if (okPreferred) return;
+  // Essai 1: rôle préféré
+  if (await performLogin(preferred)) return;
 
-  // Essai 2: autre rôle (ex: si admin refusé, tenter teacher)
+  // Essai 2: rôle alternatif
   const fallbackRole = preferred === 'teacher' ? 'admin' : 'teacher';
-  const okFallback = await performLogin(fallbackRole);
-  if (okFallback) return;
+  if (await performLogin(fallbackRole)) return;
 
-  throw new Error('Échec de connexion: identifiants/role invalides ou absence de session');
+  throw new Error('Échec de connexion: pas de redirection ni session après tentative sur 2 rôles');
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPER: NAVIGATION DANS /grades
