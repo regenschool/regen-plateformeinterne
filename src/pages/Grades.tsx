@@ -113,6 +113,13 @@ const PublishAssessmentButton = ({
 
   const handleToggleVisibility = async () => {
     if (!subjectId) return;
+    
+    // ✅ Empêcher la publication si l'épreuve n'est pas complète
+    if (!isComplete && !assessmentData?.is_visible_to_students) {
+      toast.error("❌ Impossible de publier : l'épreuve n'est pas complète");
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
