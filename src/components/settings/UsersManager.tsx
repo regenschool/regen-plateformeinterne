@@ -35,6 +35,13 @@ export const UsersManager = () => {
   const [selectedUserEmail, setSelectedUserEmail] = useState("");
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
+  // Réinit MDP manuel
+  const [manualResetOpen, setManualResetOpen] = useState(false);
+  const [manualResetUser, setManualResetUser] = useState<{ id: string; email: string } | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isSettingPassword, setIsSettingPassword] = useState(false);
+
   // Formulaire édition
   const [editFullName, setEditFullName] = useState("");
   const [editPhone, setEditPhone] = useState("");
@@ -216,6 +223,40 @@ export const UsersManager = () => {
       toast.error(error.message || "Erreur lors de la réinitialisation");
     }
   };
+
+  const openManualReset = (user: UserWithRole) => {
+    setManualResetUser({ id: user.id, email: user.email });
+    setNewPassword("");
+    setConfirmPassword("");
+    setManualResetOpen(true);
+  };
+
+  const submitManualReset = async () => {
+    if (!manualResetUser) return;
+    if (newPassword.length < 8) {
+      toast.error("Le mot de passe doit contenir au moins 8 caractères");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Les mots de passe ne correspondent pas");
+      return;
+    }
+    try {
+      setIsSettingPassword(true);
+      const { error } = await supabase.functions.invoke("admin-set-password", {
+        body: { userId: manualResetUser.id, newPassword },
+      });
+      if (error) throw error;
+      toast.success("Mot de passe mis à jour avec succès");
+      setManualResetOpen(false);
+    } catch (error: any) {
+      console.error("Erreur set password:", error);
+      toast.error(error.message || "Erreur lors de la mise à jour du mot de passe");
+    } finally {
+      setIsSettingPassword(false);
+    }
+  };
+
 
   const handleInviteUser = async (email: string, firstName: string, lastName: string, role: string) => {
     try {
@@ -401,8 +442,16 @@ export const UsersManager = () => {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => openManualReset(user)}
+                          title="Définir manuellement un nouveau mot de passe"
+                        >
+                          Définir MDP
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleResetPassword(user.id)}
-                          title="Réinitialiser le mot de passe"
+                          title="Réinitialiser le mot de passe (lien)"
                         >
                           Réinitialiser MDP
                         </Button>
@@ -491,6 +540,37 @@ export const UsersManager = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* Dialog réinitialisation manuelle du mot de passe */}
+      <Dialog open={manualResetOpen} onOpenChange={(open) => {
+        if (!open) {
+          setManualResetOpen(false);
+          setManualResetUser(null);
+          setNewPassword("");
+          setConfirmPassword("");
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Définir un nouveau mot de passe</DialogTitle>
+            <DialogDescription>
+              {manualResetUser?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nouveau mot de passe</Label>
+              <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+            </div>
+            <div>
+              <Label>Confirmer le mot de passe</Label>
+              <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+            </div>
+            <Button onClick={submitManualReset} disabled={isSettingPassword} className="w-full">
+              {isSettingPassword ? "Mise à jour..." : "Mettre à jour"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
