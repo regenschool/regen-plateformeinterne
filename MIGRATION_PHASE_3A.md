@@ -26,10 +26,10 @@ Migrer progressivement le code pour utiliser `subject_id` (FK) au lieu des colon
 
 ## 📋 Prochaines Étapes
 
-### Composants à migrer (ordre de priorité) :
+### Composants migrés ✅ :
 1. ✅ `src/pages/Grades.tsx` - Page principale MIGRÉ
    - Utilise `useGradesNormalized()` avec `subject_id`
-   - Passe `subjectId` à `GradeEntryDialog`
+   - Passe `subjectId` à tous les composants enfants
    - Real-time via `useRealtimeGrades(subjectId)`
    
 2. ✅ `src/components/EditGradeDialog.tsx` - MIGRÉ
@@ -37,6 +37,10 @@ Migrer progressivement le code pour utiliser `subject_id` (FK) au lieu des colon
    
 3. ✅ `src/hooks/useRealtimeGrades.ts` - MIGRÉ
    - Écoute sur `subject_id` au lieu de colonnes dénormalisées
+
+4. ✅ `src/components/BulkGradeImport.tsx` - MIGRÉ
+   - Utilise `useAddGradeNormalized()` avec `subject_id`
+   - Import en série avec gestion d'erreurs granulaire
    
 3. ⏳ `src/components/BulkGradeImport.tsx`
    - Récupérer `subject_id` avant insertion

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { OptimizedImage } from "@/components/OptimizedImage";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Sheet,
   SheetContent,
@@ -17,6 +16,8 @@ import { toast } from "sonner";
 import { Upload, FileSpreadsheet } from "lucide-react";
 import { checkRateLimit, RATE_LIMITS, RateLimitError } from "@/lib/rateLimiter";
 import { logAuditAction } from "@/hooks/useAuditLog";
+import { useAddGradeNormalized } from "@/hooks/useGradesNormalized";
+import { supabase } from "@/integrations/supabase/client";
 
 type Student = {
   id: string;
@@ -29,6 +30,7 @@ type BulkGradeImportProps = {
   students: Student[];
   classname: string;
   subject: string;
+  subjectId: string; // ✅ NOUVEAU - subject_id (FK normalisée)
   subjectMetadata: {
     teacherName: string;
     schoolYear: string;
@@ -52,7 +54,7 @@ const weightingOptions = [
   "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5"
 ];
 
-export const BulkGradeImport = ({ students, classname, subject, subjectMetadata, onClose, onImportComplete }: BulkGradeImportProps) => {
+export const BulkGradeImport = ({ students, classname, subject, subjectId, subjectMetadata, onClose, onImportComplete }: BulkGradeImportProps) => {
   const [assessmentName, setAssessmentName] = useState("");
   const [assessmentType, setAssessmentType] = useState("");
   const [customLabel, setCustomLabel] = useState("");
@@ -61,6 +63,10 @@ export const BulkGradeImport = ({ students, classname, subject, subjectMetadata,
   const [grades, setGrades] = useState<Record<string, string>>({});
   const [weightings, setWeightings] = useState<Record<string, string>>({});
   const [csvData, setCsvData] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ✅ Utiliser le hook normalisé
+  const addGradeMutation = useAddGradeNormalized();
 
   const handleGradeChange = (studentId: string, value: string) => {
     setGrades(prev => ({ ...prev, [studentId]: value }));
@@ -127,6 +133,8 @@ export const BulkGradeImport = ({ students, classname, subject, subjectMetadata,
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast.error("Vous devez être connecté");
@@ -160,47 +168,70 @@ export const BulkGradeImport = ({ students, classname, subject, subjectMetadata,
     }
 
     const gradeEntries = Object.entries(grades)
-      .filter(([_, grade]) => grade && grade.trim() !== "")
-      .map(([studentId, grade]) => ({
-        student_id: studentId,
-        teacher_id: user.id,
-        class_name: classname,
-        subject: subject,
-        assessment_name: assessmentName.trim(),
-        assessment_type: assessmentType as "participation_individuelle" | "oral_groupe" | "oral_individuel" | "ecrit_groupe" | "ecrit_individuel" | "memoire" | "autre",
-        assessment_custom_label: assessmentType === "autre" ? customLabel : null,
-        grade: parseFloat(grade),
-        max_grade: parseFloat(maxGrade),
-        weighting: parseFloat(weightings[studentId] || weighting),
-        appreciation: null,
-        teacher_name: subjectMetadata?.teacherName || null,
-        school_year: subjectMetadata?.schoolYear || null,
-        semester: subjectMetadata?.semester || null,
-      }));
+      .filter(([_, grade]) => grade && grade.trim() !== "");
 
     if (gradeEntries.length === 0) {
       toast.error("Veuillez saisir au moins une note");
       return;
     }
 
-    const { error } = await supabase.from("grades").insert(gradeEntries);
+    setIsSubmitting(true);
 
-    if (error) {
+    try {
+      // ✅ ARCHITECTURE NORMALISÉE - Utiliser subject_id
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const [studentId, grade] of gradeEntries) {
+        try {
+          await addGradeMutation.mutateAsync({
+            student_id: studentId,
+            subject_id: subjectId, // ✅ FK normalisée
+            teacher_id: user.id,
+            assessment_name: assessmentName.trim(),
+            assessment_type: assessmentType as "participation_individuelle" | "oral_groupe" | "oral_individuel" | "ecrit_groupe" | "ecrit_individuel" | "memoire" | "autre",
+            assessment_custom_label: assessmentType === "autre" ? customLabel : null,
+            grade: parseFloat(grade),
+            max_grade: parseFloat(maxGrade),
+            weighting: parseFloat(weightings[studentId] || weighting),
+            appreciation: null,
+            // Colonnes temporaires pour backward compatibility
+            class_name: classname,
+            subject: subject,
+            teacher_name: subjectMetadata?.teacherName || null,
+            school_year: subjectMetadata?.schoolYear || null,
+            semester: subjectMetadata?.semester || null,
+          });
+          successCount++;
+        } catch (error) {
+          console.error('Error importing grade:', error);
+          errorCount++;
+        }
+      }
+
+      // Logger l'action d'audit
+      await logAuditAction('IMPORT', 'grades', {
+        assessment_name: assessmentName,
+        total_grades: successCount,
+        errors: errorCount,
+        class_name: classname,
+        subject,
+        subject_id: subjectId,
+      });
+
+      if (successCount > 0) {
+        toast.success(`${successCount} notes importées avec succès${errorCount > 0 ? ` (${errorCount} erreurs)` : ''}`);
+        onImportComplete();
+        onClose();
+      } else {
+        toast.error("Erreur lors de l'import des notes");
+      }
+    } catch (error) {
+      console.error('Bulk import error:', error);
       toast.error("Erreur lors de l'import des notes");
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Logger l'action d'audit
-    await logAuditAction('IMPORT', 'grades', {
-      assessment_name: assessmentName,
-      total_grades: gradeEntries.length,
-      class_name: classname,
-      subject,
-    });
-
-    toast.success(`${gradeEntries.length} notes importées avec succès`);
-    onImportComplete();
-    onClose();
   };
 
   return (
@@ -374,11 +405,18 @@ export const BulkGradeImport = ({ students, classname, subject, subjectMetadata,
           </Tabs>
 
           <div className="flex gap-2 pt-4 border-t">
-            <Button onClick={handleSubmit} className="flex-1" disabled={Object.keys(grades).length === 0}>
+            <Button 
+              onClick={handleSubmit} 
+              className="flex-1" 
+              disabled={Object.keys(grades).length === 0 || isSubmitting}
+            >
               <Upload className="w-4 h-4 mr-2" />
-              Importer {Object.keys(grades).length} note{Object.keys(grades).length > 1 ? 's' : ''}
+              {isSubmitting 
+                ? "Import en cours..." 
+                : `Importer ${Object.keys(grades).length} note${Object.keys(grades).length > 1 ? 's' : ''}`
+              }
             </Button>
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
               Annuler
             </Button>
           </div>

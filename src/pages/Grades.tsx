@@ -1308,11 +1308,12 @@ export default function Grades() {
         </div>
       )}
 
-      {showBulkImport && selectedClass && selectedSubject && (
+      {showBulkImport && selectedClass && selectedSubject && selectedSubjectId && (
         <BulkGradeImport
           students={students}
           classname={selectedClass}
           subject={selectedSubject}
+          subjectId={selectedSubjectId}
           subjectMetadata={newSubjectMetadata}
           onClose={() => setShowBulkImport(false)}
           onImportComplete={handleGradeUpdated}
