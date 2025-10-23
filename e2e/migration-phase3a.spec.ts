@@ -75,6 +75,7 @@ async function login(page: Page) {
     await emailInput.waitFor({ state: 'visible', timeout: 7000 });
     await emailInput.fill(String(TEST_EMAIL));
     await passwordInput.fill(String(TEST_PASSWORD));
+    console.log(`E2E creds: email=${String(TEST_EMAIL)} | pwd_len=${String(TEST_PASSWORD).length}`);
 
     const submitBtn = page.getByRole('button', { name: /se connecter|connexion/i });
     await submitBtn.click();
