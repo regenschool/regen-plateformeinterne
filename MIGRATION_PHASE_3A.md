@@ -66,6 +66,20 @@ Une fois Phase 3A validée :
 3. Mettre à jour les index
 4. Mettre à jour les RLS policies si nécessaire
 
+### ⚠️ Points d'attention pour Phase 3B
+
+**Import CSV de matières avec enseignant inexistant:**
+- **Fichier concerné:** `src/components/ImportSubjectsDialog.tsx` (lignes 120-142)
+- **Comportement actuel:** Si un `teacher_email` n'existe pas lors de l'import CSV, la matière est créée avec `teacher_id = null`
+- Un warning est affiché en console
+- Le `teacher_email` et `teacher_name` sont stockés pour référence
+- **ACTION REQUISE en Phase 3B:** Gérer ce cas avant d'appliquer `NOT NULL` sur `subjects.teacher_id` pour éviter les erreurs d'intégrité
+- **Options possibles:**
+  1. Bloquer l'import si l'enseignant n'existe pas (validation stricte)
+  2. Créer automatiquement un compte enseignant avec invitation email
+  3. Assigner temporairement à un enseignant par défaut/admin
+  4. Garder `teacher_id` nullable dans `subjects` (compromis)
+
 ## 📊 Avantages attendus
 - **Performance** : JOINs optimisés, moins de colonnes indexées
 - **Intégrité** : CASCADE automatique, impossible d'avoir des orphelins
