@@ -55,53 +55,53 @@ async function login(page: Page) {
   await page.goto('/auth');
   await page.waitForLoadState('networkidle');
 
-  const preferred = (process.env.PLAYWRIGHT_ROLE || 'teacher').toLowerCase() as 'teacher' | 'admin';
-
-  const performLogin = async (role: 'teacher' | 'admin') => {
-    // 1) Sélection explicite du rôle
-    const adminBtn = page.getByRole('button', { name: /Direction/i });
-    const teacherBtn = page.getByRole('button', { name: /Enseignant/i });
-    if (role === 'admin' && await adminBtn.isVisible().catch(() => false)) await adminBtn.click();
-    else if (role === 'teacher' && await teacherBtn.isVisible().catch(() => false)) await teacherBtn.click();
-    else if (await teacherBtn.isVisible().catch(() => false)) await teacherBtn.click();
-    else if (await adminBtn.isVisible().catch(() => false)) await adminBtn.click();
-
-    // 2) Saisie identifiants + submit
-    const emailInput = page.locator('input[type="email"], input#email');
-    const passwordInput = page.locator('input[type="password"], input#password');
-    await emailInput.waitFor({ state: 'visible', timeout: 15000 });
-    await emailInput.fill(String(TEST_EMAIL));
-    await passwordInput.fill(String(TEST_PASSWORD));
-    const submit = page.getByRole('button', { name: /se connecter|login|connexion|sign in/i });
-    if (await submit.isVisible().catch(() => false)) await submit.click();
-    else await page.click('button[type="submit"]');
-
-    // 3) Attendre soit succès (sortie de /auth) soit erreur visible - SANS timeout fixe
-    const outcome = await Promise.race([
-      // Succès: on quitte /auth (redirection automatique)
-      page.waitForURL(/^(?!.*\/auth).*$/i, { timeout: 15000 }).then(() => 'redirected'),
-      // Échec: message d'erreur visible
-      page.waitForSelector('text=/n\'avez pas accès|erreur|invalid|incorrect|mot de passe/i', { timeout: 15000 }).then(() => 'error')
-    ]).catch(() => 'timeout');
-
-    if (outcome === 'error') return false;
-    if (outcome === 'timeout') return false;
-
-    // 4) Double validation: on force /directory et on vérifie qu'on y reste
+  // Essayer admin d'abord, puis teacher
+  const roles = ['admin', 'teacher'];
+  
+  for (const role of roles) {
+    console.log(`Tentative connexion avec rôle: ${role}`);
+    
+    // Aller sur /auth au cas où
+    await page.goto('/auth');
+    await page.waitForLoadState('networkidle');
+    
+    // Sélectionner le rôle
+    if (role === 'admin') {
+      const adminBtn = page.getByRole('button', { name: /Direction/i });
+      if (await adminBtn.isVisible().catch(() => false)) {
+        await adminBtn.click();
+      }
+    } else {
+      const teacherBtn = page.getByRole('button', { name: /Enseignant/i });
+      if (await teacherBtn.isVisible().catch(() => false)) {
+        await teacherBtn.click();
+      }
+    }
+    
+    // Remplir et soumettre
+    await page.fill('input[type="email"], input#email', String(TEST_EMAIL));
+    await page.fill('input[type="password"], input#password', String(TEST_PASSWORD));
+    
+    const submitBtn = page.getByRole('button', { name: /se connecter|connexion/i });
+    await submitBtn.click();
+    
+    // Attendre 3 secondes pour que l'app traite
+    await page.waitForTimeout(3000);
+    
+    // Tester l'accès à /directory
     await page.goto('/directory');
     await page.waitForLoadState('networkidle');
     
-    return !page.url().includes('/auth');
-  };
-
-  // Essai 1: rôle préféré
-  if (await performLogin(preferred)) return;
-
-  // Essai 2: rôle alternatif
-  const fallbackRole = preferred === 'teacher' ? 'admin' : 'teacher';
-  if (await performLogin(fallbackRole)) return;
-
-  throw new Error('Échec de connexion: pas de redirection ni session après tentative sur 2 rôles');
+    // Si on reste sur /directory (pas redirigé vers /auth), c'est bon
+    if (!page.url().includes('/auth')) {
+      console.log(`✅ Connexion réussie avec rôle: ${role}`);
+      return;
+    }
+    
+    console.log(`❌ Échec avec rôle: ${role}`);
+  }
+  
+  throw new Error('Impossible de se connecter avec admin ou teacher');
 }
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPER: NAVIGATION DANS /grades
