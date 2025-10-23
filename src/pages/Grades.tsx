@@ -258,13 +258,20 @@ export default function Grades() {
 
       const userEmail = user.email;
 
-      const { data, error } = await supabase
+      // ✅ Les admins voient TOUTES les matières, les enseignants voient uniquement les leurs
+      let query = supabase
         .from("subjects")
         .select("*")
-        .or(`teacher_id.eq.${user.id},teacher_email.eq.${userEmail}`)
         .eq("class_name", selectedClass)
         .eq("school_year", selectedSchoolYear)
         .eq("semester", selectedSemester);
+
+      // Si non-admin, filtrer par teacher_id/email
+      if (!isAdmin) {
+        query = query.or(`teacher_id.eq.${user.id},teacher_email.eq.${userEmail}`);
+      }
+
+      const { data, error } = await query;
       
       if (error) throw error;
       
