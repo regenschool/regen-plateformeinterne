@@ -149,6 +149,16 @@ const Auth = () => {
     };
   }, [navigate, t]);
 
+  // E2E local: forcer le mode connexion et un rôle par défaut
+  useEffect(() => {
+    const isLocalE2E = window.location.hostname === 'localhost' && new URL(window.location.href).searchParams.get('e2e') === '1';
+    if (isLocalE2E) {
+      setIsSignup(false);
+      setIsForgotPassword(false);
+      if (!selectedRole) setSelectedRole('admin');
+    }
+  }, [selectedRole]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
