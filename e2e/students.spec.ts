@@ -1,13 +1,20 @@
 import { test, expect } from '@playwright/test';
 
-// Helper pour se connecter (à adapter avec vos vraies credentials de test)
+// Helper de connexion robuste (login-only, pas de création de compte)
 async function login(page: any) {
-  await page.goto('/auth');
+  // Déjà connecté ? Aller à /directory et vérifier
+  await page.goto('/directory');
+  await page.waitForLoadState('networkidle');
+  if (!page.url().includes('/auth')) {
+    return;
+  }
+  // Connexion sur /auth avec bypass e2e local
+  await page.goto('/auth?e2e=1');
   await page.waitForLoadState('networkidle');
 
-  // Sélection du rôle (admin prioritaire)
-  const adminBtn = page.getByRole('button', { name: /Direction/i });
-  const teacherBtn = page.getByRole('button', { name: /Enseignant/i });
+  // Sélection du rôle via data-testid (admin prioritaire)
+  const adminBtn = page.getByTestId('role-admin');
+  const teacherBtn = page.getByTestId('role-teacher');
   if (await adminBtn.isVisible().catch(() => false)) {
     await adminBtn.click();
   } else if (await teacherBtn.isVisible().catch(() => false)) {
@@ -16,10 +23,13 @@ async function login(page: any) {
 
   const email = process.env.PLAYWRIGHT_EMAIL || process.env.TEST_USER_EMAIL || '';
   const password = process.env.PLAYWRIGHT_PASSWORD || process.env.TEST_USER_PASSWORD || '';
-  await page.locator('input[type="email"], input#email').first().waitFor({ state: 'visible', timeout: 10000 });
-  await page.fill('input[type="email"], input#email', email);
-  await page.fill('input[type="password"], input#password', password);
-  await page.click('button[type="submit"]');
+  const emailInput = page.locator('input[type="email"], input#email').first();
+  const passwordInput = page.locator('input[type="password"], input#password').first();
+  await emailInput.waitFor({ state: 'visible', timeout: 10000 });
+  await emailInput.fill(email);
+  await passwordInput.fill(password);
+
+  await page.getByTestId('submit-auth').click();
   await page.waitForURL(/^(?!.*auth).*$/i, { timeout: 20000 });
 }
 

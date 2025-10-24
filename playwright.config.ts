@@ -18,7 +18,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1,
   reporter: 'html',
   timeout: 30000, // 30s par test
   use: {
@@ -49,7 +49,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run build && npm run preview -- --port=4173',
     url: 'http://localhost:4173',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 240000, // 4 minutes pour le build + preview en CI
   },
 });
