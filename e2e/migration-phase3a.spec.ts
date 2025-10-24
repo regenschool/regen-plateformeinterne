@@ -59,43 +59,51 @@ console.log('[E2E ENV] Final email:', TEST_EMAIL);
 async function login(page: Page) {
   // Vérifier si déjà authentifié
   await page.goto('/directory');
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
   if (!page.url().includes('/auth')) {
     console.log('🔓 Session déjà active');
     return;
   }
   // Bypass E2E pour la connexion locale
   await page.goto('/auth?e2e=1');
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 
   const roles: Array<'admin' | 'teacher'> = ['admin', 'teacher'];
 
   const attemptSignIn = async (role: 'admin' | 'teacher') => {
-    // Sélectionner le rôle via data-testid (plus stable)
     const roleBtn = role === 'admin'
       ? page.getByTestId('role-admin')
       : page.getByTestId('role-teacher');
 
     if (await roleBtn.isVisible().catch(() => false)) {
       await roleBtn.click();
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(200);
+    }
+
+    // S'assurer qu'on est en mode connexion (pas inscription)
+    const submitBtn = page.getByTestId('submit-auth');
+    const submitText = ((await submitBtn.textContent().catch(() => '')) || '').toLowerCase();
+    if (submitText.includes('créer le compte')) {
+      const toggle = page.getByTestId('toggle-signup');
+      if (await toggle.isVisible().catch(() => false)) {
+        await toggle.click();
+        await page.waitForTimeout(200);
+      }
     }
 
     const emailInput = page.locator('input[type="email"], input#email').first();
     const passwordInput = page.locator('input[type="password"], input#password').first();
 
-    await emailInput.waitFor({ state: 'visible', timeout: 7000 });
+    await emailInput.waitFor({ state: 'visible', timeout: 10000 });
     await emailInput.fill(String(TEST_EMAIL));
     await passwordInput.fill(String(TEST_PASSWORD));
-    console.log(`E2E creds: email=${String(TEST_EMAIL)} | pwd_len=${String(TEST_PASSWORD).length}`);
 
-    const submitBtn = page.getByTestId('submit-auth');
     await submitBtn.click();
 
     const outcome = await Promise.race([
-      page.waitForURL(/^(?!.*\/auth).*$/i, { timeout: 8000 }).then(() => 'success'),
-      page.waitForSelector('text=/n\'avez pas accès|erreur|invalid|incorrect|mot de passe/i', { timeout: 8000 }).then(() => 'error'),
-      page.waitForTimeout(8000).then(() => 'timeout')
+      page.waitForURL(/^(?!.*\/auth).*$/i, { timeout: 12000 }).then(() => 'success'),
+      page.waitForSelector('text=/n\'avez pas accès|erreur|invalid|incorrect|mot de passe/i', { timeout: 12000 }).then(() => 'error'),
+      page.waitForTimeout(12000).then(() => 'timeout')
     ]).catch(() => 'timeout');
 
     return outcome;
@@ -107,7 +115,7 @@ async function login(page: Page) {
     console.log(`🔐 Tentative connexion avec rôle: ${role}`);
 
     await page.goto('/auth?e2e=1');
-    await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
 
     const outcome = await attemptSignIn(role);
     if (outcome === 'success') {
@@ -148,14 +156,14 @@ async function setupGradesPage(page: Page, options: {
   subjectName?: string;
 } = {}) {
   await page.goto('/grades');
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('domcontentloaded');
   
   // ─────────────────────────────────────────────────────────────────────────
   // ÉTAPE 1: Sélectionner l'année scolaire
   // ─────────────────────────────────────────────────────────────────────────
   
   const schoolYearTrigger = page.getByTestId('school-year-select');
-  await schoolYearTrigger.waitFor({ state: 'visible', timeout: 5000 });
+  await schoolYearTrigger.waitFor({ state: 'visible', timeout: 12000 });
   await schoolYearTrigger.click();
   
   // Attendre que le menu Radix s'ouvre
