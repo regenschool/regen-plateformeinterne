@@ -94,13 +94,15 @@ async function login(page: Page) {
 
     await submitBtn.click();
 
-    const outcome = await Promise.race([
-      page.waitForURL(/^(?!.*\/auth).*$/i, { timeout: 12000 }).then(() => 'success'),
-      page.waitForSelector('text=/n\'avez pas accès|erreur|invalid|incorrect|mot de passe/i', { timeout: 12000 }).then(() => 'error'),
-      page.waitForTimeout(12000).then(() => 'timeout')
-    ]).catch(() => 'timeout');
-
-    return outcome;
+    // Attendre d'abord la navigation (priorité au succès)
+    try {
+      await page.waitForURL(/^(?!.*\/auth).*$/i, { timeout: 15000 });
+      return 'success';
+    } catch {
+      // Si pas de navigation, vérifier s'il y a une erreur persistante
+      const hasError = await page.locator('text=/n\'avez pas accès|erreur|invalid|incorrect|mot de passe/i').isVisible().catch(() => false);
+      return hasError ? 'error' : 'timeout';
+    }
   };
 
   // attemptSignUpThenSignIn supprimé pour stabilité E2E (pas de création auto de compte)
