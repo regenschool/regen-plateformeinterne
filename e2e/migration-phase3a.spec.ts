@@ -93,14 +93,23 @@ async function login(page: Page) {
     await passwordInput.fill(String(TEST_PASSWORD));
 
     await submitBtn.click();
+    console.log(`📝 Click effectué sur submit pour rôle: ${role}`);
 
     // Attendre d'abord la navigation (priorité au succès)
     try {
+      console.log(`⏳ Attente navigation...`);
       await page.waitForURL(/^(?!.*\/auth).*$/i, { timeout: 15000 });
+      console.log(`✅ Navigation réussie vers: ${page.url()}`);
       return 'success';
     } catch {
+      console.log(`❌ Pas de navigation, vérification erreurs...`);
+      // Capturer le contenu de la page pour debug
+      const pageContent = await page.textContent('body').catch(() => 'N/A');
+      console.log(`📄 Contenu de la page (extrait): ${pageContent?.substring(0, 200)}...`);
+      
       // Si pas de navigation, vérifier s'il y a une erreur persistante
       const hasError = await page.locator('text=/n\'avez pas accès|erreur|invalid|incorrect|mot de passe/i').isVisible().catch(() => false);
+      console.log(`🔍 Erreur détectée: ${hasError}`);
       return hasError ? 'error' : 'timeout';
     }
   };
