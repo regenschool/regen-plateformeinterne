@@ -57,16 +57,10 @@ console.log('[E2E ENV] Final email:', TEST_EMAIL);
  * @throws Error si l'authentification échoue
  */
 async function login(page: Page) {
-  // Vérifier si déjà authentifié
-  await page.goto('/directory');
-  await page.waitForLoadState('domcontentloaded');
-  if (!page.url().includes('/auth')) {
-    console.log('🔓 Session déjà active');
-    return;
-  }
-  // Bypass E2E pour la connexion locale
+  // Toujours aller à la page d'auth E2E pour éviter les redirections tardives
   await page.goto('/auth?e2e=1');
   await page.waitForLoadState('domcontentloaded');
+
 
   const roles: Array<'admin' | 'teacher'> = ['admin', 'teacher'];
 
