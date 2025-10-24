@@ -65,51 +65,64 @@ async function login(page: Page) {
   const roles: Array<'admin' | 'teacher'> = ['admin', 'teacher'];
 
   const attemptSignIn = async (role: 'admin' | 'teacher') => {
+    console.log(`🎯 DEBUT attemptSignIn pour ${role}`);
+    
     const roleBtn = role === 'admin'
       ? page.getByTestId('role-admin')
       : page.getByTestId('role-teacher');
 
+    console.log(`🔍 Recherche bouton role-${role}`);
     if (await roleBtn.isVisible().catch(() => false)) {
       await roleBtn.click();
       await page.waitForTimeout(200);
+      console.log(`✅ Bouton role-${role} cliqué`);
+    } else {
+      console.log(`❌ Bouton role-${role} introuvable`);
     }
 
     // S'assurer qu'on est en mode connexion (pas inscription)
     const submitBtn = page.getByTestId('submit-auth');
     const submitText = ((await submitBtn.textContent().catch(() => '')) || '').toLowerCase();
+    console.log(`📝 Texte bouton submit: "${submitText}"`);
+    
     if (submitText.includes('créer le compte')) {
+      console.log(`🔄 Mode signup détecté, bascule vers login`);
       const toggle = page.getByTestId('toggle-signup');
       if (await toggle.isVisible().catch(() => false)) {
         await toggle.click();
         await page.waitForTimeout(200);
+        const newText = ((await submitBtn.textContent().catch(() => '')) || '');
+        console.log(`📝 Nouveau texte: "${newText}"`);
       }
     }
 
     const emailInput = page.locator('input[type="email"], input#email').first();
     const passwordInput = page.locator('input[type="password"], input#password').first();
 
+    console.log(`📧 Remplissage email: ${String(TEST_EMAIL)}`);
     await emailInput.waitFor({ state: 'visible', timeout: 10000 });
     await emailInput.fill(String(TEST_EMAIL));
     await passwordInput.fill(String(TEST_PASSWORD));
 
+    console.log(`🖱️ Click sur submit`);
     await submitBtn.click();
-    console.log(`📝 Click effectué sur submit pour rôle: ${role}`);
 
     // Attendre d'abord la navigation (priorité au succès)
     try {
-      console.log(`⏳ Attente navigation...`);
+      console.log(`⏳ Attente navigation (15s timeout)`);
       await page.waitForURL(/^(?!.*\/auth).*$/i, { timeout: 15000 });
       console.log(`✅ Navigation réussie vers: ${page.url()}`);
       return 'success';
     } catch {
-      console.log(`❌ Pas de navigation, vérification erreurs...`);
+      console.log(`❌ Pas de navigation, analyse de l'erreur`);
+      
       // Capturer le contenu de la page pour debug
       const pageContent = await page.textContent('body').catch(() => 'N/A');
-      console.log(`📄 Contenu de la page (extrait): ${pageContent?.substring(0, 200)}...`);
+      console.log(`📄 Contenu page (200 chars): ${pageContent?.substring(0, 200)}...`);
       
-      // Si pas de navigation, vérifier s'il y a une erreur persistante
+      // Vérifier s'il y a une erreur persistante
       const hasError = await page.locator('text=/n\'avez pas accès|erreur|invalid|incorrect|mot de passe/i').isVisible().catch(() => false);
-      console.log(`🔍 Erreur détectée: ${hasError}`);
+      console.log(`🔍 Erreur visible: ${hasError}`);
       return hasError ? 'error' : 'timeout';
     }
   };
