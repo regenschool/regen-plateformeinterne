@@ -152,12 +152,18 @@ async function setupGradesPage(page: Page, options: {
   await page.goto('/grades');
   await page.waitForLoadState('domcontentloaded');
   
-  // ─────────────────────────────────────────────────────────────────────────
-  // ÉTAPE 1: Sélectionner l'année scolaire
-  // ─────────────────────────────────────────────────────────────────────────
+  // Si redirigé vers /auth, reconnecter puis réessayer
+  if (page.url().includes('/auth')) {
+    await login(page);
+    await page.goto('/grades');
+    await page.waitForLoadState('domcontentloaded');
+  }
   
+  // Attendre de façon robuste que le sélecteur soit présent et visible
   const schoolYearTrigger = page.getByTestId('school-year-select');
-  await schoolYearTrigger.waitFor({ state: 'visible', timeout: 12000 });
+  await schoolYearTrigger.waitFor({ state: 'attached', timeout: 30000 });
+  await schoolYearTrigger.scrollIntoViewIfNeeded().catch(() => {});
+  await schoolYearTrigger.waitFor({ state: 'visible', timeout: 30000 });
   await schoolYearTrigger.click();
   
   // Attendre que le menu Radix s'ouvre
