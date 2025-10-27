@@ -154,12 +154,14 @@ export const useDeleteStudentPermanently = () => {
   
   return useMutation({
     mutationFn: async (studentId: string) => {
-      const { error } = await supabase
-        .from('students')
-        .delete()
-        .eq('id', studentId);
+      const { data, error } = await supabase.functions.invoke('admin-delete-student', {
+        body: { studentId }
+      });
       
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['enrollments'] });
@@ -167,6 +169,7 @@ export const useDeleteStudentPermanently = () => {
       toast.success('Étudiant supprimé définitivement de toutes les années');
     },
     onError: (error: any) => {
+      console.error('Erreur suppression étudiant:', error);
       toast.error('Erreur lors de la suppression : ' + error.message);
     },
   });
