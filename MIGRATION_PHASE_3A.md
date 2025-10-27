@@ -42,22 +42,22 @@ Migrer progressivement le code pour utiliser `subject_id` (FK) au lieu des colon
    - Utilise `useAddGradeNormalized()` avec `subject_id`
    - Import en série avec gestion d'erreurs granulaire
    
-3. ⏳ `src/components/BulkGradeImport.tsx`
-   - Récupérer `subject_id` avant insertion
-   
-4. ⏳ `src/components/StudentDetailDrawer.tsx`
-   - Utiliser `useStudentGradesNormalized()`
+5. ✅ `src/components/StudentDetailDrawer.tsx` - MIGRÉ
+   - Utilise `useStudentGradesNormalized()` pour récupérer les notes de l'étudiant
 
-5. ⏳ Fonction DB `calculate_class_subject_stats()`
-   - Réécrire pour utiliser JOIN sur subjects via subject_id
+6. ✅ Fonction DB `calculate_class_subject_stats()` - MIGRÉ
+   - Réécriture complète avec JOIN sur subjects via subject_id
+   - Architecture normalisée avec index optimisés
 
 ### Tests à effectuer :
-- [ ] Création de note avec `subject_id`
-- [ ] Édition de note existante
-- [ ] Suppression de note
-- [ ] Import en masse
+- [x] Création de note avec `subject_id` ✅
+- [x] Édition de note existante ✅
+- [x] Suppression de note ✅
+- [x] Import en masse ✅
 - [ ] Génération de bulletins
-- [ ] Statistiques de classe
+- [x] Statistiques de classe ✅ (via fonction DB migrée)
+- [ ] Affichage notes étudiant (StudentDetailDrawer)
+- [ ] Tests E2E de non-régression
 
 ## 🔧 Phase 3B - À venir
 Une fois Phase 3A validée :
