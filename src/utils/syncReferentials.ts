@@ -27,14 +27,16 @@ export const syncExistingDataToReferentials = async () => {
     const stats = { classesAdded: 0, yearsAdded: 0, periodsAdded: 0, levelsAdded: 0 };
     
     // 1. Synchroniser les classes depuis la table students
-    const { data: students, error: studentsError } = await supabase
-      .from('students')
-      .select('class_name');
+    // Phase 4B: class_name removed from students - get via enrollments
+    const { data: classes, error: classesError } = await supabase
+      .from('classes')
+      .select('name')
+      .eq('is_active', true);
     
-    if (studentsError) throw studentsError;
+    if (classesError) throw classesError;
     
-    const uniqueClassesFromStudents = [...new Set(students?.map(s => s.class_name) || [])];
-    console.log(`📚 Classes trouvées dans students: ${uniqueClassesFromStudents.length}`);
+    const uniqueClassesFromStudents = classes?.map(c => c.name) || [];
+    console.log(`📚 Classes trouvées dans classes: ${uniqueClassesFromStudents.length}`);
     
     // 2. Phase 4A: Récupérer les classes via JOIN
     const { data: subjects } = await supabase

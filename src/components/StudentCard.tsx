@@ -180,12 +180,8 @@ export const StudentCard = ({
 
   const saveCompany = async () => {
     try {
-      const { error } = await supabase
-        .from("students")
-        .update({ company: companyValue.trim() || null })
-        .eq("id", student.id);
-
-      if (error) throw error;
+      // company field removed in Phase 4B
+      toast.info("Ce champ n'est plus disponible");
 
       setIsEditingCompany(false);
       toast.success("Entreprise mise à jour");

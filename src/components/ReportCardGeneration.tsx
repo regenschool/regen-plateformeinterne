@@ -128,20 +128,19 @@ export const ReportCardGeneration = () => {
     enabled: !!(selectedClass && selectedSchoolYear && selectedSemester && subjects && subjects.length > 0),
   });
 
-  // Récupérer les élèves de la classe
+  // Récupérer les élèves de la classe via enrollments
   const { data: students } = useQuery({
     queryKey: ['students', selectedClass],
     queryFn: async () => {
       if (!selectedClass) return [];
       
-      const { data, error } = await supabase
-        .from('students')
-        .select('*')
-        .eq('class_name', selectedClass)
-        .order('last_name');
+      const { data: enrollments, error } = await supabase
+        .from('student_enrollments')
+        .select('students(id, first_name, last_name, photo_url, age, birth_date, special_needs), classes!inner(name)')
+        .eq('classes.name', selectedClass);
       
       if (error) throw error;
-      return data;
+      return enrollments?.map(e => (e as any).students).filter(Boolean) || [];
     },
     enabled: !!selectedClass,
   });
@@ -543,7 +542,7 @@ export const ReportCardGeneration = () => {
                             <TableCell className="font-medium">
                               {student.first_name} {student.last_name}
                             </TableCell>
-                            <TableCell>{student.class_name}</TableCell>
+                            <TableCell>{(student as any).class?.name || '-'}</TableCell>
                             <TableCell>
                               {existingReport ? (
                                 <Badge variant="secondary">

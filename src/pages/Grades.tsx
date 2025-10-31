@@ -411,8 +411,9 @@ export default function Grades() {
       if (error) throw error;
       
       if (data) {
-        const uniqueClasses = Array.from(new Set(data.map(s => s.class_name)));
-        setClasses(uniqueClasses);
+        // Get classes via enrollments
+        const { data: classes } = await supabase.from('classes').select('name').eq('is_active', true);
+        setClasses(classes?.map(c => c.name) || []);
       }
     } catch (error) {
       console.error("Error fetching classes:", error);
@@ -533,15 +534,16 @@ export default function Grades() {
   const fetchStudents = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from("students")
-        .select("id, first_name, last_name, photo_url, class_name")
-        .eq("class_name", selectedClass)
-        .order("last_name");
+      // Get students via enrollments for the selected class
+      const { data: enrollments, error: enrollError } = await supabase
+        .from("student_enrollments")
+        .select("student_id, students(id, first_name, last_name, photo_url), classes!inner(name)")
+        .eq("classes.name", selectedClass);
 
-      if (error) throw error;
+      if (enrollError) throw enrollError;
 
-      setStudents(data || []);
+      const students = enrollments?.map(e => (e as any).students).filter(Boolean) || [];
+      setStudents(students);
     } catch (error) {
       console.error("Error fetching students:", error);
       toast.error("Erreur lors du chargement des étudiants");

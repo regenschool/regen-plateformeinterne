@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useMemo } from 'react';
 
-type Student = {
+export type Student = {
   id: string;
   first_name: string;
   last_name: string;
@@ -43,7 +43,22 @@ export const useStudents = (classFilter?: string) => {
       const { data, error } = await query;
       
       if (error) throw error;
-      return data as Student[];
+      // Map to Student type (ignoring relations)
+      return (data || []).map((s: any) => ({
+        id: s.id,
+        first_name: s.first_name,
+        last_name: s.last_name,
+        photo_url: s.photo_url,
+        age: s.age,
+        birth_date: s.birth_date,
+        special_needs: s.special_needs,
+        created_at: s.created_at,
+        level_id: s.level_id,
+        user_id: s.user_id,
+        updated_at: s.updated_at,
+        is_active: s.is_active,
+        deleted_at: s.deleted_at,
+      }));
     },
     staleTime: 5 * 60 * 1000, // Cache 5 minutes
     gcTime: 10 * 60 * 1000, // Garbage collection après 10 minutes

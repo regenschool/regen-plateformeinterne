@@ -97,8 +97,6 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
         first_name: student?.first_name,
         last_name: student?.last_name,
         birth_date: student?.birth_date,
-        company: student?.company,
-        academic_background: student?.academic_background,
       });
     }
     setIsEditingInfo(!isEditingInfo);
@@ -135,7 +133,7 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
     // Les données subject_name, class_name, etc. viennent du JOIN avec subjects
     const params = new URLSearchParams({
       subject: grade.subjects?.subject_name || '',
-      class: grade.subjects?.class_name || student?.class_name || '',
+      class: grade.subjects?.class_name || '',
       schoolYear: grade.subjects?.school_year || '',
       semester: grade.subjects?.semester || '',
     });
@@ -163,7 +161,7 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
                   </SheetTitle>
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                    {student.class_name}
+                    {(student as any).class?.name || '-'}
                   </p>
                 </div>
                 <Button
@@ -261,7 +259,7 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
                       </div>
                       <div className="space-y-1 group">
                         <Label className="text-xs text-muted-foreground group-hover:text-primary transition-colors">Classe</Label>
-                        <p className="font-medium">{student.class_name}</p>
+                        <p className="font-medium">{(student as any).class?.name || '-'}</p>
                       </div>
                       <div className="space-y-1 group">
                         <Label className="text-xs text-muted-foreground group-hover:text-primary transition-colors">Date de naissance</Label>
@@ -278,32 +276,6 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
                               ? new Date(student.birth_date).toLocaleDateString("fr-FR")
                               : "-"}
                           </p>
-                        )}
-                      </div>
-                      <div className="col-span-2 space-y-1 group">
-                        <Label className="text-xs text-muted-foreground group-hover:text-primary transition-colors">Entreprise</Label>
-                        {isEditingInfo ? (
-                          <Input
-                            value={editedStudent?.company || ''}
-                            onChange={(e) => setEditedStudent({ ...editedStudent, company: e.target.value })}
-                            className="h-9"
-                            placeholder="Nom de l'entreprise"
-                          />
-                        ) : (
-                          <p className="font-medium">{student.company || "-"}</p>
-                        )}
-                      </div>
-                      <div className="col-span-2 space-y-1 group">
-                        <Label className="text-xs text-muted-foreground group-hover:text-primary transition-colors">Parcours académique</Label>
-                        {isEditingInfo ? (
-                          <Input
-                            value={editedStudent?.academic_background || ''}
-                            onChange={(e) => setEditedStudent({ ...editedStudent, academic_background: e.target.value })}
-                            className="h-9"
-                            placeholder="Parcours académique"
-                          />
-                        ) : (
-                          <p className="font-medium">{student.academic_background || "-"}</p>
                         )}
                       </div>
                     </CardContent>

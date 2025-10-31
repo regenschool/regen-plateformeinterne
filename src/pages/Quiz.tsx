@@ -97,8 +97,8 @@ const Quiz = () => {
       }
 
       if (data) {
-        const uniqueClasses = Array.from(new Set(data.map((s) => s.class_name)));
-        setClasses(uniqueClasses);
+        const { data: classes } = await supabase.from('classes').select('name').eq('is_active', true);
+        setClasses(classes?.map(c => c.name) || []);
       }
     } catch (error) {
       toast.error("Erreur lors du chargement des classes");
@@ -112,18 +112,19 @@ const Quiz = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from("students")
-        .select("id, first_name, last_name, photo_url, class_name")
-        .eq("class_name", selectedClass);
+      const { data: enrollments, error } = await supabase
+        .from("student_enrollments")
+        .select("students(id, first_name, last_name, photo_url), classes!inner(name)")
+        .eq("classes.name", selectedClass);
 
       if (error) {
         console.error("Error fetching students:", error);
         throw error;
       }
 
-      if (data && data.length > 0) {
-        const shuffled = [...data].sort(() => Math.random() - 0.5);
+      const students = enrollments?.map(e => (e as any).students).filter(Boolean) || [];
+      if (students.length > 0) {
+        const shuffled = [...students].sort(() => Math.random() - 0.5);
         setStudents(shuffled);
         setQuizStarted(true);
         generateOptions(shuffled[0], shuffled);

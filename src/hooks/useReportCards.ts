@@ -347,7 +347,7 @@ export const useGenerateReportCard = () => {
           firstName: student.first_name,
           lastName: student.last_name,
           birthDate: student.birth_date,
-          className: student.class_name,
+          className: (student as any).classes?.name || '-',
           photoUrl: student.photo_url,
           age: student.age,
         },

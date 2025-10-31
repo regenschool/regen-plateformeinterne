@@ -119,7 +119,7 @@ export default function StudentDetail() {
           </h1>
           <p className="text-muted-foreground flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-            {student.class_name}
+            -
           </p>
         </div>
       </div>
@@ -165,10 +165,6 @@ export default function StudentDetail() {
                 <p className="font-medium">{student.last_name}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Classe</p>
-                <p className="font-medium">{student.class_name}</p>
-              </div>
-              <div>
                 <p className="text-sm text-muted-foreground">Date de naissance</p>
                 <p className="font-medium">
                   {student.birth_date
@@ -176,18 +172,6 @@ export default function StudentDetail() {
                     : "-"}
                 </p>
               </div>
-              {student.company && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Entreprise</p>
-                  <p className="font-medium">{student.company}</p>
-                </div>
-              )}
-              {student.academic_background && (
-                <div className="col-span-2">
-                  <p className="text-sm text-muted-foreground">Parcours académique</p>
-                  <p className="font-medium">{student.academic_background}</p>
-                </div>
-              )}
             </CardContent>
           </Card>
         </TabsContent>
