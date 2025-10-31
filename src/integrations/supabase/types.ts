@@ -72,7 +72,7 @@ export type Database = {
           school_year: string
           semester: string
           subject: string
-          subject_id: string | null
+          subject_id: string
           teacher_id: string
           teacher_name: string | null
           total_students: number
@@ -97,7 +97,7 @@ export type Database = {
           school_year: string
           semester: string
           subject: string
-          subject_id?: string | null
+          subject_id: string
           teacher_id: string
           teacher_name?: string | null
           total_students?: number
@@ -122,7 +122,7 @@ export type Database = {
           school_year?: string
           semester?: string
           subject?: string
-          subject_id?: string | null
+          subject_id?: string
           teacher_id?: string
           teacher_name?: string | null
           total_students?: number
@@ -148,6 +148,13 @@ export type Database = {
           },
           {
             foreignKeyName: "assessments_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_assessments_subject"
             columns: ["subject_id"]
             isOneToOne: false
             referencedRelation: "subjects"
@@ -341,19 +348,14 @@ export type Database = {
           assessment_name: string | null
           assessment_type: Database["public"]["Enums"]["assessment_type"]
           class_fk_id: string | null
-          class_name: string
           created_at: string
           grade: number
           id: string
           is_absent: boolean
           max_grade: number
-          school_year: string | null
-          semester: string | null
           student_id: string
-          subject: string
-          subject_id: string | null
+          subject_id: string
           teacher_id: string
-          teacher_name: string | null
           updated_at: string
           weighting: number
         }
@@ -364,19 +366,14 @@ export type Database = {
           assessment_name?: string | null
           assessment_type: Database["public"]["Enums"]["assessment_type"]
           class_fk_id?: string | null
-          class_name: string
           created_at?: string
           grade: number
           id?: string
           is_absent?: boolean
           max_grade?: number
-          school_year?: string | null
-          semester?: string | null
           student_id: string
-          subject: string
-          subject_id?: string | null
+          subject_id: string
           teacher_id: string
-          teacher_name?: string | null
           updated_at?: string
           weighting?: number
         }
@@ -387,23 +384,25 @@ export type Database = {
           assessment_name?: string | null
           assessment_type?: Database["public"]["Enums"]["assessment_type"]
           class_fk_id?: string | null
-          class_name?: string
           created_at?: string
           grade?: number
           id?: string
           is_absent?: boolean
           max_grade?: number
-          school_year?: string | null
-          semester?: string | null
           student_id?: string
-          subject?: string
-          subject_id?: string | null
+          subject_id?: string
           teacher_id?: string
-          teacher_name?: string | null
           updated_at?: string
           weighting?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_grades_subject"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "grades_academic_period_fk_id_fkey"
             columns: ["academic_period_fk_id"]
@@ -2048,19 +2047,24 @@ export type Database = {
           grade: number | null
           id: string | null
           is_absent: boolean | null
-          is_complete: boolean | null
-          is_visible_to_students: boolean | null
           max_grade: number | null
           school_year: string | null
           semester: string | null
           student_id: string | null
-          subject: string | null
+          subject_id: string | null
+          subject_name: string | null
           teacher_id: string | null
-          teacher_name: string | null
           updated_at: string | null
           weighting: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_grades_subject"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "grades_academic_period_fk_id_fkey"
             columns: ["academic_period_fk_id"]
@@ -2087,6 +2091,13 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_students_enriched"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]
@@ -2094,34 +2105,36 @@ export type Database = {
       v_grades_enriched: {
         Row: {
           academic_period_fk_id: string | null
-          academic_period_label: string | null
           appreciation: string | null
           assessment_custom_label: string | null
           assessment_name: string | null
           assessment_type: Database["public"]["Enums"]["assessment_type"] | null
           class_fk_id: string | null
           class_name: string | null
-          class_name_from_ref: string | null
           created_at: string | null
           grade: number | null
           id: string | null
           is_absent: boolean | null
           max_grade: number | null
           school_year: string | null
-          school_year_from_ref: string | null
           semester: string | null
-          student_first_name: string | null
           student_id: string | null
-          student_last_name: string | null
-          subject: string | null
-          teacher_email_from_ref: string | null
-          teacher_full_name: string | null
+          student_name: string | null
+          subject_id: string | null
+          subject_name: string | null
           teacher_id: string | null
           teacher_name: string | null
           updated_at: string | null
           weighting: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_grades_subject"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "grades_academic_period_fk_id_fkey"
             columns: ["academic_period_fk_id"]
@@ -2148,6 +2161,13 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_students_enriched"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]
@@ -2237,19 +2257,25 @@ export type Database = {
           grade: number | null
           id: string | null
           is_absent: boolean | null
-          is_complete: boolean | null
           is_visible_to_students: boolean | null
           max_grade: number | null
           school_year: string | null
           semester: string | null
           student_id: string | null
-          subject: string | null
+          subject_id: string | null
+          subject_name: string | null
           teacher_id: string | null
-          teacher_name: string | null
           updated_at: string | null
           weighting: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_grades_subject"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "grades_academic_period_fk_id_fkey"
             columns: ["academic_period_fk_id"]
@@ -2276,6 +2302,13 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "v_students_enriched"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grades_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
         ]
