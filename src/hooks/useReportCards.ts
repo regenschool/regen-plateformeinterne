@@ -182,13 +182,28 @@ export const useGenerateReportCard = () => {
 
       if (studentError) throw studentError;
 
-      // 2. Récupérer les notes (✅ OPTIMISÉ : colonnes sélectives + limite)
+      // 2. Récupérer les notes (✅ OPTIMISÉ : architecture normalisée avec JOIN)
       const { data: grades, error: gradesError } = await supabase
         .from('grades')
-        .select('student_id, subject, grade, max_grade, weighting, appreciation, assessment_type, assessment_name, is_absent, teacher_name')
+        .select(`
+          student_id, 
+          grade, 
+          max_grade, 
+          weighting, 
+          appreciation, 
+          assessment_type, 
+          assessment_name, 
+          is_absent,
+          subjects!fk_grades_subject(
+            subject_name,
+            teacher_name,
+            school_year,
+            semester
+          )
+        `)
         .eq('student_id', studentId)
-        .eq('school_year', schoolYear)
-        .eq('semester', semester)
+        .eq('subjects.school_year', schoolYear)
+        .eq('subjects.semester', semester)
         .limit(500); // Protection contre volumes excessifs
 
       if (gradesError) throw gradesError;
