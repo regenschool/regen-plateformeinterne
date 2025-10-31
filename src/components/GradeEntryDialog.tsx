@@ -195,29 +195,16 @@ export const GradeEntryDialog = ({
     try {
       setIsSubmitting(true);
 
-    // Phase 3A: Récupérer subject_id si non fourni (backward compatibility)
-    let effectiveSubjectId = subjectId;
-    if (!effectiveSubjectId && subjectMetadata) {
-      const { data: subjectData } = await supabase
-        .from('subjects')
-        .select('id')
-        .eq('subject_name', subject)
-        .eq('class_name', student.class_name)
-        .eq('school_year', subjectMetadata.schoolYear)
-        .eq('semester', subjectMetadata.semester)
-        .eq('teacher_id', user.id)
-        .maybeSingle();
-      
-      effectiveSubjectId = subjectData?.id || undefined;
-    }
+      // Phase 4A: subject_id est obligatoire
+      if (!subjectId) {
+        toast.error('Erreur: subject_id manquant');
+        return;
+      }
 
     const gradeData = {
       student_id: student.id,
       teacher_id: user.id,
-      subject_id: effectiveSubjectId, // NOUVEAU: Phase 3A FK
-      // Colonnes dénormalisées (conservées pour backward compatibility)
-      class_name: student.class_name,
-      subject: subject,
+      subject_id: subjectId,
       assessment_name: assessmentName.trim(),
       assessment_type: assessmentType as "participation_individuelle" | "oral_groupe" | "oral_individuel" | "ecrit_groupe" | "ecrit_individuel" | "memoire" | "autre",
       assessment_custom_label: assessmentType === "autre" ? customLabel.trim() : null,

@@ -101,29 +101,12 @@ const PublishAssessmentButton = ({
     queryFn: async () => {
       if (!subjectId) return null;
       
-      // Essayer d'abord avec subject_id
-      let { data, error } = await supabase
+      const { data, error } = await supabase
         .from('assessments')
         .select('id, is_visible_to_students')
         .eq('assessment_name', assessmentName)
         .eq('subject_id', subjectId)
         .maybeSingle();
-      
-      // Si pas trouvé avec subject_id, chercher avec les champs dénormalisés (épreuves historiques)
-      if (!data && !error) {
-        const result = await supabase
-          .from('assessments')
-          .select('id, is_visible_to_students')
-          .eq('assessment_name', assessmentName)
-          .eq('subject', subjectName)
-          .eq('class_name', className)
-          .eq('school_year', schoolYear)
-          .eq('semester', semester)
-          .is('subject_id', null)
-          .maybeSingle();
-        data = result.data;
-        error = result.error;
-      }
       
       if (error) throw error;
       return data;

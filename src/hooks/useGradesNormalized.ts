@@ -182,27 +182,9 @@ export const getSubjectId = async (params: {
   semester: string;
   teacherId: string;
 }): Promise<string | null> => {
-  try {
-  const { data, error } = await supabase
-    .from('subjects')
-    .select('id')
-    .eq('subject_name', params.subjectName)
-    .eq('class_name', params.className)
-    .eq('school_year', params.schoolYear)
-    .eq('semester', params.semester)
-    .eq('teacher_id', params.teacherId)
-    .maybeSingle();
-  
-  if (error) {
-    console.error('Error fetching subject_id:', error);
-    return null;
-  }
-  
-  return data?.id || null;
-  } catch (err) {
-    console.error('Exception in getSubjectId:', err);
-    return null;
-  }
+  // Phase 4A: Plus de colonnes dénormalisées, cette fonction est obsolète
+  console.warn('getSubjectId is deprecated - use direct subject_id instead');
+  return null;
 };
 
 /**
