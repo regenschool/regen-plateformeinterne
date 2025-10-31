@@ -36,10 +36,12 @@ export const syncExistingDataToReferentials = async () => {
     const uniqueClassesFromStudents = [...new Set(students?.map(s => s.class_name) || [])];
     console.log(`📚 Classes trouvées dans students: ${uniqueClassesFromStudents.length}`);
     
-    // 2. Synchroniser les classes depuis subjects uniquement (grades n'a plus class_name)
-    const { data: subjects } = await supabase.from('subjects').select('class_name');
+    // 2. Phase 4A: Récupérer les classes via JOIN
+    const { data: subjects } = await supabase
+      .from('subjects')
+      .select('classes!fk_subjects_class(name)');
     
-    const uniqueClassesFromSubjects = [...new Set(subjects?.map(s => s.class_name) || [])];
+    const uniqueClassesFromSubjects = [...new Set(subjects?.map((s: any) => s.classes?.[0]?.name).filter(Boolean) || [])];
     
     // Combiner toutes les classes uniques
     const allUniqueClasses = [...new Set([
@@ -106,11 +108,12 @@ export const syncExistingDataToReferentials = async () => {
       }
     }
     
-    // 5. Synchroniser les années scolaires depuis grades et subjects (et forcer 2025-2026)
-    // Récupérer les années depuis subjects uniquement (grades n'a plus school_year)
-    const { data: subjectsWithYear } = await supabase.from('subjects').select('school_year');
+    // 5. Phase 4A: Récupérer les années scolaires via JOIN
+    const { data: subjectsWithYear } = await supabase
+      .from('subjects')
+      .select('school_years!fk_subjects_school_year(label)');
     
-    const uniqueYearsFromSubjects = [...new Set(subjectsWithYear?.map(s => s.school_year).filter(Boolean) || [])];
+    const uniqueYearsFromSubjects = [...new Set(subjectsWithYear?.map((s: any) => s.school_years?.[0]?.label).filter(Boolean) || [])];
     
     const allUniqueYears = [...new Set([...uniqueYearsFromSubjects])];
     
@@ -158,11 +161,13 @@ export const syncExistingDataToReferentials = async () => {
       console.log('✅ Année 2025-2026 activée');
     }
     
-    // 8. Synchroniser les semestres depuis subjects uniquement (grades n'a plus semester)
-    const { data: subjectsWithSemester } = await supabase.from('subjects').select('semester');
+    // 8. Phase 4A: Récupérer les semestres via JOIN
+    const { data: subjectsWithSemester } = await supabase
+      .from('subjects')
+      .select('academic_periods!fk_subjects_academic_period(label)');
     
     const uniqueSemesters = [...new Set([
-      ...(subjectsWithSemester?.map(s => s.semester).filter(Boolean) || [])
+      ...(subjectsWithSemester?.map((s: any) => s.academic_periods?.[0]?.label).filter(Boolean) || [])
     ])];
     
     console.log(`📆 Semestres trouvés: ${uniqueSemesters.length}`);

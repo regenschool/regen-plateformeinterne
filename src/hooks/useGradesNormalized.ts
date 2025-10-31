@@ -63,10 +63,9 @@ export const useGradesNormalized = (filters: GradesNormalizedFilters = {}) => {
           *,
           subjects!fk_grades_subject (
             subject_name,
-            class_name,
-            school_year,
-            semester,
-            teacher_name
+            classes!fk_subjects_class(name),
+            school_years!fk_subjects_school_year(label),
+            academic_periods!fk_subjects_academic_period(label)
           )
         `);
       
@@ -86,29 +85,29 @@ export const useGradesNormalized = (filters: GradesNormalizedFilters = {}) => {
       
       if (error) throw error;
       
-      // Filtrer côté client si besoin (temporaire, en attendant les index)
-      let filteredData = data as GradeNormalized[];
+      // Filtrer côté client si besoin (via JOINs)
+      let filteredData = data as any[];
       
       if (className) {
-        filteredData = filteredData.filter(g => g.subjects?.class_name === className);
+        filteredData = filteredData.filter(g => g.subjects?.classes?.[0]?.name === className);
       }
       if (subject) {
         filteredData = filteredData.filter(g => g.subjects?.subject_name === subject);
       }
       if (schoolYear) {
-        filteredData = filteredData.filter(g => g.subjects?.school_year === schoolYear);
+        filteredData = filteredData.filter(g => g.subjects?.school_years?.[0]?.label === schoolYear);
       }
       if (semester) {
-        filteredData = filteredData.filter(g => g.subjects?.semester === semester);
+        filteredData = filteredData.filter(g => g.subjects?.academic_periods?.[0]?.label === semester);
       }
       
       // Mapper les données pour compatibilité avec les anciens composants
       return filteredData.map(grade => ({
         ...grade,
         subject: grade.subjects?.subject_name,
-        teacher_name: grade.subjects?.teacher_name || null,
-        school_year: grade.subjects?.school_year || null,
-        semester: grade.subjects?.semester || null,
+        teacher_name: null, // Plus disponible, sera récupéré si besoin
+        school_year: grade.subjects?.school_years?.[0]?.label || null,
+        semester: grade.subjects?.academic_periods?.[0]?.label || null,
       }));
     },
     enabled: !!(subject_id || (className && subject && schoolYear && semester)),
@@ -133,10 +132,9 @@ export const useStudentGradesNormalized = (
           *,
           subjects!fk_grades_subject (
             subject_name,
-            class_name,
-            school_year,
-            semester,
-            teacher_name
+            classes!fk_subjects_class(name),
+            school_years!fk_subjects_school_year(label),
+            academic_periods!fk_subjects_academic_period(label)
           )
         `)
         .eq('student_id', studentId);
@@ -145,28 +143,28 @@ export const useStudentGradesNormalized = (
       
       if (error) throw error;
       
-      let filteredData = data as GradeNormalized[];
+      let filteredData = data as any[];
       
       if (filters?.className) {
-        filteredData = filteredData.filter(g => g.subjects?.class_name === filters.className);
+        filteredData = filteredData.filter(g => g.subjects?.classes?.[0]?.name === filters.className);
       }
       if (filters?.subject) {
         filteredData = filteredData.filter(g => g.subjects?.subject_name === filters.subject);
       }
       if (filters?.schoolYear) {
-        filteredData = filteredData.filter(g => g.subjects?.school_year === filters.schoolYear);
+        filteredData = filteredData.filter(g => g.subjects?.school_years?.[0]?.label === filters.schoolYear);
       }
       if (filters?.semester) {
-        filteredData = filteredData.filter(g => g.subjects?.semester === filters.semester);
+        filteredData = filteredData.filter(g => g.subjects?.academic_periods?.[0]?.label === filters.semester);
       }
       
       // Mapper pour compatibilité
       return filteredData.map(grade => ({
         ...grade,
         subject: grade.subjects?.subject_name,
-        teacher_name: grade.subjects?.teacher_name || null,
-        school_year: grade.subjects?.school_year || null,
-        semester: grade.subjects?.semester || null,
+        teacher_name: null,
+        school_year: grade.subjects?.school_years?.[0]?.label || null,
+        semester: grade.subjects?.academic_periods?.[0]?.label || null,
       }));
     },
     enabled: !!studentId,
@@ -184,6 +182,7 @@ export const getSubjectId = async (params: {
   semester: string;
   teacherId: string;
 }): Promise<string | null> => {
+  try {
   const { data, error } = await supabase
     .from('subjects')
     .select('id')
@@ -200,6 +199,10 @@ export const getSubjectId = async (params: {
   }
   
   return data?.id || null;
+  } catch (err) {
+    console.error('Exception in getSubjectId:', err);
+    return null;
+  }
 };
 
 /**

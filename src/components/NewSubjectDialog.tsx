@@ -262,7 +262,7 @@ export const NewSubjectDialog = ({
       selectedSchoolYear.label,
       periodLabel,
       schoolYearId,
-      selectedPeriod ? academicPeriodId : undefined
+      selectedPeriod?.id
     );
     
     // Reset form

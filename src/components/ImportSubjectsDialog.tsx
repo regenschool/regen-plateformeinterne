@@ -216,9 +216,14 @@ export function ImportSubjectsDialog({ open, onClose, onImportComplete }: Import
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Non authentifié");
 
+      // Récupérer les IDs de référentiels
+      const { data: schoolYears } = await supabase.from('school_years').select('id, label');
+      const { data: academicPeriods } = await supabase.from('academic_periods').select('id, label, school_year_id');
+      const { data: classes } = await supabase.from('classes').select('id, name');
+      
       const { data: existingSubjects } = await supabase
         .from('subjects')
-        .select('id, school_year, semester, class_name, subject_name');
+        .select('id, school_year_fk_id, academic_period_id, class_fk_id, subject_name');
 
       let importedCount = 0;
       let updatedCount = 0;
@@ -272,22 +277,27 @@ export function ImportSubjectsDialog({ open, onClose, onImportComplete }: Import
           }
         }
 
+        // ✅ Trouver les IDs de référentiels pour les FK
+        const schoolYearFk = schoolYears?.find(sy => sy.label === subject.school_year);
+        const classFk = classes?.find(c => c.name === subject.class_name);
+        const academicPeriodFk = academicPeriods?.find(ap => 
+          ap.label === subject.semester && ap.school_year_id === schoolYearFk?.id
+        );
+
         const existing = existingSubjects?.find(
           (s) =>
-            s.school_year === subject.school_year &&
-            s.semester === subject.semester &&
-            s.class_name === subject.class_name &&
+            s.school_year_fk_id === schoolYearFk?.id &&
+            s.academic_period_id === academicPeriodFk?.id &&
+            s.class_fk_id === classFk?.id &&
             s.subject_name === subject.subject_name
         );
 
-        const subjectData = {
-          school_year: subject.school_year,
-          semester: subject.semester,
-          class_name: subject.class_name,
+        const subjectData: any = {
           subject_name: subject.subject_name,
-          teacher_email: subject.teacher_email || null,
-          teacher_name: teacherName || "Admin Import",
           teacher_id: targetTeacherId,
+          school_year_fk_id: schoolYearFk?.id || null,
+          academic_period_id: academicPeriodFk?.id || null,
+          class_fk_id: classFk?.id || null,
         };
 
         if (existing) {

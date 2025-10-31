@@ -213,7 +213,7 @@ export default function StudentDetail() {
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <div>
-                        <p className="font-medium">{grade.subjects?.subject_name || 'Matière inconnue'}</p>
+                        <p className="font-medium">{(grade as any).subjects?.subject_name || 'Matière inconnue'}</p>
                         <p className="text-sm text-muted-foreground">
                           {grade.assessment_name || grade.assessment_type}
                         </p>

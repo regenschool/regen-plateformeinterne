@@ -269,12 +269,24 @@ const Profile = () => {
         // Mode admin : voir toutes les matières
         const { data, error } = await supabase
           .from("subjects")
-          .select("*")
-          .order("school_year", { ascending: false })
-          .order("class_name");
+          .select(`
+            *,
+            classes!fk_subjects_class(name),
+            school_years!fk_subjects_school_year(label),
+            academic_periods!fk_subjects_academic_period(label)
+          `);
 
         if (error) throw error;
-        setSubjects(data || []);
+        
+        // Mapper pour compatibilité avec Subject type
+        const mapped = (data || []).map((s: any) => ({
+          ...s,
+          class_name: s.classes?.[0]?.name || '',
+          school_year: s.school_years?.[0]?.label || '',
+          semester: s.academic_periods?.[0]?.label || '',
+        }));
+        
+        setSubjects(mapped || []);
       } else {
         // Mode enseignant : voir seulement ses matières (assignées via email ou créées par lui)
         const { data: userData } = await supabase.auth.getUser();
@@ -282,13 +294,25 @@ const Profile = () => {
 
         const { data, error } = await supabase
           .from("subjects")
-          .select("*")
-          .or(`teacher_email.eq.${userEmail},and(teacher_id.eq.${userId},teacher_email.is.null)`)
-          .order("school_year", { ascending: false })
-          .order("class_name");
+          .select(`
+            *,
+            classes!fk_subjects_class(name),
+            school_years!fk_subjects_school_year(label),
+            academic_periods!fk_subjects_academic_period(label)
+          `)
+          .eq('teacher_id', userId);
 
         if (error) throw error;
-        setSubjects(data || []);
+        
+        // Mapper pour compatibilité avec Subject type
+        const mapped = (data || []).map((s: any) => ({
+          ...s,
+          class_name: s.classes?.[0]?.name || '',
+          school_year: s.school_years?.[0]?.label || '',
+          semester: s.academic_periods?.[0]?.label || '',
+        }));
+        
+        setSubjects(mapped || []);
       }
     } catch (error: any) {
       console.error("Error fetching subjects:", error);

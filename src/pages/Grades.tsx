@@ -351,14 +351,34 @@ export default function Grades() {
 
       const { data, error } = await supabase
         .from("subjects")
-        .select("id, subject_name, class_name, school_year, semester, teacher_name, school_year_fk_id, academic_period_id")
+        .select(`
+          id,
+          subject_name,
+          school_year_fk_id,
+          academic_period_id,
+          class_fk_id,
+          classes!fk_subjects_class(name, level),
+          school_years!fk_subjects_school_year(label),
+          academic_periods!fk_subjects_academic_period(label)
+        `)
         .eq("teacher_id", user.id)
-        .eq("school_year", currentYear.label)
         .order("subject_name");
 
       if (error) throw error;
 
-      setMySubjects(data as TeacherSubject[]);
+      // Mapper les données pour compatibilité avec TeacherSubject
+      const mapped = (data || []).map((s: any) => ({
+        id: s.id,
+        subject_name: s.subject_name,
+        class_name: s.classes?.[0]?.name || '',
+        school_year: s.school_years?.[0]?.label || currentYear.label,
+        semester: s.academic_periods?.[0]?.label || '',
+        teacher_name: user.email?.split('@')[0] || '',
+        school_year_fk_id: s.school_year_fk_id,
+        academic_period_id: s.academic_period_id,
+      }));
+      
+      setMySubjects(mapped as TeacherSubject[]);
     } catch (error) {
       console.error("Error fetching my subjects:", error);
     }
@@ -371,9 +391,9 @@ export default function Grades() {
     setSelectedSubject(subject.subject_name);
     setSelectedSubjectId(subject.id);
     setNewSubjectMetadata({
-      teacherName: subject.teacher_name,
-      schoolYear: subject.school_year,
-      semester: subject.semester,
+      teacherName: subject.teacher_name || '',
+      schoolYear: subject.school_year || '',
+      semester: subject.semester || '',
     });
   };
 
@@ -424,19 +444,55 @@ export default function Grades() {
 
       const userEmail = user.email;
 
-      // ✅ NAVIGATION SCOPE: 
-      // - Admin: voit TOUTES les matières du semestre/classe
-      // - Enseignant: voit uniquement SES matières (pour respecter les permissions)
+      // ✅ Phase 4A: Récupération via FK avec JOIN
+      // Récupérer les IDs des référentiels
+      const { data: schoolYearData } = await supabase
+        .from('school_years')
+        .select('id')
+        .eq('label', selectedSchoolYear)
+        .maybeSingle();
+      
+      const { data: classData } = await supabase
+        .from('classes')
+        .select('id')
+        .eq('name', selectedClass)
+        .maybeSingle();
+      
+      if (!schoolYearData || !classData) {
+        setSubjects([]);
+        return;
+      }
+      
+      const { data: academicPeriodData } = await supabase
+        .from('academic_periods')
+        .select('id')
+        .eq('label', selectedSemester)
+        .eq('school_year_id', schoolYearData.id)
+        .maybeSingle();
+
       let query = supabase
         .from("subjects")
-        .select("*")
-        .eq("class_name", selectedClass)
-        .eq("school_year", selectedSchoolYear)
-        .eq("semester", selectedSemester);
+        .select(`
+          id,
+          subject_name,
+          teacher_id,
+          school_year_fk_id,
+          academic_period_id,
+          class_fk_id,
+          classes!fk_subjects_class(name),
+          school_years!fk_subjects_school_year(label),
+          academic_periods!fk_subjects_academic_period(label)
+        `)
+        .eq("class_fk_id", classData.id)
+        .eq("school_year_fk_id", schoolYearData.id);
+
+      if (academicPeriodData) {
+        query = query.eq("academic_period_id", academicPeriodData.id);
+      }
 
       // Les enseignants ne naviguent que dans leurs propres matières
       if (!isAdmin) {
-        query = query.or(`teacher_id.eq.${user.id},teacher_email.eq.${userEmail}`);
+        query = query.eq('teacher_id', user.id);
       }
 
       const { data, error } = await query.order('subject_name');
@@ -444,7 +500,19 @@ export default function Grades() {
       if (error) throw error;
       
       if (data) {
-        setSubjects(data as TeacherSubject[]);
+        // Mapper pour compatibilité TeacherSubject
+        const mapped = (data || []).map((s: any) => ({
+          id: s.id,
+          subject_name: s.subject_name,
+          class_name: s.classes?.[0]?.name || selectedClass,
+          school_year: s.school_years?.[0]?.label || selectedSchoolYear,
+          semester: s.academic_periods?.[0]?.label || selectedSemester,
+          teacher_name: userEmail?.split('@')[0] || '',
+          school_year_fk_id: s.school_year_fk_id,
+          academic_period_id: s.academic_period_id,
+        }));
+        
+        setSubjects(mapped as TeacherSubject[]);
         
         const subjectToCheck = subjectName ?? selectedSubject;
         const currentSubjectExists = subjectToCheck
@@ -454,9 +522,9 @@ export default function Grades() {
         if (subjectToCheck && currentSubjectExists) {
           setSelectedSubjectId(currentSubjectExists.id);
           setNewSubjectMetadata({
-            teacherName: currentSubjectExists.teacher_name,
-            schoolYear: currentSubjectExists.school_year,
-            semester: currentSubjectExists.semester,
+            teacherName: (currentSubjectExists as any).teacher_name || '',
+            schoolYear: (currentSubjectExists as any).school_year || '',
+            semester: (currentSubjectExists as any).semester || '',
           });
         } else if (subjectToCheck && !currentSubjectExists) {
           setSelectedSubject("");
@@ -687,18 +755,21 @@ export default function Grades() {
         }
       }
 
+      // Phase 4A: Récupérer les ID de FK
+      const { data: classData } = await supabase
+        .from('classes')
+        .select('id')
+        .eq('name', selectedClass)
+        .maybeSingle();
+      
       const { data: newSubjectData, error } = await supabase.from("subjects").insert({
         teacher_id: teacherId,
-        teacher_email: teacherEmail,
         teacher_fk_id: teacherFkId,
-        class_name: selectedClass,
         subject_name: subject,
-        teacher_name: teacherName,
-        school_year: schoolYear,
-        semester: semester,
         school_year_fk_id: schoolYearId,
         academic_period_id: academicPeriodId,
-      }).select().single();
+        class_fk_id: classData?.id || null,
+      } as any).select().single();
 
       if (error) throw error;
 

@@ -208,11 +208,11 @@ export const useGenerateReportCard = () => {
 
       if (gradesError) throw gradesError;
 
-      // Mapper les grades pour compatibilité avec le code existant
-      const mappedGrades = (grades || []).map(g => ({
+      // Mapper les grades pour compatibilité avec le code existant (Phase 4A)
+      const mappedGrades = (grades || []).map((g: any) => ({
         ...g,
         subject: g.subjects?.subject_name || '',
-        teacher_name: g.subjects?.teacher_name || null,
+        teacher_name: null, // Plus disponible après Phase 4A
       }));
 
       // ✅ CRITIQUE : Récupérer TOUJOURS les coefficients à jour (pas de cache React Query ici)

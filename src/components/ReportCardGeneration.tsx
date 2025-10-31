@@ -67,18 +67,40 @@ export const ReportCardGeneration = () => {
     },
   });
 
-  // Récupérer les matières pour la classe sélectionnée
+  // Récupérer les matières pour la classe sélectionnée (Phase 4A: JOIN sur FK)
   const { data: subjects } = useQuery({
     queryKey: ['subjects', selectedClass, selectedSchoolYear, selectedSemester],
     queryFn: async () => {
       if (!selectedClass || !selectedSchoolYear || !selectedSemester) return [];
       
+      // Récupérer les IDs de référentiels pour filtrage
+      const { data: schoolYearData } = await supabase
+        .from('school_years')
+        .select('id')
+        .eq('label', selectedSchoolYear)
+        .maybeSingle();
+      
+      const { data: classData } = await supabase
+        .from('classes')
+        .select('id')
+        .eq('name', selectedClass)
+        .maybeSingle();
+      
+      if (!schoolYearData || !classData) return [];
+      
+      const { data: academicPeriodData } = await supabase
+        .from('academic_periods')
+        .select('id')
+        .eq('label', selectedSemester)
+        .eq('school_year_id', schoolYearData.id)
+        .maybeSingle();
+      
       const { data, error } = await supabase
         .from('subjects')
-        .select('*')
-        .eq('class_name', selectedClass)
-        .eq('school_year', selectedSchoolYear)
-        .eq('semester', selectedSemester);
+        .select('id, subject_name')
+        .eq('class_fk_id', classData.id)
+        .eq('school_year_fk_id', schoolYearData.id)
+        .eq('academic_period_id', academicPeriodData?.id || null);
       
       if (error) throw error;
       return data;
@@ -86,23 +108,24 @@ export const ReportCardGeneration = () => {
     enabled: !!(selectedClass && selectedSchoolYear && selectedSemester),
   });
 
-  // Récupérer les pondérations existantes
+  // Récupérer les pondérations existantes (Phase 4A: via subject_id)
   const { data: existingWeights } = useQuery({
     queryKey: ['subject-weights', selectedClass, selectedSchoolYear, selectedSemester],
     queryFn: async () => {
-      if (!selectedClass || !selectedSchoolYear || !selectedSemester) return [];
+      if (!selectedClass || !selectedSchoolYear || !selectedSemester || !subjects) return [];
+      
+      const subjectIds = subjects.map(s => s.id);
+      if (subjectIds.length === 0) return [];
       
       const { data, error } = await supabase
         .from('subject_weights')
         .select('*, subjects(subject_name)')
-        .eq('class_name', selectedClass)
-        .eq('school_year', selectedSchoolYear)
-        .eq('semester', selectedSemester);
+        .in('subject_id', subjectIds);
       
       if (error) throw error;
       return data;
     },
-    enabled: !!(selectedClass && selectedSchoolYear && selectedSemester),
+    enabled: !!(selectedClass && selectedSchoolYear && selectedSemester && subjects && subjects.length > 0),
   });
 
   // Récupérer les élèves de la classe
@@ -150,32 +173,28 @@ export const ReportCardGeneration = () => {
     },
   });
 
-  // Sauvegarder les pondérations
+  // Sauvegarder les pondérations (Phase 4A: subject_id uniquement)
   const saveWeightsMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedClass || !selectedSchoolYear || !selectedSemester) {
-        throw new Error('Veuillez sélectionner une classe, une année et un semestre');
+      if (!subjectWeights || subjectWeights.length === 0) {
+        throw new Error('Aucune pondération à sauvegarder');
       }
 
-      // Supprimer les pondérations existantes
+      // Supprimer les pondérations existantes pour ces subjects
+      const subjectIds = subjectWeights.map(sw => sw.subject_id);
       await supabase
         .from('subject_weights')
         .delete()
-        .eq('class_name', selectedClass)
-        .eq('school_year', selectedSchoolYear)
-        .eq('semester', selectedSemester);
+        .in('subject_id', subjectIds);
 
-      // Insérer les nouvelles pondérations
+      // Insérer les nouvelles pondérations (uniquement subject_id et weight, as any pour compatibilité)
       const { error } = await supabase
         .from('subject_weights')
         .insert(
           subjectWeights.map(sw => ({
             subject_id: sw.subject_id,
-            class_name: selectedClass,
-            school_year: selectedSchoolYear,
-            semester: selectedSemester,
             weight: sw.weight,
-          }))
+          }) as any)
         );
 
       if (error) throw error;

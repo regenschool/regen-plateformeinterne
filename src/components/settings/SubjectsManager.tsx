@@ -100,14 +100,11 @@ export const SubjectsManager = () => {
 
         if (gradesError) throw gradesError;
 
-        // Supprimer les évaluations (assessments)
+        // Supprimer les évaluations (assessments) via subject_id (Phase 4A)
         const { error: assessmentsError } = await supabase
           .from('assessments')
           .delete()
-          .eq('subject', subject.subject_name)
-          .eq('class_name', subject.class_name)
-          .eq('school_year', subject.school_year)
-          .eq('semester', subject.semester);
+          .eq('subject_id', subject.id);
 
         if (assessmentsError) throw assessmentsError;
       }
