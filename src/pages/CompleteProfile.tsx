@@ -10,6 +10,8 @@ import { toast } from "sonner";
 export default function CompleteProfile() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [tokenExpired, setTokenExpired] = useState(false);
+  const [resendingInvite, setResendingInvite] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [userName, setUserName] = useState("");
   const [formData, setFormData] = useState({
@@ -43,7 +45,23 @@ export default function CompleteProfile() {
 
         if (error) {
           console.error("Erreur lors de l'établissement de la session:", error);
-          toast.error("Erreur lors de l'activation du lien d'invitation");
+          
+          // Détecter si c'est un token expiré
+          if (error.message?.includes('expired') || error.message?.includes('invalid') || error.status === 400) {
+            setTokenExpired(true);
+            // Extraire l'email du token si possible
+            try {
+              const payload = JSON.parse(atob(accessToken.split('.')[1]));
+              if (payload.email) {
+                setUserEmail(payload.email);
+              }
+            } catch (e) {
+              console.log("Impossible d'extraire l'email du token");
+            }
+            toast.error("Ce lien d'invitation a expiré (valide 24h)");
+          } else {
+            toast.error("Erreur lors de l'activation du lien d'invitation");
+          }
           return;
         }
 
@@ -148,6 +166,104 @@ export default function CompleteProfile() {
       setLoading(false);
     }
   };
+
+  const handleResendInvitation = async () => {
+    if (!userEmail) {
+      toast.error("Impossible de renvoyer l'invitation : email manquant");
+      return;
+    }
+
+    setResendingInvite(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const { error } = await supabase.functions.invoke('resend-invitation', {
+        body: { email: userEmail },
+        headers: session?.access_token ? {
+          Authorization: `Bearer ${session.access_token}`
+        } : undefined
+      });
+
+      if (error) throw error;
+
+      toast.success("Nouvelle invitation envoyée ! Consultez votre boîte mail 📧");
+      setTokenExpired(false);
+    } catch (error: any) {
+      console.error("Erreur renvoi invitation:", error);
+      toast.error("Erreur lors du renvoi de l'invitation. Contactez votre administrateur.");
+    } finally {
+      setResendingInvite(false);
+    }
+  };
+
+  // Affichage spécial si le token a expiré
+  if (tokenExpired) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-accent/5 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-3">
+            <div className="text-center">
+              <div className="inline-block p-3 bg-orange-100 rounded-full mb-4">
+                <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <CardTitle className="text-2xl">Lien expiré</CardTitle>
+            </div>
+            <CardDescription className="text-center">
+              Ce lien d'invitation n'est plus valide. Les liens expirent automatiquement après 24 heures pour des raisons de sécurité.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {userEmail && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  📧 Email : <strong>{userEmail}</strong>
+                </p>
+              </div>
+            )}
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <h3 className="font-semibold text-amber-900 mb-2">💡 Que faire ?</h3>
+              <ol className="text-sm text-amber-800 space-y-2 list-decimal list-inside">
+                <li>Cliquez sur le bouton ci-dessous pour recevoir un nouveau lien</li>
+                <li>Consultez votre boîte mail (vérifiez les spams)</li>
+                <li>Utilisez le nouveau lien dans les 24 heures</li>
+              </ol>
+            </div>
+
+            <Button 
+              onClick={handleResendInvitation} 
+              className="w-full" 
+              size="lg"
+              disabled={resendingInvite}
+            >
+              {resendingInvite ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Envoi en cours...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Renvoyer l'invitation
+                </>
+              )}
+            </Button>
+
+            <p className="text-xs text-center text-muted-foreground">
+              Si le problème persiste, contactez votre administrateur
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-accent/5 p-4">

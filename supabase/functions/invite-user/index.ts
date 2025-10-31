@@ -169,8 +169,8 @@ serve(async (req) => {
 
           <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; margin: 24px 0;">
             <p style="margin: 0; color: #92400e; font-size: 14px;">
-              <strong>⏱️ Pas de pression !</strong><br>
-              Vous pouvez cliquer sur ce lien maintenant ou plus tard. Il reste valide jusqu'à ce que vous ayez créé votre compte.
+              <strong>⏱️ Important : Lien valide 24 heures</strong><br>
+              Ce lien expire automatiquement après 24 heures. Si le lien a expiré, demandez simplement un nouveau lien d'invitation à votre administrateur.
             </p>
           </div>
 
