@@ -237,6 +237,7 @@ export const StudentCard = ({
       }`}
       style={isAdmin ? {
         transform: 'translateZ(0)', // Force GPU acceleration
+        contain: 'layout style paint', // Isolation pour éviter CLS
       } : undefined}
       onClick={handleCardClick}
     >
@@ -246,7 +247,10 @@ export const StudentCard = ({
           <div className="absolute inset-0 bg-gradient-to-br from-primary/0 to-primary/0 group-hover:from-primary/10 group-hover:to-accent/10 transition-all duration-500 z-10 pointer-events-none" />
         )}
         
-        <div className="relative w-full h-40 bg-gradient-to-br from-primary/10 to-accent/10">
+        <div 
+          className="relative w-full h-40 bg-gradient-to-br from-primary/10 to-accent/10"
+          style={{ contain: 'layout' }} // Isolation du header
+        >
           {student.photo_url ? (
             <OptimizedImage
               src={student.photo_url}
@@ -264,7 +268,15 @@ export const StudentCard = ({
             </div>
           )}
           <div className="absolute top-1.5 right-1.5 flex gap-1 items-center z-20">
-            <div className="bg-primary text-primary-foreground px-2 py-0.5 rounded-full text-xs font-medium group-hover:scale-110 transition-transform">
+            <div 
+              className="bg-primary text-primary-foreground px-2 py-0.5 rounded-full text-xs font-medium transition-transform"
+              style={{ 
+                transform: 'scale(1)',
+                willChange: 'transform'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
               {student.class_name}
             </div>
           </div>

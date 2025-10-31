@@ -77,7 +77,14 @@ export const OptimizedImage = ({
   }
 
   return (
-    <div ref={imgRef} className={cn("relative overflow-hidden", className)}>
+    <div 
+      ref={imgRef} 
+      className={cn("relative overflow-hidden", className)}
+      style={{ 
+        aspectRatio: width && height ? `${width} / ${height}` : undefined,
+        contain: 'layout style paint' // Force containment pour éviter reflow
+      }}
+    >
       {/* Placeholder pendant le chargement */}
       {!isLoaded && (
         <div className={cn("absolute inset-0 bg-gradient-to-br from-muted to-muted/50 animate-pulse", placeholderClassName)} />
