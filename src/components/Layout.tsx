@@ -117,7 +117,11 @@ export const Layout = ({ children }: LayoutProps) => {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button 
-                        variant={["/profile", "/settings", "/tests", "/year-transition", "/audit", "/quality", "/quiz"].some(path => isActive(path)) ? "default" : "ghost"}
+                        variant={
+                          isAdmin 
+                            ? ["/profile", "/settings", "/tests", "/year-transition", "/audit", "/quality"].some(path => isActive(path)) ? "default" : "ghost"
+                            : isActive("/quiz") ? "default" : "ghost"
+                        }
                         className="gap-2"
                       >
                         <Settings className="w-4 h-4" />
