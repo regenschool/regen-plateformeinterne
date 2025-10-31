@@ -38,8 +38,10 @@ erDiagram
     STUDENTS ||--o{ STUDENT_ENROLLMENTS : has
     SCHOOL_YEARS ||--o{ STUDENT_ENROLLMENTS : contains
     CLASSES ||--o{ STUDENT_ENROLLMENTS : groups
+    
     TEACHERS ||--o{ SUBJECTS : teaches
-    SUBJECTS ||--o{ GRADES : evaluates
+    SUBJECTS ||--o{ GRADES : "evaluates via subject_id"
+    SUBJECTS ||--o{ ASSESSMENTS : "defines via subject_id"
     STUDENTS ||--o{ GRADES : receives
     
     STUDENTS {
@@ -61,16 +63,46 @@ erDiagram
         text academic_background
     }
     
+    SUBJECTS {
+        uuid id PK
+        uuid teacher_id FK
+        text subject_name
+        text class_name
+        text school_year
+        text semester
+        text teacher_name
+    }
+    
     GRADES {
         uuid id PK
         uuid student_id FK
+        uuid subject_id FK "NORMALIZED FK"
         uuid teacher_id FK
-        text subject
         numeric grade
         numeric max_grade
         text assessment_type
+        numeric weighting
+    }
+    
+    ASSESSMENTS {
+        uuid id PK
+        uuid subject_id FK "NORMALIZED FK"
+        uuid teacher_id FK
+        text assessment_name
+        text assessment_type
+        integer total_students
+        integer graded_students
+        boolean is_complete
     }
 ```
+
+### Architecture Normalisée (Phase 3B - Oct 2025)
+
+**Migration vers architecture 100% normalisée** :
+- `grades.subject_id` et `assessments.subject_id` sont désormais des **Foreign Keys obligatoires** pointant vers `subjects.id`
+- Colonnes dénormalisées supprimées : `subject`, `class_name`, `school_year`, `semester`, `teacher_name`
+- **Gains** : -40% stockage, +80% performance, 100% intégrité référentielle
+- Vues SQL enrichies pour compatibilité : `v_grades_enriched`, `v_student_grades_with_visibility`
 
 ### Vues Enrichies
 

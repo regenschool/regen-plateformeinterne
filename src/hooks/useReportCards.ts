@@ -208,6 +208,13 @@ export const useGenerateReportCard = () => {
 
       if (gradesError) throw gradesError;
 
+      // Mapper les grades pour compatibilité avec le code existant
+      const mappedGrades = (grades || []).map(g => ({
+        ...g,
+        subject: g.subjects?.subject_name || '',
+        teacher_name: g.subjects?.teacher_name || null,
+      }));
+
       // ✅ CRITIQUE : Récupérer TOUJOURS les coefficients à jour (pas de cache React Query ici)
       // On force le refetch direct depuis Supabase pour éviter les valeurs obsolètes
       const { data: subjectWeightsData } = await supabase.rpc('get_subject_weights_for_class', {
@@ -271,9 +278,9 @@ export const useGenerateReportCard = () => {
         }
       }
 
-      // 4. Calculer les moyennes par matière
-      const subjectAverages = grades && grades.length > 0 
-        ? calculateSubjectAverages(grades) 
+      // 4. Calculer les moyennes par matière (utiliser mappedGrades)
+      const subjectAverages = mappedGrades && mappedGrades.length > 0 
+        ? calculateSubjectAverages(mappedGrades) 
         : [];
       
       const studentAverage = subjectAverages.length > 0
@@ -334,7 +341,7 @@ export const useGenerateReportCard = () => {
         programName = (cls as any)?.programs?.name || undefined;
       }
 
-      // 7. Construire les données pour le PDF
+      // 7. Construire les données pour le PDF (utiliser mappedGrades)
       const reportCardData = {
         student: {
           firstName: student.first_name,
