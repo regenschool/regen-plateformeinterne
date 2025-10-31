@@ -60,28 +60,22 @@ export const SubjectsManager = () => {
 
   const handleDelete = async (subject: any) => {
     try {
-      // Vérifier s'il existe des notes pour cette matière
+      // Vérifier s'il existe des notes pour cette matière via subject_id
       const { data: grades, error: gradesError } = await supabase
         .from('grades')
         .select('id')
-        .eq('subject', subject.subject_name)
-        .eq('class_name', subject.class_name)
-        .eq('school_year', subject.school_year)
-        .eq('semester', subject.semester)
+        .eq('subject_id', subject.id)
         .limit(1);
 
       if (gradesError) throw gradesError;
 
       // Si des notes existent, retourner le nombre pour l'affichage dans l'alerte
       if (grades && grades.length > 0) {
-        // Compter le nombre total de notes
+        // Compter le nombre total de notes via subject_id (architecture normalisée)
         const { count } = await supabase
           .from('grades')
-          .select('*', { count: 'exact', head: true })
-          .eq('subject', subject.subject_name)
-          .eq('class_name', subject.class_name)
-          .eq('school_year', subject.school_year)
-          .eq('semester', subject.semester);
+          .select('id', { count: 'exact', head: true })
+          .eq('subject_id', subject.id);
 
         return { hasGrades: true, count: count || 0 };
       }
@@ -98,14 +92,11 @@ export const SubjectsManager = () => {
     try {
       // Supprimer les notes et évaluations associées si demandé
       if (deleteGrades) {
-        // Supprimer les notes
+        // Supprimer les notes via subject_id
         const { error: gradesError } = await supabase
           .from('grades')
           .delete()
-          .eq('subject', subject.subject_name)
-          .eq('class_name', subject.class_name)
-          .eq('school_year', subject.school_year)
-          .eq('semester', subject.semester);
+          .eq('subject_id', subject.id);
 
         if (gradesError) throw gradesError;
 

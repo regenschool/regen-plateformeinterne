@@ -98,14 +98,12 @@ export const GradeEntryDialog = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Récupérer les assessments via subject_id (architecture normalisée)
       const { data, error } = await supabase
         .from("grades")
         .select("assessment_name, assessment_type, assessment_custom_label")
         .eq("teacher_id", user.id)
-        .eq("class_name", student.class_name)
-        .eq("subject", subject)
-        .eq("school_year", subjectMetadata?.schoolYear || "")
-        .eq("semester", subjectMetadata?.semester || "")
+        .eq("subject_id", subjectId)
         .not("assessment_name", "is", null);
 
       if (error) throw error;
@@ -142,15 +140,12 @@ export const GradeEntryDialog = ({
         setAssessmentType(assessment.type);
         setCustomLabel(assessment.customLabel || "");
         
-        // Récupérer le coefficient de l'épreuve existante
+        // Récupérer le coefficient de l'épreuve existante via subject_id
         const { data: existingGradeWithWeighting } = await supabase
           .from("grades")
           .select("weighting")
           .eq("assessment_name", assessment.name)
-          .eq("class_name", student.class_name)
-          .eq("subject", subject)
-          .eq("school_year", subjectMetadata?.schoolYear || "")
-          .eq("semester", subjectMetadata?.semester || "")
+          .eq("subject_id", subjectId)
           .limit(1)
           .maybeSingle();
         
@@ -236,14 +231,12 @@ export const GradeEntryDialog = ({
       is_absent: isAbsent,
     };
 
-    // Check if grade already exists for this assessment/student combination
+    // Check if grade already exists for this assessment/student combination via subject_id
     const { data: existingGrade } = await supabase
       .from('grades')
       .select('id')
       .eq('student_id', student.id)
-      .eq('subject', subject)
-      .eq('school_year', subjectMetadata?.schoolYear || '')
-      .eq('semester', subjectMetadata?.semester || '')
+      .eq('subject_id', subjectId)
       .eq('assessment_name', assessmentName.trim())
       .eq('assessment_type', assessmentType as any)
       .maybeSingle();

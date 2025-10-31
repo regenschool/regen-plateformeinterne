@@ -36,17 +36,14 @@ export const syncExistingDataToReferentials = async () => {
     const uniqueClassesFromStudents = [...new Set(students?.map(s => s.class_name) || [])];
     console.log(`📚 Classes trouvées dans students: ${uniqueClassesFromStudents.length}`);
     
-    // 2. Synchroniser les classes depuis grades et subjects
-    const { data: grades } = await supabase.from('grades').select('class_name');
+    // 2. Synchroniser les classes depuis subjects uniquement (grades n'a plus class_name)
     const { data: subjects } = await supabase.from('subjects').select('class_name');
     
-    const uniqueClassesFromGrades = [...new Set(grades?.map(g => g.class_name) || [])];
     const uniqueClassesFromSubjects = [...new Set(subjects?.map(s => s.class_name) || [])];
     
     // Combiner toutes les classes uniques
     const allUniqueClasses = [...new Set([
       ...uniqueClassesFromStudents,
-      ...uniqueClassesFromGrades,
       ...uniqueClassesFromSubjects
     ])].filter(Boolean);
     
@@ -110,13 +107,12 @@ export const syncExistingDataToReferentials = async () => {
     }
     
     // 5. Synchroniser les années scolaires depuis grades et subjects (et forcer 2025-2026)
-    const { data: gradesWithYear } = await supabase.from('grades').select('school_year');
+    // Récupérer les années depuis subjects uniquement (grades n'a plus school_year)
     const { data: subjectsWithYear } = await supabase.from('subjects').select('school_year');
     
-    const uniqueYearsFromGrades = [...new Set(gradesWithYear?.map(g => g.school_year).filter(Boolean) || [])];
     const uniqueYearsFromSubjects = [...new Set(subjectsWithYear?.map(s => s.school_year).filter(Boolean) || [])];
     
-    const allUniqueYears = [...new Set([...uniqueYearsFromGrades, ...uniqueYearsFromSubjects])];
+    const allUniqueYears = [...new Set([...uniqueYearsFromSubjects])];
     
     console.log(`📅 Années scolaires trouvées: ${allUniqueYears.length}`);
     
@@ -162,12 +158,10 @@ export const syncExistingDataToReferentials = async () => {
       console.log('✅ Année 2025-2026 activée');
     }
     
-    // 8. Synchroniser les semestres depuis grades et subjects
-    const { data: gradesWithSemester } = await supabase.from('grades').select('semester');
+    // 8. Synchroniser les semestres depuis subjects uniquement (grades n'a plus semester)
     const { data: subjectsWithSemester } = await supabase.from('subjects').select('semester');
     
     const uniqueSemesters = [...new Set([
-      ...(gradesWithSemester?.map(g => g.semester).filter(Boolean) || []),
       ...(subjectsWithSemester?.map(s => s.semester).filter(Boolean) || [])
     ])];
     

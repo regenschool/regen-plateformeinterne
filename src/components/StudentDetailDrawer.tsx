@@ -132,11 +132,12 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
 
   const handleGradeClick = (grade: any) => {
     // Naviguer vers la page de saisie des notes avec TOUS les filtres pré-remplis
+    // Les données subject_name, class_name, etc. viennent du JOIN avec subjects
     const params = new URLSearchParams({
-      subject: grade.subject,
-      class: grade.class_name || student?.class_name || '',
-      schoolYear: grade.school_year || '',
-      semester: grade.semester || '',
+      subject: grade.subjects?.subject_name || '',
+      class: grade.subjects?.class_name || student?.class_name || '',
+      schoolYear: grade.subjects?.school_year || '',
+      semester: grade.subjects?.semester || '',
     });
     navigate(`/grades?${params.toString()}`);
   };
@@ -335,7 +336,7 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
                               onClick={() => handleGradeClick(grade)}
                             >
                               <div>
-                                <p className="font-medium text-sm">{grade.subject}</p>
+                                <p className="font-medium text-sm">{grade.subjects?.subject_name || 'Matière inconnue'}</p>
                                 <p className="text-xs text-muted-foreground">
                                   {grade.assessment_name || grade.assessment_type}
                                 </p>

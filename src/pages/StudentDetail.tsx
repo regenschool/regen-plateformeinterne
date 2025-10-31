@@ -46,7 +46,16 @@ export default function StudentDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("grades")
-        .select("*")
+        .select(`
+          *,
+          subjects!fk_grades_subject (
+            subject_name,
+            class_name,
+            school_year,
+            semester,
+            teacher_name
+          )
+        `)
         .eq("student_id", id)
         .order("created_at", { ascending: false });
 
@@ -204,7 +213,7 @@ export default function StudentDetail() {
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <div>
-                        <p className="font-medium">{grade.subject}</p>
+                        <p className="font-medium">{grade.subjects?.subject_name || 'Matière inconnue'}</p>
                         <p className="text-sm text-muted-foreground">
                           {grade.assessment_name || grade.assessment_type}
                         </p>

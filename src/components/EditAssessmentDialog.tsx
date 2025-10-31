@@ -65,16 +65,13 @@ export const EditAssessmentDialog = ({
       setNewType(assessmentType);
       setNewCustomLabel(assessmentCustomLabel || "");
       
-      // Charger le coefficient et max_grade actuels
+      // Charger le coefficient et max_grade actuels via subject_id
       const loadCurrentSettings = async () => {
         const { data } = await supabase
           .from("grades")
           .select("weighting, max_grade")
           .eq("assessment_name", assessmentName)
-          .eq("class_name", className)
-          .eq("subject", subject)
-          .eq("school_year", schoolYear)
-          .eq("semester", semester)
+          .eq("subject_id", subjectId)
           .limit(1)
           .maybeSingle();
         
@@ -111,7 +108,7 @@ export const EditAssessmentDialog = ({
     try {
       setIsSubmitting(true);
 
-      // Mettre à jour toutes les notes de cette épreuve
+      // Mettre à jour toutes les notes de cette épreuve via subject_id
       const { error: gradesError } = await supabase
         .from("grades")
         .update({
@@ -122,10 +119,7 @@ export const EditAssessmentDialog = ({
           max_grade: parseFloat(maxGrade),
         })
         .eq("assessment_name", assessmentName)
-        .eq("class_name", className)
-        .eq("subject", subject)
-        .eq("school_year", schoolYear)
-        .eq("semester", semester);
+        .eq("subject_id", subjectId);
 
       if (gradesError) throw gradesError;
 

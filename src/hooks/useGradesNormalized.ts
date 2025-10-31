@@ -61,7 +61,7 @@ export const useGradesNormalized = (filters: GradesNormalizedFilters = {}) => {
         .from('grades')
         .select(`
           *,
-          subjects:subject_id (
+          subjects!fk_grades_subject (
             subject_name,
             class_name,
             school_year,
@@ -131,7 +131,7 @@ export const useStudentGradesNormalized = (
         .from('grades')
         .select(`
           *,
-          subjects:subject_id (
+          subjects!fk_grades_subject (
             subject_name,
             class_name,
             school_year,
