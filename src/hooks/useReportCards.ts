@@ -196,14 +196,13 @@ export const useGenerateReportCard = () => {
           is_absent,
           subjects!fk_grades_subject(
             subject_name,
-            teacher_name,
-            school_year,
-            semester
+            school_years(label),
+            academic_periods(label)
           )
         `)
         .eq('student_id', studentId)
-        .eq('subjects.school_year', schoolYear)
-        .eq('subjects.semester', semester)
+        .eq('subjects.school_years.label', schoolYear)
+        .eq('subjects.academic_periods.label', semester)
         .limit(500); // Protection contre volumes excessifs
 
       if (gradesError) throw gradesError;

@@ -53,11 +53,11 @@ export default function ArchiveManager() {
             .select('*', { count: 'exact', head: true })
             .eq('school_year_id', year.id);
 
-          // Count grades via JOIN with subjects table (normalized architecture)
+          // Count grades via JOIN with subjects -> school_year (normalized)
           const { count: gradeCount } = await supabase
             .from('grades')
-            .select('id, subjects!fk_grades_subject(school_year)', { count: 'exact', head: true })
-            .eq('subjects.school_year', year.label);
+            .select('id, subjects!fk_grades_subject(school_years(label))', { count: 'exact', head: true })
+            .eq('subjects.school_years.label', year.label);
 
           return {
             ...year,
@@ -97,13 +97,12 @@ export default function ArchiveManager() {
           *,
           subjects!fk_grades_subject(
             subject_name,
-            class_name,
-            school_year,
-            semester,
-            teacher_name
+            classes(name),
+            school_years(label),
+            academic_periods(label)
           )
         `)
-        .eq('subjects.school_year', selectedYear.label);
+        .eq('subjects.school_years.label', selectedYear.label);
 
       const archiveData = {
         school_year: selectedYear,

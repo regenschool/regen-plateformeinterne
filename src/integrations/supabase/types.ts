@@ -63,8 +63,10 @@ export type Database = {
           assessment_type: Database["public"]["Enums"]["assessment_type"]
           class_fk_id: string | null
           created_at: string
+          deleted_at: string | null
           graded_students: number
           id: string
+          is_active: boolean | null
           is_complete: boolean | null
           is_visible_to_students: boolean
           max_grade: number
@@ -83,8 +85,10 @@ export type Database = {
           assessment_type: Database["public"]["Enums"]["assessment_type"]
           class_fk_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           graded_students?: number
           id?: string
+          is_active?: boolean | null
           is_complete?: boolean | null
           is_visible_to_students?: boolean
           max_grade?: number
@@ -103,8 +107,10 @@ export type Database = {
           assessment_type?: Database["public"]["Enums"]["assessment_type"]
           class_fk_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           graded_students?: number
           id?: string
+          is_active?: boolean | null
           is_complete?: boolean | null
           is_visible_to_students?: boolean
           max_grade?: number
@@ -190,6 +196,7 @@ export type Database = {
         Row: {
           capacity: number | null
           created_at: string
+          deleted_at: string | null
           id: string
           is_active: boolean | null
           level: string | null
@@ -200,6 +207,7 @@ export type Database = {
         Insert: {
           capacity?: number | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
           is_active?: boolean | null
           level?: string | null
@@ -210,6 +218,7 @@ export type Database = {
         Update: {
           capacity?: number | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
           is_active?: boolean | null
           level?: string | null
@@ -334,9 +343,11 @@ export type Database = {
           assessment_type: Database["public"]["Enums"]["assessment_type"]
           class_fk_id: string | null
           created_at: string
+          deleted_at: string | null
           grade: number
           id: string
           is_absent: boolean
+          is_active: boolean | null
           max_grade: number
           student_id: string
           subject_id: string
@@ -352,9 +363,11 @@ export type Database = {
           assessment_type: Database["public"]["Enums"]["assessment_type"]
           class_fk_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           grade: number
           id?: string
           is_absent?: boolean
+          is_active?: boolean | null
           max_grade?: number
           student_id: string
           subject_id: string
@@ -370,9 +383,11 @@ export type Database = {
           assessment_type?: Database["public"]["Enums"]["assessment_type"]
           class_fk_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           grade?: number
           id?: string
           is_absent?: boolean
+          is_active?: boolean | null
           max_grade?: number
           student_id?: string
           subject_id?: string
@@ -1051,7 +1066,9 @@ export type Database = {
           class_name: string | null
           company: string | null
           created_at: string
+          deleted_at: string | null
           id: string
+          is_active: boolean | null
           level_id: string | null
           program_id: string | null
           school_year_id: string
@@ -1065,7 +1082,9 @@ export type Database = {
           class_name?: string | null
           company?: string | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
+          is_active?: boolean | null
           level_id?: string | null
           program_id?: string | null
           school_year_id: string
@@ -1079,7 +1098,9 @@ export type Database = {
           class_name?: string | null
           company?: string | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
+          is_active?: boolean | null
           level_id?: string | null
           program_id?: string | null
           school_year_id?: string
@@ -1087,6 +1108,48 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_enrollments_class"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_enrollments_level"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_enrollments_program"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_enrollments_school_year"
+            columns: ["school_year_id"]
+            isOneToOne: false
+            referencedRelation: "school_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_enrollments_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_enrollments_teacher"
+            columns: ["assigned_teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "student_enrollments_assigned_teacher_id_fkey"
             columns: ["assigned_teacher_id"]
@@ -1300,9 +1363,11 @@ export type Database = {
           class_name: string
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           edited_data: Json | null
           generated_data: Json
           id: string
+          is_active: boolean | null
           pdf_url: string | null
           school_year: string
           semester: string
@@ -1315,9 +1380,11 @@ export type Database = {
           class_name: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           edited_data?: Json | null
           generated_data: Json
           id?: string
+          is_active?: boolean | null
           pdf_url?: string | null
           school_year: string
           semester: string
@@ -1330,9 +1397,11 @@ export type Database = {
           class_name?: string
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           edited_data?: Json | null
           generated_data?: Json
           id?: string
+          is_active?: boolean | null
           pdf_url?: string | null
           school_year?: string
           semester?: string
@@ -1363,8 +1432,10 @@ export type Database = {
           age: number | null
           birth_date: string | null
           created_at: string
+          deleted_at: string | null
           first_name: string
           id: string
+          is_active: boolean | null
           last_name: string
           level_id: string | null
           photo_url: string | null
@@ -1376,8 +1447,10 @@ export type Database = {
           age?: number | null
           birth_date?: string | null
           created_at?: string
+          deleted_at?: string | null
           first_name: string
           id?: string
+          is_active?: boolean | null
           last_name: string
           level_id?: string | null
           photo_url?: string | null
@@ -1389,8 +1462,10 @@ export type Database = {
           age?: number | null
           birth_date?: string | null
           created_at?: string
+          deleted_at?: string | null
           first_name?: string
           id?: string
+          is_active?: boolean | null
           last_name?: string
           level_id?: string | null
           photo_url?: string | null
@@ -1399,6 +1474,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_students_level"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "levels"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "students_level_id_fkey"
             columns: ["level_id"]
@@ -1479,7 +1561,9 @@ export type Database = {
           category_id: string | null
           class_fk_id: string | null
           created_at: string
+          deleted_at: string | null
           id: string
+          is_active: boolean | null
           school_year_fk_id: string | null
           subject_name: string
           teacher_fk_id: string | null
@@ -1491,7 +1575,9 @@ export type Database = {
           category_id?: string | null
           class_fk_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
+          is_active?: boolean | null
           school_year_fk_id?: string | null
           subject_name: string
           teacher_fk_id?: string | null
@@ -1503,7 +1589,9 @@ export type Database = {
           category_id?: string | null
           class_fk_id?: string | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
+          is_active?: boolean | null
           school_year_fk_id?: string | null
           subject_name?: string
           teacher_fk_id?: string | null
@@ -1511,6 +1599,34 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_subjects_academic_period"
+            columns: ["academic_period_id"]
+            isOneToOne: false
+            referencedRelation: "academic_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_subjects_class"
+            columns: ["class_fk_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_subjects_school_year"
+            columns: ["school_year_fk_id"]
+            isOneToOne: false
+            referencedRelation: "school_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_subjects_teacher"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "subjects_academic_period_id_fkey"
             columns: ["academic_period_id"]
@@ -1825,22 +1941,28 @@ export type Database = {
       teachers: {
         Row: {
           created_at: string
+          deleted_at: string | null
           full_name: string
           id: string
+          is_active: boolean | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           full_name: string
           id?: string
+          is_active?: boolean | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           full_name?: string
           id?: string
+          is_active?: boolean | null
           updated_at?: string
           user_id?: string
         }
@@ -1932,6 +2054,41 @@ export type Database = {
           updated_at: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_enrollments_class"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_enrollments_level"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_enrollments_school_year"
+            columns: ["school_year_id"]
+            isOneToOne: false
+            referencedRelation: "school_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_enrollments_student"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_enrollments_teacher"
+            columns: ["assigned_teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "student_enrollments_assigned_teacher_id_fkey"
             columns: ["assigned_teacher_id"]

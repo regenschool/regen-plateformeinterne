@@ -49,7 +49,7 @@ export const ImportStudentsDialog = ({ onImportComplete, selectedSchoolYearId }:
           class_name,
           company,
           academic_background,
-          students (
+          students!fk_enrollments_student (
             first_name,
             last_name,
             photo_url,
