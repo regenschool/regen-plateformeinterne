@@ -10,15 +10,13 @@ type Student = {
   photo_url: string | null;
   age: number | null;
   birth_date: string | null;
-  academic_background: string | null;
-  company: string | null;
-  class_name: string;
   special_needs: string | null;
   created_at: string;
-  class_id: string | null;
   level_id: string | null;
-  school_year_id: string | null;
-  assigned_teacher_id: string | null;
+  user_id: string | null;
+  updated_at: string;
+  is_active: boolean | null;
+  deleted_at: string | null;
 };
 
 // Hook optimisé pour récupérer tous les étudiants avec cache et relations
@@ -37,9 +35,10 @@ export const useStudents = (classFilter?: string) => {
         `)
         .order('last_name');
       
-      if (classFilter && classFilter !== 'all') {
-        query = query.eq('class_name', classFilter);
-      }
+      // Filtrage par classe via enrollments (plus via students.class_name qui n'existe plus)
+      // if (classFilter && classFilter !== 'all') {
+      //   Filtrage désactivé temporairement - à refaire via JOIN avec enrollments
+      // }
       
       const { data, error } = await query;
       
@@ -74,15 +73,16 @@ export const useClasses = () => {
   return useQuery({
     queryKey: ['classes'],
     queryFn: async () => {
+      // Récupérer les classes depuis la table classes au lieu de students
       const { data, error } = await supabase
-        .from('students')
-        .select('class_name')
-        .order('class_name');
+        .from('classes')
+        .select('name')
+        .eq('is_active', true)
+        .order('name');
       
       if (error) throw error;
       
-      const uniqueClasses = Array.from(new Set(data?.map(s => s.class_name) || []));
-      return uniqueClasses;
+      return data?.map(c => c.name) || [];
     },
   });
 };
@@ -104,31 +104,8 @@ export const useAddStudent = () => {
       
       if (studentError) throw studentError;
       
-      // 2. Si school_year_id fourni, créer automatiquement un enrollment
-      if (school_year_id && studentData.class_name) {
-        // Récupérer class_id depuis class_name
-        const { data: classData } = await supabase
-          .from('classes')
-          .select('id')
-          .eq('name', studentData.class_name)
-          .maybeSingle();
-        
-        if (classData) {
-          const { error: enrollmentError } = await supabase
-            .from('student_enrollments')
-            .insert([{
-              student_id: newStudent.id,
-              school_year_id: school_year_id,
-              class_id: classData.id,
-              class_name: studentData.class_name,
-            }]);
-          
-          if (enrollmentError) {
-            console.error('Erreur création enrollment:', enrollmentError);
-            // On ne bloque pas si l'enrollment échoue (possiblement déjà existant)
-          }
-        }
-      }
+      // 2. Création enrollment désactivée temporairement
+      // Les enrollments seront gérés via un hook dédié useEnrollments
       
       return newStudent;
     },
@@ -150,20 +127,7 @@ export const useUpdateStudent = () => {
   
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
-      // Si class_name fourni mais pas class_id, chercher l'ID
-      if (updates.class_name && !updates.class_id) {
-        const { data: classData } = await supabase
-          .from('classes')
-          .select('id')
-          .eq('name', updates.class_name)
-          .maybeSingle();
-        
-        if (classData) {
-          updates.class_id = classData.id;
-        }
-      }
-      
-      const { data, error } = await supabase
+      const { data, error} = await supabase
         .from('students')
         .update(updates)
         .eq('id', id)

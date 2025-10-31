@@ -410,13 +410,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "grades_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_students_enriched"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "grades_subject_id_fkey"
             columns: ["subject_id"]
             isOneToOne: false
@@ -1048,13 +1041,6 @@ export type Database = {
             referencedRelation: "students"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "student_documents_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_students_enriched"
-            referencedColumns: ["id"]
-          },
         ]
       }
       student_enrollments: {
@@ -1143,13 +1129,6 @@ export type Database = {
             referencedRelation: "students"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "student_enrollments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_students_enriched"
-            referencedColumns: ["id"]
-          },
         ]
       }
       student_onboarding_categories: {
@@ -1234,13 +1213,6 @@ export type Database = {
             referencedRelation: "students"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "student_onboarding_checklist_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_students_enriched"
-            referencedColumns: ["id"]
-          },
         ]
       }
       student_profiles: {
@@ -1321,13 +1293,6 @@ export type Database = {
             referencedRelation: "students"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "student_profiles_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: true
-            referencedRelation: "v_students_enriched"
-            referencedColumns: ["id"]
-          },
         ]
       }
       student_report_cards: {
@@ -1385,13 +1350,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "student_report_cards_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_students_enriched"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "student_report_cards_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
@@ -1402,92 +1360,50 @@ export type Database = {
       }
       students: {
         Row: {
-          academic_background: string | null
           age: number | null
-          assigned_teacher_id: string | null
           birth_date: string | null
-          class_id: string | null
-          class_name: string
-          company: string | null
           created_at: string
           first_name: string
           id: string
           last_name: string
           level_id: string | null
           photo_url: string | null
-          school_year_id: string | null
           special_needs: string | null
-          teacher_id: string | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
-          academic_background?: string | null
           age?: number | null
-          assigned_teacher_id?: string | null
           birth_date?: string | null
-          class_id?: string | null
-          class_name: string
-          company?: string | null
           created_at?: string
           first_name: string
           id?: string
           last_name: string
           level_id?: string | null
           photo_url?: string | null
-          school_year_id?: string | null
           special_needs?: string | null
-          teacher_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
-          academic_background?: string | null
           age?: number | null
-          assigned_teacher_id?: string | null
           birth_date?: string | null
-          class_id?: string | null
-          class_name?: string
-          company?: string | null
           created_at?: string
           first_name?: string
           id?: string
           last_name?: string
           level_id?: string | null
           photo_url?: string | null
-          school_year_id?: string | null
           special_needs?: string | null
-          teacher_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "students_assigned_teacher_id_fkey"
-            columns: ["assigned_teacher_id"]
-            isOneToOne: false
-            referencedRelation: "teachers"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "students_class_id_fkey"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "classes"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "students_level_id_fkey"
             columns: ["level_id"]
             isOneToOne: false
             referencedRelation: "levels"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "students_school_year_id_fkey"
-            columns: ["school_year_id"]
-            isOneToOne: false
-            referencedRelation: "school_years"
             referencedColumns: ["id"]
           },
         ]
@@ -1963,13 +1879,6 @@ export type Database = {
             referencedRelation: "students"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "user_notes_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_students_enriched"
-            referencedColumns: ["id"]
-          },
         ]
       }
       user_roles: {
@@ -2056,70 +1965,6 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "student_enrollments_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "v_students_enriched"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      v_students_enriched: {
-        Row: {
-          academic_background: string | null
-          age: number | null
-          assigned_teacher_email: string | null
-          assigned_teacher_id: string | null
-          assigned_teacher_name: string | null
-          birth_date: string | null
-          class_id: string | null
-          class_level: string | null
-          class_name: string | null
-          class_name_from_ref: string | null
-          company: string | null
-          created_at: string | null
-          first_name: string | null
-          id: string | null
-          last_name: string | null
-          level_id: string | null
-          level_name: string | null
-          photo_url: string | null
-          school_year_id: string | null
-          school_year_label: string | null
-          special_needs: string | null
-          teacher_id: string | null
-          updated_at: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "students_assigned_teacher_id_fkey"
-            columns: ["assigned_teacher_id"]
-            isOneToOne: false
-            referencedRelation: "teachers"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "students_class_id_fkey"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "classes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "students_level_id_fkey"
-            columns: ["level_id"]
-            isOneToOne: false
-            referencedRelation: "levels"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "students_school_year_id_fkey"
-            columns: ["school_year_id"]
-            isOneToOne: false
-            referencedRelation: "school_years"
             referencedColumns: ["id"]
           },
         ]
