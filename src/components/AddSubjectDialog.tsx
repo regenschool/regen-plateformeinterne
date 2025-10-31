@@ -58,17 +58,35 @@ export function AddSubjectDialog({ open, onClose, onSubjectAdded }: AddSubjectDi
         }
       }
 
+      // Phase 4A: Récupérer les FK correspondantes
+      const { data: classData } = await supabase
+        .from("classes")
+        .select("id")
+        .eq("name", className)
+        .maybeSingle();
+      
+      const { data: schoolYearData } = await supabase
+        .from("school_years")
+        .select("id")
+        .eq("label", schoolYear)
+        .maybeSingle();
+      
+      const { data: academicPeriodData } = await supabase
+        .from("academic_periods")
+        .select("id")
+        .eq("label", semester)
+        .eq("school_year_id", schoolYearData?.id)
+        .maybeSingle();
+
       const { error } = await supabase
         .from("subjects")
-        .insert({
+        .insert([{
           teacher_id: targetTeacherId,
-          teacher_email: teacherEmail || null,
-          teacher_name: teacherName || (teacherEmail ? teacherEmail.split("@")[0] : "Admin"),
-          school_year: schoolYear,
-          semester,
-          class_name: className,
           subject_name: subjectName,
-        });
+          class_fk_id: classData?.id || null,
+          school_year_fk_id: schoolYearData?.id || null,
+          academic_period_id: academicPeriodData?.id || null,
+        } as any]);
 
       if (error) throw error;
 

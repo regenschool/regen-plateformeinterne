@@ -123,7 +123,7 @@ export const EditAssessmentDialog = ({
 
       if (gradesError) throw gradesError;
 
-      // Mettre à jour l'assessment dans la table assessments si elle existe
+      // Mettre à jour l'assessment dans la table assessments (Phase 4A - via subject_id)
       const { error: assessmentError } = await supabase
         .from("assessments")
         .update({
@@ -134,12 +134,9 @@ export const EditAssessmentDialog = ({
           max_grade: parseFloat(maxGrade),
         })
         .eq("assessment_name", assessmentName)
-        .eq("class_name", className)
-        .eq("subject", subject)
-        .eq("school_year", schoolYear)
-        .eq("semester", semester);
+        .eq("subject_id", subjectId);
 
-      // Ne pas lancer d'erreur si l'assessment n'existe pas encore dans la table assessments
+      // Ne pas lancer d'erreur si l'assessment n'existe pas encore
       if (assessmentError) {
         console.warn("Assessments table update skipped:", assessmentError);
       }

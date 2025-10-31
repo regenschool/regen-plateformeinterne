@@ -222,12 +222,6 @@ export const useAddGradeNormalized = () => {
       appreciation?: string | null;
       is_absent?: boolean;
       teacher_id: string;
-      // Colonnes temporaires pour backward compatibility
-      class_name: string;
-      subject: string;
-      school_year?: string | null;
-      semester?: string | null;
-      teacher_name?: string | null;
     }) => {
       // Vérifier si une note existe déjà
       const { data: existingGrade } = await supabase

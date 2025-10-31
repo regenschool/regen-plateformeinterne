@@ -145,12 +145,6 @@ export const BulkGradeImport = ({ students, classname, subject, subjectId, subje
             weighting: parseFloat(weightings[studentId] || weighting),
             is_absent: isAbsent,
             appreciation: null,
-            // Colonnes temporaires pour backward compatibility
-            class_name: classname,
-            subject: subject,
-            teacher_name: subjectMetadata?.teacherName || null,
-            school_year: subjectMetadata?.schoolYear || null,
-            semester: subjectMetadata?.semester || null,
           });
           successCount++;
         } catch (error) {

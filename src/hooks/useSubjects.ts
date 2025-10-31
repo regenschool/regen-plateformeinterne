@@ -5,19 +5,25 @@ import { toast } from 'sonner';
 type Subject = {
   id: string;
   teacher_id: string;
-  teacher_email: string | null;
-  teacher_name: string;
-  school_year: string;
-  semester: string;
-  class_name: string;
   subject_name: string;
   created_at: string;
   updated_at: string;
-  // FK normalisées
+  // FK normalisées (architecture Phase 4A)
   school_year_fk_id: string | null;
   academic_period_id: string | null;
   teacher_fk_id: string | null;
   class_fk_id: string | null;
+  // Relations JOINées
+  classes?: {
+    name: string;
+    level: string | null;
+  };
+  school_years?: {
+    label: string;
+  };
+  academic_periods?: {
+    label: string;
+  };
 };
 
 type SubjectsFilters = {
@@ -27,7 +33,7 @@ type SubjectsFilters = {
   teacherId?: string;
 };
 
-// Hook pour récupérer les matières avec filtres
+// Hook pour récupérer les matières avec filtres (architecture normalisée Phase 4A)
 export const useSubjects = (filters: SubjectsFilters) => {
   const { className, schoolYear, semester, teacherId } = filters;
   
@@ -37,23 +43,39 @@ export const useSubjects = (filters: SubjectsFilters) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
       
-      let query = supabase.from('subjects').select('*');
+      let query = supabase
+        .from('subjects')
+        .select(`
+          *,
+          classes!fk_subjects_class(name, level),
+          school_years!fk_subjects_school_year(label),
+          academic_periods!fk_subjects_academic_period(label)
+        `);
       
       // Filtrer par utilisateur si teacherId n'est pas fourni
       if (!teacherId) {
-        query = query.or(`teacher_id.eq.${user.id},teacher_email.eq.${user.email}`);
+        query = query.eq('teacher_id', user.id);
       } else {
         query = query.eq('teacher_id', teacherId);
       }
       
-      if (className) query = query.eq('class_name', className);
-      if (schoolYear) query = query.eq('school_year', schoolYear);
-      if (semester) query = query.eq('semester', semester);
-      
       const { data, error } = await query.order('subject_name');
       
       if (error) throw error;
-      return data as Subject[];
+      
+      // Filtrer côté client pour className/schoolYear/semester
+      let filtered = data || [];
+      if (className) {
+        filtered = filtered.filter((s: any) => s.classes?.[0]?.name === className);
+      }
+      if (schoolYear) {
+        filtered = filtered.filter((s: any) => s.school_years?.[0]?.label === schoolYear);
+      }
+      if (semester) {
+        filtered = filtered.filter((s: any) => s.academic_periods?.[0]?.label === semester);
+      }
+      
+      return filtered as any;
     },
     enabled: !!(className && schoolYear && semester),
   });
@@ -94,24 +116,16 @@ export const useAddSubject = () => {
   });
 };
 
-// Hook pour supprimer une matière
+// Hook pour supprimer une matière (Phase 4A - par ID)
 export const useDeleteSubject = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (params: {
-      className: string;
-      subject: string;
-      schoolYear: string;
-      semester: string;
-    }) => {
+    mutationFn: async (subjectId: string) => {
       const { error } = await supabase
         .from('subjects')
         .delete()
-        .eq('class_name', params.className)
-        .eq('subject_name', params.subject)
-        .eq('school_year', params.schoolYear)
-        .eq('semester', params.semester);
+        .eq('id', subjectId);
       
       if (error) throw error;
     },
