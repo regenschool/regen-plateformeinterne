@@ -701,36 +701,27 @@ export default function Grades() {
 
       let teacherId = user.id;
 
-      // ✅ Vérifier si l'utilisateur existe dans teachers, sinon le créer
-      const { data: existingTeacher } = await supabase
+      // ✅ Récupérer le teachers.id (et non user_id) pour la FK
+      const { data: currentTeacher } = await supabase
         .from('teachers')
-        .select('user_id')
+        .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (!existingTeacher) {
-        // Créer l'entrée dans teachers si elle n'existe pas
-        const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Enseignant';
-        await supabase
-          .from('teachers')
-          .insert({
-            user_id: user.id,
-            full_name: fullName,
-          });
+      if (currentTeacher) {
+        teacherId = currentTeacher.id;
       }
 
-      // Si admin, résoudre le teacher_id depuis le nom du prof
+      // Si admin, résoudre depuis le nom du prof
       if (isAdmin && teacherName) {
         const { data: teacher } = await supabase
           .from('teachers')
-          .select('user_id')
+          .select('id')
           .eq('full_name', teacherName)
           .maybeSingle();
 
         if (teacher) {
-          teacherId = teacher.user_id;
-        } else {
-          console.warn(`Teacher ${teacherName} not found in teachers table, using current user`);
+          teacherId = teacher.id;
         }
       }
 
