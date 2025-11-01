@@ -540,15 +540,28 @@ export default function Grades() {
   const fetchStudents = async () => {
     try {
       setIsLoading(true);
-      // ✅ Utiliser la FK explicite pour éviter l'ambiguïté (PGRST201)
+      
+      // ✅ D'abord récupérer l'ID de la classe sélectionnée
+      const { data: classData } = await supabase
+        .from('classes')
+        .select('id')
+        .eq('name', selectedClass)
+        .maybeSingle();
+      
+      if (!classData) {
+        setStudents([]);
+        setIsLoading(false);
+        return;
+      }
+      
+      // ✅ Filtrer les enrollments par class_id (pas par le JOIN)
       const { data: enrollments, error: enrollError } = await supabase
         .from("student_enrollments")
         .select(`
           student_id, 
-          students!fk_enrollments_student(id, first_name, last_name, photo_url), 
-          classes!fk_enrollments_class(name)
+          students!fk_enrollments_student(id, first_name, last_name, photo_url)
         `)
-        .eq("classes.name", selectedClass);
+        .eq("class_id", classData.id);
 
       if (enrollError) throw enrollError;
 
