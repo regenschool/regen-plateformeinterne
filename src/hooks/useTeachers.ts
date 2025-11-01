@@ -12,7 +12,8 @@ import { toast } from 'sonner';
  */
 
 export type Teacher = {
-  user_id: string; // PRIMARY KEY
+  id: string; // internal teacher id (FK target)
+  user_id: string; // auth user id
   full_name: string;
   created_at: string;
   updated_at: string;

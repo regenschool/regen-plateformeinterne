@@ -165,7 +165,7 @@ export function AddSubjectDialog({ open, onClose, onSubjectAdded }: AddSubjectDi
               </SelectTrigger>
               <SelectContent>
                 {teachers?.map((teacher) => (
-                  <SelectItem key={teacher.user_id} value={teacher.user_id}>
+                  <SelectItem key={teacher.id} value={teacher.id}>
                     {teacher.full_name}
                   </SelectItem>
                 ))}
