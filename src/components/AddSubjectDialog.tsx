@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useSchoolYears, useAcademicPeriods, useClassesReferential } from "@/hooks/useReferentials";
+import { useTeachers } from "@/hooks/useTeachers";
 
 interface AddSubjectDialogProps {
   open: boolean;
@@ -14,90 +16,62 @@ interface AddSubjectDialogProps {
 }
 
 export function AddSubjectDialog({ open, onClose, onSubjectAdded }: AddSubjectDialogProps) {
-  const [teacherEmail, setTeacherEmail] = useState("");
-  const [teacherName, setTeacherName] = useState("");
-  const [schoolYear, setSchoolYear] = useState("");
-  const [semester, setSemester] = useState("");
-  const [className, setClassName] = useState("");
+  const [teacherId, setTeacherId] = useState("");
+  const [schoolYearId, setSchoolYearId] = useState("");
+  const [academicPeriodId, setAcademicPeriodId] = useState("");
+  const [classId, setClassId] = useState("");
   const [subjectName, setSubjectName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!schoolYear || !semester || !className || !subjectName) {
-      toast.error("Veuillez remplir tous les champs obligatoires");
-      return;
-    }
+  const { data: schoolYears } = useSchoolYears(true);
+  const { data: academicPeriods } = useAcademicPeriods(schoolYearId, true);
+  const { data: classes } = useClassesReferential(true);
+  const { data: teachers } = useTeachers();
 
-    if (teacherEmail && !teacherEmail.includes("@")) {
-      toast.error("Veuillez entrer une adresse email valide");
+  // Pré-sélectionner l'année scolaire active
+  useEffect(() => {
+    if (schoolYears && open && !schoolYearId) {
+      const activeYear = schoolYears.find(y => y.is_active);
+      if (activeYear) setSchoolYearId(activeYear.id);
+    }
+  }, [schoolYears, open, schoolYearId]);
+
+  // Pré-sélectionner la période active
+  useEffect(() => {
+    if (academicPeriods && open && schoolYearId && !academicPeriodId) {
+      const activePeriod = academicPeriods.find(p => p.is_active);
+      if (activePeriod) setAcademicPeriodId(activePeriod.id);
+    }
+  }, [academicPeriods, open, schoolYearId, academicPeriodId]);
+
+  const handleSubmit = async () => {
+    if (!schoolYearId || !academicPeriodId || !classId || !subjectName || !teacherId) {
+      toast.error("Veuillez remplir tous les champs obligatoires");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error("Vous devez être connecté");
-        return;
-      }
-
-      // Résoudre le teacher_id depuis l'email si fourni
-      let targetTeacherId = user.id; // Par défaut, l'admin qui crée la matière
-      
-      if (teacherEmail) {
-        // Chercher l'utilisateur avec cet email
-        const { data: teacherUser } = await supabase.rpc('get_user_id_from_email', { 
-          _email: teacherEmail 
-        });
-        
-        if (teacherUser) {
-          targetTeacherId = teacherUser;
-        } else {
-          toast.warning(`Aucun utilisateur trouvé pour ${teacherEmail}, matière assignée à vous-même`);
-        }
-      }
-
-      // Phase 4A: Récupérer les FK correspondantes
-      const { data: classData } = await supabase
-        .from("classes")
-        .select("id")
-        .eq("name", className)
-        .maybeSingle();
-      
-      const { data: schoolYearData } = await supabase
-        .from("school_years")
-        .select("id")
-        .eq("label", schoolYear)
-        .maybeSingle();
-      
-      const { data: academicPeriodData } = await supabase
-        .from("academic_periods")
-        .select("id")
-        .eq("label", semester)
-        .eq("school_year_id", schoolYearData?.id)
-        .maybeSingle();
-
       const { error } = await supabase
         .from("subjects")
-        .insert([{
-          teacher_id: targetTeacherId,
+        .insert({
+          teacher_id: teacherId,
           subject_name: subjectName,
-          class_fk_id: classData?.id || null,
-          school_year_fk_id: schoolYearData?.id || null,
-          academic_period_id: academicPeriodData?.id || null,
-        } as any]);
+          class_fk_id: classId,
+          school_year_fk_id: schoolYearId,
+          academic_period_id: academicPeriodId,
+        });
 
       if (error) throw error;
 
       toast.success("Matière ajoutée avec succès");
       
       // Reset form
-      setTeacherEmail("");
-      setTeacherName("");
-      setSchoolYear("");
-      setSemester("");
-      setClassName("");
+      setTeacherId("");
+      setSchoolYearId("");
+      setAcademicPeriodId("");
+      setClassId("");
       setSubjectName("");
       
       onSubjectAdded();
@@ -122,39 +96,70 @@ export function AddSubjectDialog({ open, onClose, onSubjectAdded }: AddSubjectDi
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="schoolYear">Année scolaire *</Label>
-            <Select value={schoolYear} onValueChange={setSchoolYear}>
+            <Select value={schoolYearId} onValueChange={setSchoolYearId}>
               <SelectTrigger id="schoolYear">
                 <SelectValue placeholder="Sélectionner une année" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="2024-2025">2024-2025</SelectItem>
-                <SelectItem value="2025-2026">2025-2026</SelectItem>
-                <SelectItem value="2026-2027">2026-2027</SelectItem>
+                {schoolYears?.map((year) => (
+                  <SelectItem key={year.id} value={year.id}>
+                    {year.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="semester">Semestre *</Label>
-            <Select value={semester} onValueChange={setSemester}>
+            <Label htmlFor="semester">Période académique *</Label>
+            <Select 
+              value={academicPeriodId} 
+              onValueChange={setAcademicPeriodId}
+              disabled={!schoolYearId}
+            >
               <SelectTrigger id="semester">
-                <SelectValue placeholder="Sélectionner un semestre" />
+                <SelectValue placeholder="Sélectionner une période" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Semestre 1">Semestre 1</SelectItem>
-                <SelectItem value="Semestre 2">Semestre 2</SelectItem>
+                {academicPeriods?.map((period) => (
+                  <SelectItem key={period.id} value={period.id}>
+                    {period.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="className">Classe *</Label>
-            <Input
-              id="className"
-              placeholder="Ex: B3"
-              value={className}
-              onChange={(e) => setClassName(e.target.value)}
-            />
+            <Select value={classId} onValueChange={setClassId}>
+              <SelectTrigger id="className">
+                <SelectValue placeholder="Sélectionner une classe" />
+              </SelectTrigger>
+              <SelectContent>
+                {classes?.map((classItem) => (
+                  <SelectItem key={classItem.id} value={classItem.id}>
+                    {classItem.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="teacher">Enseignant *</Label>
+            <Select value={teacherId} onValueChange={setTeacherId}>
+              <SelectTrigger id="teacher">
+                <SelectValue placeholder="Sélectionner un enseignant" />
+              </SelectTrigger>
+              <SelectContent>
+                {teachers?.map((teacher) => (
+                  <SelectItem key={teacher.user_id} value={teacher.user_id}>
+                    {teacher.full_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -167,27 +172,6 @@ export function AddSubjectDialog({ open, onClose, onSubjectAdded }: AddSubjectDi
               maxLength={60}
             />
             <p className="text-xs text-muted-foreground">{subjectName.length}/60 caractères</p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="teacherEmail">Email de l'enseignant</Label>
-            <Input
-              id="teacherEmail"
-              type="email"
-              placeholder="enseignant@example.com"
-              value={teacherEmail}
-              onChange={(e) => setTeacherEmail(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="teacherName">Nom de l'enseignant</Label>
-            <Input
-              id="teacherName"
-              placeholder="Ex: Dupont"
-              value={teacherName}
-              onChange={(e) => setTeacherName(e.target.value)}
-            />
           </div>
 
           <div className="flex gap-2 justify-end">
