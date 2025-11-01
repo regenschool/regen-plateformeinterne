@@ -38,7 +38,8 @@ export const SubjectsManager = () => {
           *,
           classes!fk_subjects_class(name),
           school_years!fk_subjects_school_year(label),
-          academic_periods!fk_subjects_academic_period(label)
+          academic_periods!fk_subjects_academic_period(label),
+          teachers!fk_subjects_teacher(full_name)
         `)
         .order("created_at", { ascending: false });
 
@@ -139,12 +140,12 @@ export const SubjectsManager = () => {
     const csvContent = [
       headers.join(","),
       ...allSubjects.map(s => [
-        (s as any).school_years?.[0]?.label || "",
-        (s as any).academic_periods?.[0]?.label || "",
-        (s as any).classes?.[0]?.name || "",
+        (s as any).school_years?.label || "",
+        (s as any).academic_periods?.label || "",
+        (s as any).classes?.name || "",
         s.subject_name,
         (s as any).teacher_email || "",
-        (s as any).teacher_name || ""
+        (s as any).teachers?.full_name || ""
       ].map(field => `"${field}"`).join(","))
     ].join("\n");
 
@@ -197,12 +198,12 @@ export const SubjectsManager = () => {
           <TableBody>
             {allSubjects.map((subject) => (
               <TableRow key={subject.id}>
-                <TableCell>{(subject as any).school_years?.[0]?.label || "-"}</TableCell>
-                <TableCell>{(subject as any).academic_periods?.[0]?.label || "-"}</TableCell>
-                <TableCell>{(subject as any).classes?.[0]?.name || "-"}</TableCell>
+                <TableCell>{(subject as any).school_years?.label || "-"}</TableCell>
+                <TableCell>{(subject as any).academic_periods?.label || "-"}</TableCell>
+                <TableCell>{(subject as any).classes?.name || "-"}</TableCell>
                 <TableCell className="font-medium">{subject.subject_name}</TableCell>
                 <TableCell className="text-muted-foreground">
-                  {subject.teacher_name || "-"}
+                  {(subject as any).teachers?.full_name || "-"}
                 </TableCell>
                 <TableCell>
                   <Button 
@@ -257,17 +258,17 @@ export const SubjectsManager = () => {
                   <p className="font-medium text-orange-600">
                     ⚠️ Cette matière contient {gradeCount} note{gradeCount > 1 ? 's' : ''}.
                   </p>
-                  <p>
-                    Voulez-vous supprimer la matière <strong>{deleteSubject?.subject_name}</strong> ({(deleteSubject as any)?.classes?.[0]?.name}, {(deleteSubject as any)?.school_years?.[0]?.label}, {(deleteSubject as any)?.academic_periods?.[0]?.label}) ?
-                  </p>
+                   <p>
+                     Voulez-vous supprimer la matière <strong>{deleteSubject?.subject_name}</strong> ({(deleteSubject as any)?.classes?.name}, {(deleteSubject as any)?.school_years?.label}, {(deleteSubject as any)?.academic_periods?.label}) ?
+                   </p>
                   <p className="text-destructive font-medium">
                     Si vous confirmez, toutes les notes ET évaluations associées seront également supprimées. Cette action est irréversible.
                   </p>
                 </>
               ) : (
-                <p>
-                  Êtes-vous sûr de vouloir supprimer la matière <strong>{deleteSubject?.subject_name}</strong> ({(deleteSubject as any)?.classes?.[0]?.name}, {(deleteSubject as any)?.school_years?.[0]?.label}, {(deleteSubject as any)?.academic_periods?.[0]?.label}) ?
-                </p>
+                 <p>
+                   Êtes-vous sûr de vouloir supprimer la matière <strong>{deleteSubject?.subject_name}</strong> ({(deleteSubject as any)?.classes?.name}, {(deleteSubject as any)?.school_years?.label}, {(deleteSubject as any)?.academic_periods?.label}) ?
+                 </p>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
