@@ -15,6 +15,7 @@ import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 import { useRealtimeGrades } from "@/hooks/useRealtimeGrades";
 import { useAdmin } from "@/contexts/AdminContext";
 import { useGradesNormalized } from "@/hooks/useGradesNormalized";
+import { useSchoolYears, useAcademicPeriods } from "@/hooks/useReferentials";
 import { toast } from "sonner";
 import { ClipboardList, Upload, TrendingUp, FileText, AlertTriangle, Trash2, ArrowLeft, ChevronLeft, ChevronRight, PlusCircle, BookOpen, Eye, EyeOff } from "lucide-react";
 import { OptimizedImage } from "@/components/OptimizedImage";
@@ -222,6 +223,9 @@ export default function Grades() {
   const [selectedSchoolYear, setSelectedSchoolYear] = useState<string>("");
   const [selectedSemester, setSelectedSemester] = useState<string>("");
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
+  // ✅ Ajout des IDs pour année scolaire et période académique
+  const [selectedSchoolYearId, setSelectedSchoolYearId] = useState<string>("");
+  const [selectedSemesterId, setSelectedSemesterId] = useState<string>("");
   const [classes, setClasses] = useState<string[]>([]);
   const [subjects, setSubjects] = useState<TeacherSubject[]>([]);
   const [showBulkImport, setShowBulkImport] = useState(false);
@@ -243,6 +247,10 @@ export default function Grades() {
   const [currentCompletionIndex, setCurrentCompletionIndex] = useState<number>(0);
   const [mySubjects, setMySubjects] = useState<TeacherSubject[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
+
+  // ✅ Utiliser les hooks pour récupérer les référentiels
+  const { data: schoolYearsData = [] } = useSchoolYears();
+  const { data: academicPeriodsData = [] } = useAcademicPeriods(selectedSchoolYearId);
 
   // Utiliser le hook normalisé pour récupérer les notes
   const { data: gradesData = [], isLoading: gradesLoading } = useGradesNormalized({
@@ -292,18 +300,15 @@ export default function Grades() {
     }
   }, [location.state, location.search, location.key]);
 
-  const currentYear = new Date().getFullYear();
-  const schoolYears = [
-    `${currentYear - 1}-${currentYear}`,
-    `${currentYear}-${currentYear + 1}`,
-    `${currentYear + 1}-${currentYear + 2}`,
-  ];
+  const queryClient = useQueryClient();
   
-  const semesters = [
-    { value: "Semestre 1", label: t("grades.semester1") },
-    { value: "Semestre 2", label: t("grades.semester2") },
-    { value: "Année complète", label: t("grades.fullYear") },
-  ];
+  // ✅ Utiliser les données des référentiels au lieu de labels statiques
+  const schoolYears = schoolYearsData.map(sy => sy.label);
+  const semesters = academicPeriodsData.map(ap => ({
+    value: ap.label,
+    label: ap.label,
+    id: ap.id
+  }));
 
   useEffect(() => {
     fetchClasses();
@@ -373,6 +378,9 @@ export default function Grades() {
     setSelectedSemester(subject.semester);
     setSelectedSubject(subject.subject_name);
     setSelectedSubjectId(subject.id);
+    // ✅ Stocker les IDs aussi
+    setSelectedSchoolYearId(subject.school_year_fk_id || '');
+    setSelectedSemesterId(subject.academic_period_id || '');
     setNewSubjectMetadata({
       teacherName: subject.teacher_name || '',
       schoolYear: subject.school_year || '',
@@ -991,7 +999,15 @@ export default function Grades() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">{t("grades.schoolYear")}</label>
-                <Select value={selectedSchoolYear} onValueChange={setSelectedSchoolYear}>
+                <Select value={selectedSchoolYear} onValueChange={(value) => {
+                  setSelectedSchoolYear(value);
+                  // ✅ Trouver l'ID correspondant
+                  const sy = schoolYearsData.find(y => y.label === value);
+                  setSelectedSchoolYearId(sy?.id || '');
+                  // Réinitialiser le semestre car il dépend de l'année
+                  setSelectedSemester('');
+                  setSelectedSemesterId('');
+                }}>
                   <SelectTrigger data-testid="school-year-select">
                     <SelectValue placeholder={t("grades.selectSchoolYear")} />
                   </SelectTrigger>
@@ -1007,7 +1023,12 @@ export default function Grades() {
 
               <div>
                 <label className="text-sm font-medium mb-2 block">{t("grades.semester")}</label>
-                <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+                <Select value={selectedSemester} onValueChange={(value) => {
+                  setSelectedSemester(value);
+                  // ✅ Trouver l'ID correspondant
+                  const ap = academicPeriodsData.find(p => p.label === value);
+                  setSelectedSemesterId(ap?.id || '');
+                }} disabled={!selectedSchoolYear}>
                   <SelectTrigger data-testid="semester-select">
                     <SelectValue placeholder={t("grades.selectSemester")} />
                   </SelectTrigger>
@@ -1556,6 +1577,8 @@ export default function Grades() {
         onSubjectCreated={handleSubjectCreated}
         defaultSchoolYear={selectedSchoolYear}
         defaultSemester={selectedSemester}
+        defaultSchoolYearId={selectedSchoolYearId}
+        defaultSemesterId={selectedSemesterId}
         className={selectedClass}
       />
       </div>

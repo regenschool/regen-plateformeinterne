@@ -58,6 +58,8 @@ type NewSubjectDialogProps = {
   onSubjectCreated: (subject: string, teacherName: string, schoolYear: string, semester: string, schoolYearId?: string, academicPeriodId?: string) => void;
   defaultSchoolYear?: string;
   defaultSemester?: string;
+  defaultSchoolYearId?: string;
+  defaultSemesterId?: string;
   className?: string;
 };
 
@@ -67,6 +69,8 @@ export const NewSubjectDialog = ({
   onSubjectCreated, 
   defaultSchoolYear, 
   defaultSemester,
+  defaultSchoolYearId,
+  defaultSemesterId,
   className 
 }: NewSubjectDialogProps) => {
   const { t } = useLanguage();
@@ -128,9 +132,16 @@ export const NewSubjectDialog = ({
     }
   }, [open, isAdmin]);
 
-  // Set default school year from props or active year (with fuzzy matching)
+  // Set default school year from props or active year
   useEffect(() => {
     if (schoolYears && open) {
+      // ✅ Si on a l'ID depuis les props, l'utiliser directement
+      if (defaultSchoolYearId) {
+        setSchoolYearId(defaultSchoolYearId);
+        return;
+      }
+
+      // Sinon, faire le matching par label
       const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
       const sanitize = (s: string) => norm(s).replace(/\s+/g, '').replace(/[\/]/g, '-');
 
@@ -140,7 +151,6 @@ export const NewSubjectDialog = ({
           setSchoolYearId(exact.id);
           return;
         }
-        // Fuzzy: handle 2024-2025 vs 2024/2025 or extra text
         const wanted = sanitize(defaultSchoolYear);
         const fuzzy = schoolYears.find(y => sanitize(y.label).includes(wanted) || wanted.includes(sanitize(y.label)));
         if (fuzzy) {
@@ -157,14 +167,20 @@ export const NewSubjectDialog = ({
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schoolYears, defaultSchoolYear, open]);
+  }, [schoolYears, defaultSchoolYear, defaultSchoolYearId, open]);
 
   // Set default academic period from props or active period
   useEffect(() => {
     if (academicPeriods && schoolYearId && open) {
+      // ✅ Si on a l'ID depuis les props, l'utiliser directement
+      if (defaultSemesterId) {
+        setAcademicPeriodId(defaultSemesterId);
+        return;
+      }
+
       console.log("🔍 Matching semester:", { defaultSemester, academicPeriods });
       
-      // Try to match the provided defaultSemester first
+      // Sinon, essayer le matching par label
       const matchedId = findMatchingPeriodId(defaultSemester, academicPeriods);
       console.log("📌 Matched period ID:", matchedId);
       
@@ -185,7 +201,7 @@ export const NewSubjectDialog = ({
         setAcademicPeriodId(academicPeriods[0].id);
       }
     }
-  }, [academicPeriods, schoolYearId, defaultSemester, open]);
+  }, [academicPeriods, schoolYearId, defaultSemester, defaultSemesterId, open]);
 
   const handleCreateNewTeacher = async () => {
     if (!newTeacherEmail || !newTeacherFullName) {
