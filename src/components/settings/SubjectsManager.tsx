@@ -34,9 +34,13 @@ export const SubjectsManager = () => {
     try {
       const { data, error } = await supabase
         .from("subjects")
-        .select("*")
-        .order("school_year", { ascending: false })
-        .order("class_name");
+        .select(`
+          *,
+          classes!fk_subjects_class(name),
+          school_years!fk_subjects_school_year(label),
+          academic_periods!fk_subjects_academic_period(label)
+        `)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       setAllSubjects(data || []);
@@ -135,9 +139,9 @@ export const SubjectsManager = () => {
     const csvContent = [
       headers.join(","),
       ...allSubjects.map(s => [
-        s.school_year,
-        s.semester,
-        s.class_name,
+        (s as any).school_years?.[0]?.label || "",
+        (s as any).academic_periods?.[0]?.label || "",
+        (s as any).classes?.[0]?.name || "",
         s.subject_name,
         (s as any).teacher_email || "",
         (s as any).teacher_name || ""
@@ -193,9 +197,9 @@ export const SubjectsManager = () => {
           <TableBody>
             {allSubjects.map((subject) => (
               <TableRow key={subject.id}>
-                <TableCell>{subject.school_year}</TableCell>
-                <TableCell>{subject.semester}</TableCell>
-                <TableCell>{subject.class_name}</TableCell>
+                <TableCell>{(subject as any).school_years?.[0]?.label || "-"}</TableCell>
+                <TableCell>{(subject as any).academic_periods?.[0]?.label || "-"}</TableCell>
+                <TableCell>{(subject as any).classes?.[0]?.name || "-"}</TableCell>
                 <TableCell className="font-medium">{subject.subject_name}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {subject.teacher_name || "-"}
@@ -254,7 +258,7 @@ export const SubjectsManager = () => {
                     ⚠️ Cette matière contient {gradeCount} note{gradeCount > 1 ? 's' : ''}.
                   </p>
                   <p>
-                    Voulez-vous supprimer la matière <strong>{deleteSubject?.subject_name}</strong> ({deleteSubject?.class_name}, {deleteSubject?.school_year}, {deleteSubject?.semester}) ?
+                    Voulez-vous supprimer la matière <strong>{deleteSubject?.subject_name}</strong> ({(deleteSubject as any)?.classes?.[0]?.name}, {(deleteSubject as any)?.school_years?.[0]?.label}, {(deleteSubject as any)?.academic_periods?.[0]?.label}) ?
                   </p>
                   <p className="text-destructive font-medium">
                     Si vous confirmez, toutes les notes ET évaluations associées seront également supprimées. Cette action est irréversible.
@@ -262,7 +266,7 @@ export const SubjectsManager = () => {
                 </>
               ) : (
                 <p>
-                  Êtes-vous sûr de vouloir supprimer la matière <strong>{deleteSubject?.subject_name}</strong> ({deleteSubject?.class_name}, {deleteSubject?.school_year}, {deleteSubject?.semester}) ?
+                  Êtes-vous sûr de vouloir supprimer la matière <strong>{deleteSubject?.subject_name}</strong> ({(deleteSubject as any)?.classes?.[0]?.name}, {(deleteSubject as any)?.school_years?.[0]?.label}, {(deleteSubject as any)?.academic_periods?.[0]?.label}) ?
                 </p>
               )}
             </AlertDialogDescription>
