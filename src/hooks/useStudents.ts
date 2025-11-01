@@ -108,19 +108,43 @@ export const useAddStudent = () => {
   
   return useMutation({
     mutationFn: async (studentInput: Record<string, any>) => {
-      const { school_year_id, ...studentData } = studentInput;
+      const { class_name, school_year_id, ...studentData } = studentInput;
       
-      // 1. Créer l'étudiant (avec class_name pour compatibilité)
+      // 1. ✅ Créer l'étudiant (SANS class_name qui n'existe plus)
       const { data: newStudent, error: studentError } = await (supabase as any)
         .from('students')
-        .insert([studentData])
+        .insert([{
+          first_name: studentData.first_name,
+          last_name: studentData.last_name,
+          photo_url: studentData.photo_url,
+          birth_date: studentData.birth_date,
+          special_needs: studentData.special_needs,
+        }])
         .select()
         .single();
       
       if (studentError) throw studentError;
       
-      // 2. Création enrollment désactivée temporairement
-      // Les enrollments seront gérés via un hook dédié useEnrollments
+      // 2. ✅ Créer l'enrollment si class_name et school_year_id fournis
+      if (class_name && school_year_id) {
+        // Récupérer l'ID de la classe
+        const { data: classData } = await supabase
+          .from('classes')
+          .select('id')
+          .eq('name', class_name)
+          .maybeSingle();
+        
+        if (classData) {
+          await supabase.from('student_enrollments').insert({
+            student_id: newStudent.id,
+            school_year_id: school_year_id,
+            class_id: classData.id,
+            class_name: class_name,
+            academic_background: studentData.academic_background || null,
+            company: studentData.company || null,
+          });
+        }
+      }
       
       return newStudent;
     },
@@ -142,19 +166,66 @@ export const useUpdateStudent = () => {
   
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
+      const { class_name, school_year_id, academic_background, company, ...studentUpdates } = updates;
+      
+      // 1. ✅ Mettre à jour l'étudiant (SANS class_name)
       const { data, error} = await supabase
         .from('students')
-        .update(updates)
+        .update(studentUpdates)
         .eq('id', id)
         .select()
         .single();
       
       if (error) throw error;
+      
+      // 2. ✅ Mettre à jour l'enrollment si class_name fourni
+      if (class_name && school_year_id) {
+        const { data: classData } = await supabase
+          .from('classes')
+          .select('id')
+          .eq('name', class_name)
+          .maybeSingle();
+        
+        if (classData) {
+          // Chercher l'enrollment existant
+          const { data: existingEnrollment } = await supabase
+            .from('student_enrollments')
+            .select('id')
+            .eq('student_id', id)
+            .eq('school_year_id', school_year_id)
+            .maybeSingle();
+          
+          if (existingEnrollment) {
+            // Mettre à jour
+            await supabase
+              .from('student_enrollments')
+              .update({
+                class_id: classData.id,
+                class_name: class_name,
+                academic_background: academic_background || null,
+                company: company || null,
+              })
+              .eq('id', existingEnrollment.id);
+          } else {
+            // Créer
+            await supabase.from('student_enrollments').insert({
+              student_id: id,
+              school_year_id: school_year_id,
+              class_id: classData.id,
+              class_name: class_name,
+              academic_background: academic_background || null,
+              company: company || null,
+            });
+          }
+        }
+      }
+      
       return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['students', data.id] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['enrollments'] });
       toast.success('Étudiant mis à jour');
     },
     onError: (error: any) => {

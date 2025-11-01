@@ -129,13 +129,12 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
   };
 
   const handleGradeClick = (grade: any) => {
-    // Naviguer vers la page de saisie des notes avec TOUS les filtres pré-remplis
-    // Les données subject_name, class_name, etc. viennent du JOIN avec subjects
+    // ✅ Naviguer vers la page de saisie des notes avec les données des JOINs
     const params = new URLSearchParams({
       subject: grade.subjects?.subject_name || '',
-      class: grade.subjects?.class_name || '',
-      schoolYear: grade.subjects?.school_year || '',
-      semester: grade.subjects?.semester || '',
+      class: grade.subjects?.classes?.[0]?.name || '',
+      schoolYear: grade.subjects?.school_years?.[0]?.label || '',
+      semester: grade.subjects?.academic_periods?.[0]?.label || '',
     });
     navigate(`/grades?${params.toString()}`);
   };

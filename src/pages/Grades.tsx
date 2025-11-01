@@ -532,10 +532,14 @@ export default function Grades() {
   const fetchStudents = async () => {
     try {
       setIsLoading(true);
-      // Get students via enrollments for the selected class
+      // ✅ Spécifier la FK explicite pour éviter l'ambiguïté
       const { data: enrollments, error: enrollError } = await supabase
         .from("student_enrollments")
-        .select("student_id, students(id, first_name, last_name, photo_url), classes!inner(name)")
+        .select(`
+          student_id, 
+          students(id, first_name, last_name, photo_url), 
+          classes!fk_enrollments_class(name)
+        `)
         .eq("classes.name", selectedClass);
 
       if (enrollError) throw enrollError;
@@ -696,45 +700,20 @@ export default function Grades() {
       if (!user) return;
 
       let teacherId = user.id;
-      let teacherEmail = user.email;
-      let teacherFkId = null;
 
-      if (isAdmin) {
+      // ✅ Si admin, résoudre le teacher_id depuis le nom du prof
+      if (isAdmin && teacherName) {
         const { data: teacher } = await supabase
           .from('teachers')
-          .select('user_id, full_name')
+          .select('user_id')
           .eq('full_name', teacherName)
           .maybeSingle();
 
         if (teacher) {
           teacherId = teacher.user_id;
-          teacherFkId = teacher.user_id;
-          
-          const { data: profile } = await supabase
-            .from('teacher_profiles')
-            .select('email')
-            .eq('user_id', teacher.user_id)
-            .maybeSingle();
-          
-          teacherEmail = profile?.email;
-        }
-      } else {
-        const { data: teacher } = await supabase
-          .from('teachers')
-          .select('user_id, full_name')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (teacher) {
-          teacherFkId = teacher.user_id;
-          
-          const { data: profile } = await supabase
-            .from('teacher_profiles')
-            .select('email')
-            .eq('user_id', teacher.user_id)
-            .maybeSingle();
-          
-          teacherEmail = profile?.email;
+        } else {
+          // Si le prof n'existe pas dans teachers, utiliser l'admin actuel
+          console.warn(`Teacher ${teacherName} not found in teachers table, using admin`);
         }
       }
 
@@ -747,7 +726,6 @@ export default function Grades() {
       
       const { data: newSubjectData, error } = await supabase.from("subjects").insert({
         teacher_id: teacherId,
-        teacher_fk_id: teacherFkId,
         subject_name: subject,
         school_year_fk_id: schoolYearId,
         academic_period_id: academicPeriodId,
