@@ -696,6 +696,17 @@ export default function Grades() {
     academicPeriodId?: string
   ) => {
     try {
+      // ✅ Validation des IDs requis
+      if (!schoolYearId) {
+        toast.error("L'année scolaire est requise");
+        return;
+      }
+
+      if (!academicPeriodId) {
+        toast.error("La période académique est requise");
+        return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -725,22 +736,35 @@ export default function Grades() {
         }
       }
 
-      // Phase 4A: Récupérer les ID de FK
+      // Phase 4A: Récupérer les ID de FK pour la classe
       const { data: classData } = await supabase
         .from('classes')
         .select('id')
         .eq('name', selectedClass)
         .maybeSingle();
       
+      console.log("📝 Creating subject with:", {
+        teacher_id: teacherId,
+        subject_name: subject,
+        school_year_fk_id: schoolYearId,
+        academic_period_id: academicPeriodId,
+        class_fk_id: classData?.id || null,
+      });
+
       const { data: newSubjectData, error } = await supabase.from("subjects").insert({
         teacher_id: teacherId,
         subject_name: subject,
         school_year_fk_id: schoolYearId,
         academic_period_id: academicPeriodId,
         class_fk_id: classData?.id || null,
-      } as any).select().single();
+      }).select().single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Error creating subject:", error);
+        throw error;
+      }
+
+      console.log("✅ Subject created:", newSubjectData);
 
       setSelectedSubject(subject);
       setSelectedSubjectId(newSubjectData.id);
@@ -751,7 +775,7 @@ export default function Grades() {
       fetchSubjects();
     } catch (error: any) {
       console.error("Error creating subject:", error);
-      toast.error("Erreur lors de la création de la matière");
+      toast.error("Erreur lors de la création de la matière: " + (error.message || "Erreur inconnue"));
     }
   };
 
