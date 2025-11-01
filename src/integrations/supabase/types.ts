@@ -1605,14 +1605,14 @@ export type Database = {
           {
             foreignKeyName: "fk_subject_weights_subject"
             columns: ["subject_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "subject_weights_subject_id_fkey"
             columns: ["subject_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "subjects"
             referencedColumns: ["id"]
           },
