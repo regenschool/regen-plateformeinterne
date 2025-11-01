@@ -532,12 +532,12 @@ export default function Grades() {
   const fetchStudents = async () => {
     try {
       setIsLoading(true);
-      // ✅ Spécifier la FK explicite pour éviter l'ambiguïté
+      // ✅ Utiliser la FK explicite pour éviter l'ambiguïté (PGRST201)
       const { data: enrollments, error: enrollError } = await supabase
         .from("student_enrollments")
         .select(`
           student_id, 
-          students(id, first_name, last_name, photo_url), 
+          students!fk_enrollments_student(id, first_name, last_name, photo_url), 
           classes!fk_enrollments_class(name)
         `)
         .eq("classes.name", selectedClass);
@@ -701,7 +701,25 @@ export default function Grades() {
 
       let teacherId = user.id;
 
-      // ✅ Si admin, résoudre le teacher_id depuis le nom du prof
+      // ✅ Vérifier si l'utilisateur existe dans teachers, sinon le créer
+      const { data: existingTeacher } = await supabase
+        .from('teachers')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!existingTeacher) {
+        // Créer l'entrée dans teachers si elle n'existe pas
+        const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Enseignant';
+        await supabase
+          .from('teachers')
+          .insert({
+            user_id: user.id,
+            full_name: fullName,
+          });
+      }
+
+      // Si admin, résoudre le teacher_id depuis le nom du prof
       if (isAdmin && teacherName) {
         const { data: teacher } = await supabase
           .from('teachers')
@@ -712,8 +730,7 @@ export default function Grades() {
         if (teacher) {
           teacherId = teacher.user_id;
         } else {
-          // Si le prof n'existe pas dans teachers, utiliser l'admin actuel
-          console.warn(`Teacher ${teacherName} not found in teachers table, using admin`);
+          console.warn(`Teacher ${teacherName} not found in teachers table, using current user`);
         }
       }
 
