@@ -37,7 +37,7 @@ type Student = {
   first_name: string;
   last_name: string;
   photo_url: string | null;
-  class_name: string;
+  // ✅ class_name supprimée - récupérée via student_enrollments
 };
 
 // Utiliser directement le type GradeNormalized
@@ -403,18 +403,16 @@ export default function Grades() {
 
   const fetchClasses = async () => {
     try {
+      // ✅ Récupérer les classes depuis la table classes au lieu de students.class_name
       const { data, error } = await supabase
-        .from("students")
-        .select("class_name")
-        .order("class_name");
+        .from('classes')
+        .select('name')
+        .eq('is_active', true)
+        .order('name');
       
       if (error) throw error;
       
-      if (data) {
-        // Get classes via enrollments
-        const { data: classes } = await supabase.from('classes').select('name').eq('is_active', true);
-        setClasses(classes?.map(c => c.name) || []);
-      }
+      setClasses(data?.map(c => c.name) || []);
     } catch (error) {
       console.error("Error fetching classes:", error);
       toast.error(t("grades.loadError") || "Erreur lors du chargement des classes");

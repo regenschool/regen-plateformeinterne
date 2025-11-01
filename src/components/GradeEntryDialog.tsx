@@ -21,7 +21,7 @@ type Student = {
   id: string;
   first_name: string;
   last_name: string;
-  class_name: string;
+  // ✅ class_name supprimée - pas utilisée dans ce composant
 };
 
 type GradeEntryDialogProps = {
