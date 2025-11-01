@@ -44,6 +44,17 @@ export function AddSubjectDialog({ open, onClose, onSubjectAdded }: AddSubjectDi
     }
   }, [academicPeriods, open, schoolYearId, academicPeriodId]);
 
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setTeacherId("");
+      setSchoolYearId("");
+      setAcademicPeriodId("");
+      setClassId("");
+      setSubjectName("");
+    }
+  }, [open]);
+
   const handleSubmit = async () => {
     if (!schoolYearId || !academicPeriodId || !classId || !subjectName || !teacherId) {
       toast.error("Veuillez remplir tous les champs obligatoires");
