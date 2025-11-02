@@ -339,6 +339,18 @@ export default function Grades() {
         return;
       }
 
+      // ✅ Utiliser teacher_fk_id au lieu de teacher_id (avec FK vers teachers)
+      const { data: teacherData } = await supabase
+        .from("teachers")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!teacherData) {
+        console.warn("Aucun profil enseignant trouvé pour cet utilisateur");
+        return;
+      }
+
       const { data, error } = await supabase
         .from("subjects")
         .select(`
@@ -349,9 +361,12 @@ export default function Grades() {
           class_fk_id,
           classes!fk_subjects_class(name, level),
           school_years!fk_subjects_school_year(label),
-          academic_periods!fk_subjects_academic_period(label)
+          academic_periods!fk_subjects_academic_period(label),
+          teachers!fk_subjects_teacher(full_name)
         `)
-        .eq("teacher_id", user.id)
+        .eq("teacher_fk_id", teacherData.id)  // ✅ Utiliser la FK
+        .eq("is_active", true)
+        .is("deleted_at", null)
         .order("subject_name");
 
       if (error) throw error;
@@ -360,10 +375,10 @@ export default function Grades() {
       const mapped = (data || []).map((s: any) => ({
         id: s.id,
         subject_name: s.subject_name,
-        class_name: s.classes?.[0]?.name || '',
-        school_year: s.school_years?.[0]?.label || currentYear.label,
-        semester: s.academic_periods?.[0]?.label || '',
-        teacher_name: user.email?.split('@')[0] || '',
+        class_name: s.classes?.name || '',
+        school_year: s.school_years?.label || currentYear.label,
+        semester: s.academic_periods?.label || '',
+        teacher_name: s.teachers?.full_name || '',  // ✅ Récupéré via JOIN
         school_year_fk_id: s.school_year_fk_id,
         academic_period_id: s.academic_period_id,
       }));
@@ -434,8 +449,6 @@ export default function Grades() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const userEmail = user.email;
-
       // ✅ Phase 4A: Récupération via FK avec JOIN
       // Récupérer les IDs des référentiels
       const { data: schoolYearData } = await supabase
@@ -467,16 +480,19 @@ export default function Grades() {
         .select(`
           id,
           subject_name,
-          teacher_id,
+          teacher_fk_id,
           school_year_fk_id,
           academic_period_id,
           class_fk_id,
           classes!fk_subjects_class(name),
           school_years!fk_subjects_school_year(label),
-          academic_periods!fk_subjects_academic_period(label)
+          academic_periods!fk_subjects_academic_period(label),
+          teachers!fk_subjects_teacher(full_name)
         `)
         .eq("class_fk_id", classData.id)
-        .eq("school_year_fk_id", schoolYearData.id);
+        .eq("school_year_fk_id", schoolYearData.id)
+        .eq("is_active", true)
+        .is("deleted_at", null);
 
       if (academicPeriodData) {
         query = query.eq("academic_period_id", academicPeriodData.id);
@@ -484,7 +500,15 @@ export default function Grades() {
 
       // Les enseignants ne naviguent que dans leurs propres matières
       if (!isAdmin) {
-        query = query.eq('teacher_id', user.id);
+        const { data: teacherData } = await supabase
+          .from("teachers")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (teacherData) {
+          query = query.eq('teacher_fk_id', teacherData.id);  // ✅ Utiliser la FK
+        }
       }
 
       const { data, error } = await query.order('subject_name');
@@ -496,10 +520,10 @@ export default function Grades() {
         const mapped = (data || []).map((s: any) => ({
           id: s.id,
           subject_name: s.subject_name,
-          class_name: s.classes?.[0]?.name || selectedClass,
-          school_year: s.school_years?.[0]?.label || selectedSchoolYear,
-          semester: s.academic_periods?.[0]?.label || selectedSemester,
-          teacher_name: userEmail?.split('@')[0] || '',
+          class_name: s.classes?.name || selectedClass,
+          school_year: s.school_years?.label || selectedSchoolYear,
+          semester: s.academic_periods?.label || selectedSemester,
+          teacher_name: s.teachers?.full_name || '',  // ✅ Récupéré via JOIN
           school_year_fk_id: s.school_year_fk_id,
           academic_period_id: s.academic_period_id,
         }));
@@ -514,9 +538,9 @@ export default function Grades() {
         if (subjectToCheck && currentSubjectExists) {
           setSelectedSubjectId(currentSubjectExists.id);
           setNewSubjectMetadata({
-            teacherName: (currentSubjectExists as any).teacher_name || '',
-            schoolYear: (currentSubjectExists as any).school_year || '',
-            semester: (currentSubjectExists as any).semester || '',
+            teacherName: (currentSubjectExists as any).teachers?.full_name || '',
+            schoolYear: (currentSubjectExists as any).school_years?.label || '',
+            semester: (currentSubjectExists as any).academic_periods?.label || '',
           });
         } else if (subjectToCheck && !currentSubjectExists) {
           setSelectedSubject("");
@@ -1155,78 +1179,65 @@ export default function Grades() {
 
 {selectedClass && selectedSubject && selectedSubject !== "__new__" && selectedSchoolYear && selectedSemester && selectedSubjectId && (
         <div className="space-y-6">
-          {/* Header élégant de la matière */}
+          {/* ✅ Bandeau unique simplifié avec toutes les infos */}
           <Card className="border-primary/30 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div className="space-y-1">
+                <div className="space-y-1.5 flex-1">
                   <CardTitle className="text-2xl font-bold flex items-center gap-3">
                     <BookOpen className="w-7 h-7 text-primary" />
                     {selectedSubject}
                   </CardTitle>
-                  <CardDescription className="text-base">
-                    {selectedClass} • {selectedSchoolYear} • {selectedSemester}
-                  </CardDescription>
-                </div>
-                {newSubjectMetadata && (
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Enseignant</p>
-                    <p className="font-medium">{newSubjectMetadata.teacherName}</p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-2 text-sm mt-3">
+                    {newSubjectMetadata?.teacherName && (
+                      <div>
+                        <span className="text-muted-foreground block mb-0.5">Enseignant</span>
+                        <p className="font-semibold text-foreground">{newSubjectMetadata.teacherName}</p>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-muted-foreground block mb-0.5">Année scolaire</span>
+                      <p className="font-semibold text-foreground">{selectedSchoolYear}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block mb-0.5">Semestre</span>
+                      <p className="font-semibold text-foreground">{selectedSemester}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block mb-0.5">Classe</span>
+                      <p className="font-semibold text-foreground">{selectedClass}</p>
+                    </div>
                   </div>
-                )}
+                </div>
+                <div className="flex items-center gap-2 ml-4">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" title="Supprimer la matière">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Supprimer la matière</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Êtes-vous sûr de vouloir supprimer la matière "{selectedSubject}" ? 
+                          Toutes les notes associées seront également supprimées. Cette action est irréversible.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteSubject} className="bg-destructive hover:bg-destructive/90">
+                          Supprimer
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
             </CardHeader>
           </Card>
 
           <>
-            {newSubjectMetadata && (
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-medium mb-2">{t("grades.subjectInfo")}</h3>
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">{t("grades.teacher")}:</span>
-                          <p className="font-medium">{newSubjectMetadata.teacherName}</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">{t("grades.schoolYear")}:</span>
-                          <p className="font-medium">{newSubjectMetadata.schoolYear}</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">{t("grades.semester")}:</span>
-                          <p className="font-medium">{newSubjectMetadata.semester}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Supprimer la matière</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Êtes-vous sûr de vouloir supprimer la matière "{selectedSubject}" ? 
-                            Toutes les notes associées seront également supprimées. Cette action est irréversible.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Annuler</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleDeleteSubject} className="bg-destructive hover:bg-destructive/90">
-                            Supprimer
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {/* Bouton pour créer une nouvelle épreuve */}
             <div className="flex gap-2">
               <Button 
