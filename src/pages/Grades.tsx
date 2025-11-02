@@ -880,6 +880,11 @@ export default function Grades() {
 
       if (error) throw error;
 
+      // 🔄 Rafraîchir les données et recalculer
+      await queryClient.invalidateQueries({ queryKey: ['grades-normalized'] });
+      // recalcul local (optionnel, l'effet sur gradesData prendra le relais)
+      // setAssessments(prev => prev.filter(a => getAssessmentKeyFromAssessment({ name: a.name, type: a.type, customLabel: a.customLabel }) !== selKey));
+
       toast.success(`Épreuve "${assessment.name}" supprimée avec ${gradesToDelete.length} note(s)`);
     } catch (error) {
       console.error("Error deleting assessment:", error);
