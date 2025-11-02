@@ -23,6 +23,8 @@ export type GradeNormalized = {
   created_at: string;
   teacher_id: string;
   is_absent?: boolean;
+  is_active?: boolean;
+  deleted_at?: string | null;
   // Relations enrichies via JOIN
   subjects?: {
     subject_name: string;

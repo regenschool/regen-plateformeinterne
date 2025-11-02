@@ -582,9 +582,14 @@ export default function Grades() {
   };
 
   const calculateAssessments = (allGrades: Grade[]) => {
+    // ✅ Filtrer uniquement les grades actifs et non supprimés
+    const activeGrades = allGrades.filter(g => g.is_active && !g.deleted_at);
+    
+    console.log('🔍 calculateAssessments - Total grades:', allGrades.length, 'Active grades:', activeGrades.length, 'Students:', students.length);
+    
     const assessmentMap = new Map<string, Assessment>();
     
-    allGrades.forEach(grade => {
+    activeGrades.forEach(grade => {
       const key = grade.assessment_name || 
                   (grade.assessment_type === "autre" 
                     ? `${grade.assessment_type}_${grade.assessment_custom_label}`
@@ -606,7 +611,7 @@ export default function Grades() {
     
     assessmentMap.forEach((assessment, key) => {
       const studentsWithThisGrade = new Set(
-        allGrades
+        activeGrades
           .filter(g => {
             const gradeKey = g.assessment_name || 
                            (g.assessment_type === "autre" 
@@ -618,13 +623,15 @@ export default function Grades() {
       ).size;
       
       assessment.studentsWithGrades = studentsWithThisGrade;
+      console.log(`📊 Assessment "${assessment.name}": ${studentsWithThisGrade}/${students.length} étudiants`);
     });
     
     setAssessments(Array.from(assessmentMap.values()));
   };
 
   const getStudentGrades = (studentId: string) => {
-    return gradesData.filter(g => g.student_id === studentId);
+    // ✅ Filtrer uniquement les grades actifs
+    return gradesData.filter(g => g.student_id === studentId && g.is_active && !g.deleted_at);
   };
 
   const calculateWeightedAverage = (studentGrades: Grade[]) => {
@@ -652,8 +659,11 @@ export default function Grades() {
       };
     }
 
+    // ✅ Filtrer uniquement les grades actifs
+    const activeGrades = gradesData.filter(g => g.is_active && !g.deleted_at);
+
     const assessments = new Map();
-    gradesData.forEach(grade => {
+    activeGrades.forEach(grade => {
       const key = grade.assessment_name || 
                   (grade.assessment_type === "autre" 
                     ? `${grade.assessment_type}_${grade.assessment_custom_label}`
