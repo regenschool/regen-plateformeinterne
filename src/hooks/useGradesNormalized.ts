@@ -25,122 +25,36 @@ export type GradeNormalized = {
   is_absent?: boolean;
   is_active?: boolean;
   deleted_at?: string | null;
-  // Relations enrichies via JOIN
+  // Relations enrichies via JOIN sur subjects
   subjects?: {
     subject_name: string;
-    class_name: string;
-    school_year: string;
-    semester: string;
-    teacher_name: string;
+    classes: { name: string };
+    school_years: { label: string };
+    academic_periods: { label: string };
   };
-  // Propriétés de compatibilité pour EditGradeDialog (mappées depuis subjects)
+  // Propriétés de compatibilité mappées
   subject?: string;
-  teacher_name?: string | null;
+  class_name?: string;
   school_year?: string | null;
   semester?: string | null;
 };
 
 type GradesNormalizedFilters = {
   subject_id?: string;
-  className?: string;
-  subject?: string;
-  schoolYear?: string;
-  semester?: string;
   teacherId?: string;
 };
 
 /**
  * Hook pour récupérer les notes avec JOIN sur subjects
- * Utilise subject_id pour des requêtes optimisées
+ * Architecture normalisée - Utilise subject_id uniquement
  */
 export const useGradesNormalized = (filters: GradesNormalizedFilters = {}) => {
-  const { subject_id, className, subject, schoolYear, semester, teacherId } = filters;
+  const { subject_id, teacherId } = filters;
   
   return useQuery({
-    queryKey: ['grades-normalized', subject_id, className, subject, schoolYear, semester, teacherId],
+    queryKey: ['grades-normalized', subject_id, teacherId],
     queryFn: async () => {
-      console.log('🔍 useGradesNormalized - Fetching grades with:', { subject_id, className, subject, schoolYear, semester });
-      let query = supabase
-        .from('grades')
-        .select(`
-          *,
-          subjects!fk_grades_subject (
-            subject_name,
-            classes!fk_subjects_class(name),
-            school_years!fk_subjects_school_year(label),
-            academic_periods!fk_subjects_academic_period(label)
-          )
-        `);
-      
-      // Filtrage direct via subject_id si fourni
-      if (subject_id) {
-        query = query.eq('subject_id', subject_id);
-      }
-      
-      // Filtrage via JOIN sur subjects
-      if (className || subject || schoolYear || semester) {
-        query = query.not('subjects', 'is', null);
-      }
-      
-      if (teacherId) query = query.eq('teacher_id', teacherId);
-      
-      const { data, error } = await query.order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      // Filtrer côté client si besoin (via JOINs)
-      let filteredData = data as any[];
-      
-      if (className) {
-        filteredData = filteredData.filter(g => g.subjects?.classes?.[0]?.name === className);
-      }
-      if (subject) {
-        filteredData = filteredData.filter(g => g.subjects?.subject_name === subject);
-      }
-      if (schoolYear) {
-        filteredData = filteredData.filter(g => g.subjects?.school_years?.[0]?.label === schoolYear);
-      }
-      if (semester) {
-        filteredData = filteredData.filter(g => g.subjects?.academic_periods?.[0]?.label === semester);
-      }
-      
-      // Mapper les données pour compatibilité avec les anciens composants
-      const mappedData = filteredData.map(grade => ({
-        ...grade,
-        subject: grade.subjects?.subject_name,
-        teacher_name: null, // Plus disponible, sera récupéré si besoin
-        school_year: grade.subjects?.school_years?.[0]?.label || null,
-        semester: grade.subjects?.academic_periods?.[0]?.label || null,
-      }));
-      
-      console.log('✅ useGradesNormalized - Fetched', mappedData.length, 'grades');
-      return mappedData;
-    },
-    enabled: !!subject_id,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 5 * 60 * 1000,
-  });
-};
-
-/**
- * Hook pour récupérer les notes d'un étudiant avec JOIN
- */
-export const useStudentGradesNormalized = (
-  studentId: string, 
-  filters?: Omit<GradesNormalizedFilters, 'teacherId'>
-) => {
-  return useQuery({
-    queryKey: ['grades-normalized', 'student', studentId, filters],
-    queryFn: async () => {
-      // ✅ Récupérer l'ID utilisateur pour vérifier si c'est un enseignant/admin
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user?.id || '')
-        .maybeSingle();
-      
-      const isTeacherOrAdmin = roles?.role === 'teacher' || roles?.role === 'admin';
+      console.log('🔍 useGradesNormalized - Fetching grades with:', { subject_id, teacherId });
       
       let query = supabase
         .from('grades')
@@ -153,73 +67,111 @@ export const useStudentGradesNormalized = (
             academic_periods!fk_subjects_academic_period(label)
           )
         `)
-        .eq('student_id', studentId);
+        .eq('is_active', true)
+        .is('deleted_at', null);
+      
+      if (subject_id) {
+        query = query.eq('subject_id', subject_id);
+      }
+      
+      if (teacherId) {
+        query = query.eq('teacher_id', teacherId);
+      }
       
       const { data, error } = await query.order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      let filteredData = data as any[];
-      
-      // ✅ Si ce n'est pas un enseignant/admin, filtrer uniquement les notes visibles
-      if (!isTeacherOrAdmin) {
-        // Récupérer les assessments visibles pour cet étudiant
-        const { data: assessmentsData } = await supabase
-          .from('assessments')
-          .select('assessment_name, subject_id')
-          .eq('is_visible_to_students', true);
-        
-        const visibleKeys = new Set(
-          (assessmentsData || []).map(a => `${a.subject_id}_${a.assessment_name}`)
-        );
-        
-        // Filtrer les notes selon les assessments visibles
-        filteredData = filteredData.filter((grade: any) => 
-          visibleKeys.has(`${grade.subject_id}_${grade.assessment_name}`)
-        );
-      }
-      
-      if (filters?.className) {
-        filteredData = filteredData.filter(g => g.subjects?.classes?.[0]?.name === filters.className);
-      }
-      if (filters?.subject) {
-        filteredData = filteredData.filter(g => g.subjects?.subject_name === filters.subject);
-      }
-      if (filters?.schoolYear) {
-        filteredData = filteredData.filter(g => g.subjects?.school_years?.[0]?.label === filters.schoolYear);
-      }
-      if (filters?.semester) {
-        filteredData = filteredData.filter(g => g.subjects?.academic_periods?.[0]?.label === filters.semester);
-      }
-      
-      // Mapper pour compatibilité
-      return filteredData.map(grade => ({
+      // Mapper pour compatibilité avec composants existants
+      const mappedData = (data || []).map(grade => ({
         ...grade,
         subject: grade.subjects?.subject_name,
-        teacher_name: null,
-        school_year: grade.subjects?.school_years?.[0]?.label || null,
-        semester: grade.subjects?.academic_periods?.[0]?.label || null,
+        class_name: grade.subjects?.classes?.name,
+        school_year: grade.subjects?.school_years?.label || null,
+        semester: grade.subjects?.academic_periods?.label || null,
       }));
+      
+      console.log('✅ useGradesNormalized - Fetched', mappedData.length, 'grades');
+      return mappedData;
     },
-    enabled: !!studentId,
+    enabled: !!subject_id,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 };
 
 /**
- * Utilitaire pour récupérer subject_id depuis les métadonnées
- * Permet la transition progressive depuis l'ancien système
+ * Hook pour récupérer les notes d'un étudiant
+ * Utilise la vue v_student_visible_grades pour filtrer automatiquement selon le rôle
  */
-export const getSubjectId = async (params: {
-  subjectName: string;
-  className: string;
-  schoolYear: string;
-  semester: string;
-  teacherId: string;
-}): Promise<string | null> => {
-  // Phase 4A: Plus de colonnes dénormalisées, cette fonction est obsolète
-  console.warn('getSubjectId is deprecated - use direct subject_id instead');
-  return null;
+export const useStudentGradesNormalized = (
+  studentId: string
+) => {
+  return useQuery({
+    queryKey: ['grades-normalized', 'student', studentId],
+    queryFn: async () => {
+      // ✅ Récupérer le rôle de l'utilisateur connecté
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user?.id || '')
+        .maybeSingle();
+      
+      const isTeacherOrAdmin = roles?.role === 'teacher' || roles?.role === 'admin';
+      
+      const { data: gradesData, error: gradesError } = await supabase
+        .from('grades')
+        .select(`
+          *,
+          subjects!fk_grades_subject (
+            subject_name,
+            classes!fk_subjects_class(name),
+            school_years!fk_subjects_school_year(label),
+            academic_periods!fk_subjects_academic_period(label)
+          )
+        `)
+        .eq('student_id', studentId)
+        .eq('is_active', true)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
+      
+      if (gradesError) throw gradesError;
+      
+      let filteredGrades = gradesData || [];
+      
+      // ✅ Si étudiant : filtrer selon visibilité
+      if (!isTeacherOrAdmin) {
+        const { data: assessments } = await supabase
+          .from('assessments')
+          .select('subject_id, assessment_name, assessment_type, teacher_id')
+          .eq('is_visible_to_students', true)
+          .eq('is_active', true)
+          .is('deleted_at', null);
+        
+        const visibleKeys = new Set(
+          (assessments || []).map(a => `${a.subject_id}_${a.assessment_name}_${a.assessment_type}_${a.teacher_id}`)
+        );
+        
+        filteredGrades = filteredGrades.filter(g => 
+          visibleKeys.has(`${g.subject_id}_${g.assessment_name}_${g.assessment_type}_${g.teacher_id}`)
+        );
+      }
+      
+      return filteredGrades.map(grade => ({
+        ...grade,
+        subject: grade.subjects?.subject_name,
+        class_name: grade.subjects?.classes?.name,
+        school_year: grade.subjects?.school_years?.label || null,
+        semester: grade.subjects?.academic_periods?.label || null,
+      }));
+    },
+    enabled: !!studentId,
+    staleTime: 1 * 60 * 1000,
+  });
 };
+
+// ✅ Fonction getSubjectId supprimée - migration complète vers subject_id
 
 /**
  * Hook pour ajouter une note avec subject_id
