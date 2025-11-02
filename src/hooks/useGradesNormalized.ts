@@ -69,8 +69,7 @@ export const useGradesNormalized = (filters: GradesNormalizedFilters = {}) => {
             classes!fk_subjects_class(name),
             school_years!fk_subjects_school_year(label),
             academic_periods!fk_subjects_academic_period(label)
-          ),
-          assessments!inner(is_visible_to_students)
+          )
         `);
       
       // Filtrage direct via subject_id si fourni
