@@ -256,6 +256,8 @@ export default function Grades() {
   const { data: gradesData = [], isLoading: gradesLoading } = useGradesNormalized({
     subject_id: selectedSubjectId || undefined,
   });
+  
+  console.log('📊 Grades.tsx - selectedSubjectId:', selectedSubjectId, 'gradesData.length:', gradesData.length, 'students.length:', students.length);
 
   // Real-time subscription pour les notes via subject_id
   useRealtimeGrades(selectedSubjectId || undefined);
@@ -407,7 +409,7 @@ export default function Grades() {
     } else {
       setAssessments([]);
     }
-  }, [gradesData, students.length]);
+  }, [gradesData]);
 
   const fetchClasses = async () => {
     try {
