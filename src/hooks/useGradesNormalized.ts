@@ -57,6 +57,7 @@ export const useGradesNormalized = (filters: GradesNormalizedFilters = {}) => {
   return useQuery({
     queryKey: ['grades-normalized', subject_id, className, subject, schoolYear, semester, teacherId],
     queryFn: async () => {
+      console.log('🔍 useGradesNormalized - Fetching grades with:', { subject_id, className, subject, schoolYear, semester });
       let query = supabase
         .from('grades')
         .select(`
@@ -102,15 +103,18 @@ export const useGradesNormalized = (filters: GradesNormalizedFilters = {}) => {
       }
       
       // Mapper les données pour compatibilité avec les anciens composants
-      return filteredData.map(grade => ({
+      const mappedData = filteredData.map(grade => ({
         ...grade,
         subject: grade.subjects?.subject_name,
         teacher_name: null, // Plus disponible, sera récupéré si besoin
         school_year: grade.subjects?.school_years?.[0]?.label || null,
         semester: grade.subjects?.academic_periods?.[0]?.label || null,
       }));
+      
+      console.log('✅ useGradesNormalized - Fetched', mappedData.length, 'grades');
+      return mappedData;
     },
-    enabled: !!(subject_id || (className && subject && schoolYear && semester)),
+    enabled: !!subject_id,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
