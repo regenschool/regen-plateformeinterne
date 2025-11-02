@@ -1418,11 +1418,11 @@ export default function Grades() {
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
+                            <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Supprimer l'épreuve</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Êtes-vous sûr de vouloir supprimer l'épreuve "{assessment.name}" ? 
+                                  Êtes-vous sûr de vouloir supprimer l'épreuve &quot;{assessment.name}&quot; ? 
                                   Toutes les notes associées ({assessment.studentsWithGrades} note(s)) seront supprimées. 
                                   Cette action est irréversible.
                                 </AlertDialogDescription>
