@@ -209,12 +209,9 @@ export const GradeEntryDialog = ({
       assessment_type: assessmentType as "participation_individuelle" | "oral_groupe" | "oral_individuel" | "ecrit_groupe" | "ecrit_individuel" | "memoire" | "autre",
       assessment_custom_label: assessmentType === "autre" ? customLabel.trim() : null,
       grade: isAbsent ? 0 : parseFloat(grade),
-      max_grade: isAbsent ? parseFloat(maxGrade) : parseFloat(maxGrade),
+      max_grade: parseFloat(maxGrade),
       weighting: parseFloat(weighting),
       appreciation: appreciation.trim() || null,
-      teacher_name: subjectMetadata?.teacherName || null,
-      school_year: subjectMetadata?.schoolYear || null,
-      semester: subjectMetadata?.semester || null,
       is_absent: isAbsent,
     };
 

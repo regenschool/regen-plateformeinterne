@@ -801,6 +801,8 @@ export default function Grades() {
   };
 
   const handleGradeUpdated = () => {
+    // Rafraîchir la liste des notes et des matières
+    queryClient.invalidateQueries({ queryKey: ['grades-normalized'] });
     fetchSubjects();
   };
 
