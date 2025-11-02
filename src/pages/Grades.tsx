@@ -129,33 +129,28 @@ const PublishAssessmentButton = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Utilisateur non authentifié');
 
-      if (!assessmentData) {
-        // Aucune ligne d'épreuve existante: on la crée et on publie directement
-        const insertPayload: any = {
-          assessment_name: assessmentName,
-          assessment_type: assessmentType,
-          assessment_custom_label: assessmentCustomLabel,
-          subject_id: subjectId,
-          subject: subjectName,
-          class_name: className,
-          school_year: schoolYear,
-          semester,
-          teacher_id: user.id,
-          teacher_name: teacherName || null,
-          total_students: totalStudents,
-          graded_students: studentsWithGrades,
-          is_complete: studentsWithGrades >= totalStudents,
-          weighting: 1,
-          max_grade: 20,
-          is_visible_to_students: true, // publication initiale
-          visibility_changed_at: new Date().toISOString(),
-          visibility_changed_by: user.id,
-        };
-        const { error: insertError } = await supabase
-          .from('assessments')
-          .insert(insertPayload);
-        if (insertError) throw insertError;
-      } else {
+        if (!assessmentData) {
+          // Aucune ligne d'épreuve existante: on la crée et on publie directement
+          const insertPayload: any = {
+            assessment_name: assessmentName,
+            assessment_type: assessmentType,
+            assessment_custom_label: assessmentCustomLabel,
+            subject_id: subjectId,
+            teacher_id: user.id,
+            total_students: totalStudents,
+            graded_students: studentsWithGrades,
+            is_complete: studentsWithGrades >= totalStudents,
+            weighting: 1,
+            max_grade: 20,
+            is_visible_to_students: true, // publication initiale
+            visibility_changed_at: new Date().toISOString(),
+            visibility_changed_by: user.id,
+          };
+          const { error: insertError } = await supabase
+            .from('assessments')
+            .insert(insertPayload);
+          if (insertError) throw insertError;
+        } else {
         // Ligne existante: toggle visibilité
         const newVisibility = !assessmentData.is_visible_to_students;
         const { error: updateError } = await supabase
@@ -409,7 +404,7 @@ export default function Grades() {
     } else {
       setAssessments([]);
     }
-  }, [gradesData]);
+  }, [gradesData, students.length]);
 
   const fetchClasses = async () => {
     try {
@@ -550,25 +545,34 @@ export default function Grades() {
         .eq('name', selectedClass)
         .maybeSingle();
       
-      if (!classData) {
+      // ✅ Récupérer l'ID de l'année scolaire sélectionnée pour éviter les doublons
+      const { data: syData } = await supabase
+        .from('school_years')
+        .select('id')
+        .eq('label', selectedSchoolYear)
+        .maybeSingle();
+      
+      if (!classData || !syData) {
         setStudents([]);
         setIsLoading(false);
         return;
       }
       
-      // ✅ Filtrer les enrollments par class_id (pas par le JOIN)
+      // ✅ Filtrer les enrollments par class_id ET school_year_id et dédupliquer les étudiants
       const { data: enrollments, error: enrollError } = await supabase
         .from("student_enrollments")
         .select(`
           student_id, 
           students!fk_enrollments_student(id, first_name, last_name, photo_url)
         `)
-        .eq("class_id", classData.id);
+        .eq("class_id", classData.id)
+        .eq("school_year_id", syData.id);
 
       if (enrollError) throw enrollError;
 
-      const students = enrollments?.map(e => (e as any).students).filter(Boolean) || [];
-      setStudents(students);
+      const mapped = enrollments?.map(e => (e as any).students).filter(Boolean) || [];
+      const uniqueById = Array.from(new Map(mapped.map((s: any) => [s.id, s])).values());
+      setStudents(uniqueById as Student[]);
     } catch (error) {
       console.error("Error fetching students:", error);
       toast.error("Erreur lors du chargement des étudiants");
