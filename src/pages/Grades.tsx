@@ -581,20 +581,32 @@ export default function Grades() {
     }
   };
 
+  // Helpers clés d'épreuve (normalisation robuste nom/type)
+  const norm = (s?: string | null) => (s ? s.replace(/\s+/g, '').toLowerCase() : '');
+  const getAssessmentKeyFromGrade = (g: Grade) => {
+    const name = norm(g.assessment_name || (g.assessment_type === 'autre' ? g.assessment_custom_label : null));
+    if (name) return `name:${name}`;
+    if (g.assessment_type === 'autre') return `type:autre|label:${norm(g.assessment_custom_label)}`;
+    return `type:${g.assessment_type}`;
+  };
+  const getAssessmentKeyFromAssessment = (a: { name: string; type: string; customLabel: string | null; }) => {
+    const name = norm(a.name || (a.type === 'autre' ? a.customLabel : null));
+    if (name) return `name:${name}`;
+    if (a.type === 'autre') return `type:autre|label:${norm(a.customLabel)}`;
+    return `type:${a.type}`;
+  };
+
   const calculateAssessments = (allGrades: Grade[]) => {
     // ✅ Filtrer uniquement les grades actifs et non supprimés
-    const activeGrades = allGrades.filter(g => g.is_active && !g.deleted_at);
+    const activeGrades = allGrades.filter(g => (g as any).is_active !== false && !(g as any).deleted_at);
     
     console.log('🔍 calculateAssessments - Total grades:', allGrades.length, 'Active grades:', activeGrades.length, 'Students:', students.length);
     
     const assessmentMap = new Map<string, Assessment>();
     
+    // Créer une entrée pour chaque clé d'épreuve rencontrée
     activeGrades.forEach(grade => {
-      const key = grade.assessment_name || 
-                  (grade.assessment_type === "autre" 
-                    ? `${grade.assessment_type}_${grade.assessment_custom_label}`
-                    : grade.assessment_type);
-      
+      const key = getAssessmentKeyFromGrade(grade);
       if (!assessmentMap.has(key)) {
         assessmentMap.set(key, {
           name: grade.assessment_name || 
@@ -609,16 +621,11 @@ export default function Grades() {
       }
     });
     
+    // Compter le nombre d'élèves notés par clé d'épreuve (dédupliqué par élève)
     assessmentMap.forEach((assessment, key) => {
       const studentsWithThisGrade = new Set(
         activeGrades
-          .filter(g => {
-            const gradeKey = g.assessment_name || 
-                           (g.assessment_type === "autre" 
-                             ? `${g.assessment_type}_${g.assessment_custom_label}`
-                             : g.assessment_type);
-            return gradeKey === key;
-          })
+          .filter(g => getAssessmentKeyFromGrade(g) === key)
           .map(g => g.student_id)
       ).size;
       
@@ -660,14 +667,11 @@ export default function Grades() {
     }
 
     // ✅ Filtrer uniquement les grades actifs
-    const activeGrades = gradesData.filter(g => g.is_active && !g.deleted_at);
+    const activeGrades = gradesData.filter(g => (g as any).is_active !== false && !(g as any).deleted_at);
 
     const assessments = new Map();
     activeGrades.forEach(grade => {
-      const key = grade.assessment_name || 
-                  (grade.assessment_type === "autre" 
-                    ? `${grade.assessment_type}_${grade.assessment_custom_label}`
-                    : grade.assessment_type);
+      const key = getAssessmentKeyFromGrade(grade);
       
       if (!assessments.has(key)) {
         assessments.set(key, {
@@ -861,21 +865,8 @@ export default function Grades() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const gradesToDelete = gradesData.filter(g => {
-        const gradeKey = g.assessment_name || 
-                        (g.assessment_type === "autre" 
-                          ? `${g.assessment_type}_${g.assessment_custom_label}`
-                          : g.assessment_type);
-        const assessmentKey = assessment.name === (assessment.type === "autre" 
-          ? assessment.customLabel 
-          : assessment.type.replace(/_/g, ' '))
-          ? (assessment.type === "autre" 
-              ? `${assessment.type}_${assessment.customLabel}`
-              : assessment.type)
-          : assessment.name;
-        
-        return gradeKey === assessmentKey || g.assessment_name === assessment.name;
-      });
+      const selKey = getAssessmentKeyFromAssessment({ name: assessment.name, type: assessment.type, customLabel: assessment.customLabel });
+      const gradesToDelete = gradesData.filter(g => getAssessmentKeyFromGrade(g) === selKey);
 
       if (gradesToDelete.length === 0) {
         toast.error("Aucune note à supprimer");
@@ -1306,13 +1297,10 @@ export default function Grades() {
                             type: assessment.type,
                             customLabel: assessment.customLabel || null,
                           };
+                          const selKey = getAssessmentKeyFromAssessment(sel);
                           const missing = students.filter((st) => {
-                            const sg = gradesData.filter((g) => g.student_id === st.id);
-                            return !sg.some((g) => {
-                              const gradeKey = g.assessment_name || (g.assessment_type === "autre" ? `${g.assessment_type}_${g.assessment_custom_label}` : g.assessment_type);
-                              const assessmentKey = sel.name || (sel.type === "autre" ? `${sel.type}_${sel.customLabel || ""}` : sel.type);
-                              return gradeKey === assessmentKey || g.assessment_name === sel.name;
-                            });
+                            const sg = gradesData.filter((g) => g.student_id === st.id && (g as any).is_active !== false && !(g as any).deleted_at);
+                            return !sg.some((g) => getAssessmentKeyFromGrade(g) === selKey);
                           });
                           if (missing.length === 0) {
                             toast.info("Toutes les notes sont déjà saisies pour cette épreuve");
@@ -1331,13 +1319,10 @@ export default function Grades() {
                               type: assessment.type,
                               customLabel: assessment.customLabel || null,
                             };
+                            const selKey = getAssessmentKeyFromAssessment(sel);
                             const missing = students.filter((st) => {
-                              const sg = gradesData.filter((g) => g.student_id === st.id);
-                              return !sg.some((g) => {
-                                const gradeKey = g.assessment_name || (g.assessment_type === "autre" ? `${g.assessment_type}_${g.assessment_custom_label}` : g.assessment_type);
-                                const assessmentKey = sel.name || (sel.type === "autre" ? `${sel.type}_${sel.customLabel || ""}` : sel.type);
-                                return gradeKey === assessmentKey || g.assessment_name === sel.name;
-                              });
+                              const sg = gradesData.filter((g) => g.student_id === st.id && (g as any).is_active !== false && !(g as any).deleted_at);
+                              return !sg.some((g) => getAssessmentKeyFromGrade(g) === selKey);
                             });
                             if (missing.length === 0) {
                               toast.info("Toutes les notes sont déjà saisies pour cette épreuve");
