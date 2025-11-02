@@ -37,6 +37,7 @@ export type GradeNormalized = {
   class_name?: string;
   school_year?: string | null;
   semester?: string | null;
+  teacher_name?: string | null;  // Optionnel - nécessite JOIN manuel si besoin
 };
 
 type GradesNormalizedFilters = {
@@ -89,6 +90,7 @@ export const useGradesNormalized = (filters: GradesNormalizedFilters = {}) => {
         class_name: grade.subjects?.classes?.name,
         school_year: grade.subjects?.school_years?.label || null,
         semester: grade.subjects?.academic_periods?.label || null,
+        teacher_name: null,  // ℹ️ Pas de FK grades→teachers, utiliser teacher_id si besoin
       }));
       
       console.log('✅ useGradesNormalized - Fetched', mappedData.length, 'grades');
@@ -164,6 +166,7 @@ export const useStudentGradesNormalized = (
         class_name: grade.subjects?.classes?.name,
         school_year: grade.subjects?.school_years?.label || null,
         semester: grade.subjects?.academic_periods?.label || null,
+        teacher_name: null,  // ℹ️ Pas de FK grades→teachers, utiliser teacher_id si besoin
       }));
     },
     enabled: !!studentId,
