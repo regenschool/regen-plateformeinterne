@@ -4,14 +4,13 @@ import { toast } from 'sonner';
 
 type Subject = {
   id: string;
-  teacher_id: string;
+  teacher_fk_id: string;  // ✅ teacher_id supprimée, utiliser teacher_fk_id
   subject_name: string;
   created_at: string;
   updated_at: string;
   // FK normalisées (architecture Phase 4A)
   school_year_fk_id: string | null;
   academic_period_id: string | null;
-  teacher_fk_id: string | null;
   class_fk_id: string | null;
   // Relations JOINées
   classes?: {
@@ -23,6 +22,9 @@ type Subject = {
   };
   academic_periods?: {
     label: string;
+  };
+  teachers?: {
+    full_name: string;
   };
 };
 
@@ -43,21 +45,27 @@ export const useSubjects = (filters: SubjectsFilters) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Non authentifié');
       
+      // ✅ Récupérer le teachers.id depuis l'user_id
+      const { data: teacherData } = await supabase
+        .from('teachers')
+        .select('id')
+        .eq('user_id', teacherId || user.id)
+        .maybeSingle();
+
+      if (!teacherData) {
+        return [];
+      }
+
       let query = supabase
         .from('subjects')
         .select(`
           *,
           classes!fk_subjects_class(name, level),
           school_years!fk_subjects_school_year(label),
-          academic_periods!fk_subjects_academic_period(label)
-        `);
-      
-      // Filtrer par utilisateur si teacherId n'est pas fourni
-      if (!teacherId) {
-        query = query.eq('teacher_id', user.id);
-      } else {
-        query = query.eq('teacher_id', teacherId);
-      }
+          academic_periods!fk_subjects_academic_period(label),
+          teachers!fk_subjects_teacher(full_name)
+        `)
+        .eq('teacher_fk_id', teacherData.id);  // ✅ Utiliser teacher_fk_id
       
       const { data, error } = await query.order('subject_name');
       

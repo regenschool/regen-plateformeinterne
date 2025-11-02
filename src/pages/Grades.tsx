@@ -818,7 +818,7 @@ export default function Grades() {
         .maybeSingle();
       
       console.log("📝 Creating subject with:", {
-        teacher_id: teacherId,
+        teacher_fk_id: teacherId,  // ✅ Utiliser teacher_fk_id
         subject_name: subject,
         school_year_fk_id: schoolYearId,
         academic_period_id: academicPeriodId,
@@ -826,7 +826,7 @@ export default function Grades() {
       });
 
       const { data: newSubjectData, error } = await supabase.from("subjects").insert({
-        teacher_id: teacherId,
+        teacher_fk_id: teacherId,  // ✅ Utiliser teacher_fk_id
         subject_name: subject,
         school_year_fk_id: schoolYearId,
         academic_period_id: academicPeriodId,

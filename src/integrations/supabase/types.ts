@@ -1629,8 +1629,7 @@ export type Database = {
           is_active: boolean | null
           school_year_fk_id: string | null
           subject_name: string
-          teacher_fk_id: string | null
-          teacher_id: string
+          teacher_fk_id: string
           updated_at: string
         }
         Insert: {
@@ -1643,8 +1642,7 @@ export type Database = {
           is_active?: boolean | null
           school_year_fk_id?: string | null
           subject_name: string
-          teacher_fk_id?: string | null
-          teacher_id: string
+          teacher_fk_id: string
           updated_at?: string
         }
         Update: {
@@ -1657,8 +1655,7 @@ export type Database = {
           is_active?: boolean | null
           school_year_fk_id?: string | null
           subject_name?: string
-          teacher_fk_id?: string | null
-          teacher_id?: string
+          teacher_fk_id?: string
           updated_at?: string
         }
         Relationships: [

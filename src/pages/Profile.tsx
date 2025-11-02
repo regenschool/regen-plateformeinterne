@@ -288,9 +288,20 @@ const Profile = () => {
         
         setSubjects(mapped || []);
       } else {
-        // Mode enseignant : voir seulement ses matières (assignées via email ou créées par lui)
+        // Mode enseignant : voir seulement ses matières (assignées via teacher_fk_id)
         const { data: userData } = await supabase.auth.getUser();
-        const userEmail = userData.user?.email;
+        
+        // ✅ Récupérer le teachers.id depuis l'user_id
+        const { data: teacherData } = await supabase
+          .from('teachers')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (!teacherData) {
+          setSubjects([]);
+          return;
+        }
 
         const { data, error } = await supabase
           .from("subjects")
@@ -298,9 +309,10 @@ const Profile = () => {
             *,
             classes!fk_subjects_class(name),
             school_years!fk_subjects_school_year(label),
-            academic_periods!fk_subjects_academic_period(label)
+            academic_periods!fk_subjects_academic_period(label),
+            teachers!fk_subjects_teacher(full_name)
           `)
-          .eq('teacher_id', userId);
+          .eq('teacher_fk_id', teacherData.id);  // ✅ Utiliser teacher_fk_id
 
         if (error) throw error;
         
