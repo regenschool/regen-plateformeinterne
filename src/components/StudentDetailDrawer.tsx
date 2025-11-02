@@ -29,18 +29,39 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
   const [isEditingInfo, setIsEditingInfo] = useState(false);
   const [editedStudent, setEditedStudent] = useState<any>(null);
 
+  // ✅ Récupérer l'étudiant avec son enrollment actif pour afficher la classe
   const { data: student, isLoading } = useQuery({
     queryKey: ["student", studentId],
     queryFn: async () => {
       if (!studentId) return null;
-      const { data, error } = await supabase
+      
+      // Récupérer l'étudiant
+      const { data: studentData, error: studentError } = await supabase
         .from("students")
         .select("*")
         .eq("id", studentId)
         .single();
 
-      if (error) throw error;
-      return data;
+      if (studentError) throw studentError;
+      
+      // Récupérer l'enrollment actif avec la classe
+      const { data: enrollmentData } = await supabase
+        .from("student_enrollments")
+        .select(`
+          class_name,
+          classes!student_enrollments_class_id_fkey(name)
+        `)
+        .eq("student_id", studentId)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      // Enrichir les données de l'étudiant avec la classe
+      return {
+        ...studentData,
+        class_name: enrollmentData?.classes?.name || enrollmentData?.class_name || null
+      };
     },
     enabled: !!studentId,
   });
@@ -160,7 +181,7 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
                   </SheetTitle>
                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <span className="inline-block w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                    {(student as any).class?.name || '-'}
+                    {(student as any).class_name || '-'}
                   </p>
                 </div>
                 <Button
@@ -258,7 +279,7 @@ export const StudentDetailDrawer = ({ studentId, onClose }: StudentDetailDrawerP
                       </div>
                       <div className="space-y-1 group">
                         <Label className="text-xs text-muted-foreground group-hover:text-primary transition-colors">Classe</Label>
-                        <p className="font-medium">{(student as any).class?.name || '-'}</p>
+                        <p className="font-medium">{(student as any).class_name || '-'}</p>
                       </div>
                       <div className="space-y-1 group">
                         <Label className="text-xs text-muted-foreground group-hover:text-primary transition-colors">Date de naissance</Label>

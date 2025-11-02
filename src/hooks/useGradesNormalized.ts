@@ -69,7 +69,8 @@ export const useGradesNormalized = (filters: GradesNormalizedFilters = {}) => {
             classes!fk_subjects_class(name),
             school_years!fk_subjects_school_year(label),
             academic_periods!fk_subjects_academic_period(label)
-          )
+          ),
+          assessments!inner(is_visible_to_students)
         `);
       
       // Filtrage direct via subject_id si fourni
@@ -132,6 +133,16 @@ export const useStudentGradesNormalized = (
   return useQuery({
     queryKey: ['grades-normalized', 'student', studentId, filters],
     queryFn: async () => {
+      // ✅ Récupérer l'ID utilisateur pour vérifier si c'est un enseignant/admin
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user?.id || '')
+        .maybeSingle();
+      
+      const isTeacherOrAdmin = roles?.role === 'teacher' || roles?.role === 'admin';
+      
       let query = supabase
         .from('grades')
         .select(`
@@ -150,6 +161,24 @@ export const useStudentGradesNormalized = (
       if (error) throw error;
       
       let filteredData = data as any[];
+      
+      // ✅ Si ce n'est pas un enseignant/admin, filtrer uniquement les notes visibles
+      if (!isTeacherOrAdmin) {
+        // Récupérer les assessments visibles pour cet étudiant
+        const { data: assessmentsData } = await supabase
+          .from('assessments')
+          .select('assessment_name, subject_id')
+          .eq('is_visible_to_students', true);
+        
+        const visibleKeys = new Set(
+          (assessmentsData || []).map(a => `${a.subject_id}_${a.assessment_name}`)
+        );
+        
+        // Filtrer les notes selon les assessments visibles
+        filteredData = filteredData.filter((grade: any) => 
+          visibleKeys.has(`${grade.subject_id}_${grade.assessment_name}`)
+        );
+      }
       
       if (filters?.className) {
         filteredData = filteredData.filter(g => g.subjects?.classes?.[0]?.name === filters.className);

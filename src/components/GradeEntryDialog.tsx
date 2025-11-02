@@ -69,10 +69,14 @@ export const GradeEntryDialog = ({
   preselectedAssessment, 
   onAssessmentDeselected, 
   openExternal,
-  studentsToComplete,
+  studentsToComplete: initialStudents,
   currentStudentIndex,
   onNavigateStudent 
 }: GradeEntryDialogProps) => {
+  // ✅ Trier les étudiants par ordre alphabétique du nom de famille
+  const studentsToComplete = initialStudents ? [...initialStudents].sort((a, b) => 
+    (a.last_name || '').localeCompare(b.last_name || '')
+  ) : undefined;
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [existingAssessments, setExistingAssessments] = useState<Array<{name: string, type: string, customLabel: string | null}>>([]);

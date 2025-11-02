@@ -54,7 +54,11 @@ const weightingOptions = [
   "0.5", "1", "1.5", "2", "2.5", "3", "3.5", "4", "4.5", "5"
 ];
 
-export const BulkGradeImport = ({ students, classname, subject, subjectId, subjectMetadata, onClose, onImportComplete }: BulkGradeImportProps) => {
+export const BulkGradeImport = ({ students: initialStudents, classname, subject, subjectId, subjectMetadata, onClose, onImportComplete }: BulkGradeImportProps) => {
+  // ✅ Trier les étudiants par ordre alphabétique du nom de famille
+  const students = [...initialStudents].sort((a, b) => 
+    (a.last_name || '').localeCompare(b.last_name || '')
+  );
   const [assessmentName, setAssessmentName] = useState("");
   const [assessmentType, setAssessmentType] = useState("");
   const [customLabel, setCustomLabel] = useState("");

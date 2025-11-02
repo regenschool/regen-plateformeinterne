@@ -96,7 +96,7 @@ const PublishAssessmentButton = ({
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Utiliser TanStack Query pour récupérer les données de l'épreuve
+  // Utiliser TanStack Query pour récupérer les données de l'épreuve (avec is_visible_to_students)
   const { data: assessmentData } = useQuery({
     queryKey: ['assessment-visibility', subjectId, assessmentName, subjectName, className, schoolYear, semester],
     queryFn: async () => {
@@ -120,8 +120,13 @@ const PublishAssessmentButton = ({
     
     // ✅ Empêcher la publication si l'épreuve n'est pas complète
     if (!isComplete && !assessmentData?.is_visible_to_students) {
-      toast.error("❌ Impossible de publier : l'épreuve n'est pas complète");
+      toast.error("❌ Impossible de publier : l'épreuve n'est pas complète (toutes les notes doivent être saisies)");
       return;
+    }
+    
+    // ✅ Si l'épreuve était publiée mais n'est plus complète, on la dépublie automatiquement
+    if (!isComplete && assessmentData?.is_visible_to_students) {
+      toast.warning("⚠️ L'épreuve n'est plus complète, elle sera automatiquement dépubliée");
     }
     
     setIsLoading(true);
@@ -572,7 +577,11 @@ export default function Grades() {
 
       const mapped = enrollments?.map(e => (e as any).students).filter(Boolean) || [];
       const uniqueById = Array.from(new Map(mapped.map((s: any) => [s.id, s])).values());
-      setStudents(uniqueById as Student[]);
+      // ✅ Trier par ordre alphabétique du nom de famille
+      const sorted = uniqueById.sort((a: any, b: any) => 
+        (a.last_name || '').localeCompare(b.last_name || '')
+      );
+      setStudents(sorted as Student[]);
     } catch (error) {
       console.error("Error fetching students:", error);
       toast.error("Erreur lors du chargement des étudiants");
