@@ -284,6 +284,24 @@ export function ImportSubjectsDialog({ open, onClose, onImportComplete }: Import
           ap.label === subject.semester && ap.school_year_id === schoolYearFk?.id
         );
 
+        // ✅ Convertir user_id en teachers.id pour teacher_fk_id
+        let teacherFkId: string | null = null;
+        if (targetTeacherId) {
+          const { data: teacherRecord } = await supabase
+            .from('teachers')
+            .select('id')
+            .eq('user_id', targetTeacherId)
+            .maybeSingle();
+          
+          teacherFkId = teacherRecord?.id || null;
+        }
+
+        if (!teacherFkId) {
+          toast.error(`Enseignant non trouvé pour la matière ${subject.subject_name}`);
+          skippedCount++;
+          continue;
+        }
+
         const existing = existingSubjects?.find(
           (s) =>
             s.school_year_fk_id === schoolYearFk?.id &&
@@ -294,7 +312,7 @@ export function ImportSubjectsDialog({ open, onClose, onImportComplete }: Import
 
         const subjectData: any = {
           subject_name: subject.subject_name,
-          teacher_id: targetTeacherId,
+          teacher_fk_id: teacherFkId,  // ✅ Utilise teachers.id, pas user_id
           school_year_fk_id: schoolYearFk?.id || null,
           academic_period_id: academicPeriodFk?.id || null,
           class_fk_id: classFk?.id || null,

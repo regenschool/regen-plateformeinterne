@@ -1688,39 +1688,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "subjects_academic_period_id_fkey"
-            columns: ["academic_period_id"]
-            isOneToOne: false
-            referencedRelation: "academic_periods"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "subjects_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "subject_categories"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "subjects_class_fk_id_fkey"
-            columns: ["class_fk_id"]
-            isOneToOne: false
-            referencedRelation: "classes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "subjects_school_year_fk_id_fkey"
-            columns: ["school_year_fk_id"]
-            isOneToOne: false
-            referencedRelation: "school_years"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "subjects_teacher_fk_id_fkey"
-            columns: ["teacher_fk_id"]
-            isOneToOne: false
-            referencedRelation: "teachers"
-            referencedColumns: ["user_id"]
           },
         ]
       }
