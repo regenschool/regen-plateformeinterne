@@ -64,21 +64,11 @@ export function AddSubjectDialog({ open, onClose, onSubjectAdded }: AddSubjectDi
     setIsSubmitting(true);
 
     try {
-      // ✅ Récupérer le teachers.id depuis l'user_id
-      const { data: teacherData } = await supabase
-        .from('teachers')
-        .select('id')
-        .eq('user_id', teacherId)
-        .single();
-
-      if (!teacherData) {
-        throw new Error('Profil enseignant non trouvé');
-      }
-
+      // ✅ teacherId est déjà teachers.id (renvoyé par useTeachers)
       const { error } = await supabase
         .from("subjects")
         .insert({
-          teacher_fk_id: teacherData.id,  // ✅ Utiliser teacher_fk_id (FK vers teachers.id)
+          teacher_fk_id: teacherId,  // ✅ Directement teachers.id
           subject_name: subjectName,
           class_fk_id: classId,
           school_year_fk_id: schoolYearId,
